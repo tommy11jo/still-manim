@@ -12,6 +12,8 @@ def to_pixel_coords(
     fh: float,
     fc: Vector3D,
 ):
+    if len(points) == 0:
+        return []
     if not np.all(np.isfinite(points)):
         logger.warn("At least point is not finite. Using default (0, 0, 0).")
         points = np.zeros((1, 3))
@@ -31,6 +33,7 @@ def to_pixel_coords(
 
 
 def rotation_matrix(angle_in_radians: float, axis: np.ndarray) -> np.ndarray:
+    """Counter-clockwise rotation"""
     if not any((axis == a).all() for a in (X_AXIS, Y_AXIS, Z_AXIS)):
         raise ValueError("Axis must be one of (X_AXIS, Y_AXIS, Z_AXIS)")
 
@@ -51,28 +54,6 @@ def rotation_matrix(angle_in_radians: float, axis: np.ndarray) -> np.ndarray:
 def rotate_vector(
     vector: Vector3D, angle: float, axis: np.ndarray = Z_AXIS
 ) -> np.ndarray:
-    """Function for rotating a vector.
-
-    Parameters
-    ----------
-    vector
-        The vector to be rotated.
-    angle
-        The angle to be rotated by.
-    axis
-        The axis to be rotated, by default OUT
-
-    Returns
-    -------
-    np.ndarray
-        The rotated vector with provided angle and axis.
-
-    Raises
-    ------
-    ValueError
-        If vector is not of dimension 2 or 3.
-    """
-
     if len(vector) > 3:
         raise ValueError("Vector must have the correct dimensions.")
     return rotation_matrix(angle, axis) @ vector

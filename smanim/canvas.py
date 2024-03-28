@@ -32,6 +32,7 @@ class Canvas:
 
         self.bg_color = bg_color
 
+        # Should this be a VGroup?
         self.mobjects: List[Mobject] = []
         self.num_snapshots = 0
         self.save_file_dir = save_file_dir
@@ -55,7 +56,7 @@ class Canvas:
 
     def get_mobjects_to_display(
         self,
-        use_z_index=False,
+        use_z_index=True,
     ):
         cur_mobjects = it.chain(*(m.get_family() for m in self.mobjects))
 
@@ -90,7 +91,6 @@ class Canvas:
         self.num_snapshots += 1
 
     def vmobject_to_svg_el(self, vmobject: VMobject):
-        # Note: Not convinced I need `gen_subpaths_from_points_2d`. No need for disconnected paths yet. Can potentially repr points as list of subpaths later.
         points = to_pixel_coords(
             vmobject.points, self.pw, self.ph, self.fw, self.fh, self.fc
         )
@@ -104,18 +104,25 @@ class Canvas:
         svg_path.append(svg.M(*start[:2]))
         for _p0, p1, p2, p3 in quads:
             svg_path.append(svg.C(*p1[:2], *p2[:2], *p3[:2]))
-        # if vmobject.consider_points_equals_2d(points[0], points[-1]):
         svg_path.append(svg.Z())
         kwargs = {}
 
         def orNone(value: any):
             return value if value is not None else "none"
 
-        kwargs["stroke"] = orNone(vmobject.stroke_color.value)
-        kwargs["stroke_width"] = orNone(vmobject.stroke_width)
-        kwargs["stroke_opacity"] = orNone(vmobject.stroke_opacity)
+        if vmobject.stroke_opacity != 0.0:
+            kwargs["stroke"] = orNone(
+                None
+                if not vmobject.stroke_color
+                else orNone(vmobject.stroke_color.value)
+            )
+            kwargs["stroke_width"] = orNone(vmobject.stroke_width)
+            # Note: stroke_opacity as "none" defaults to opaque
+            kwargs["stroke_opacity"] = orNone(vmobject.stroke_opacity)
         kwargs["fill_opacity"] = orNone(vmobject.fill_opacity)
-        kwargs["fill"] = orNone(vmobject.fill_color.value)
+        kwargs["fill"] = orNone(
+            None if not vmobject.fill_color else orNone(vmobject.fill_color.value)
+        )
 
         return svg.Path(d=svg_path, **kwargs)
 

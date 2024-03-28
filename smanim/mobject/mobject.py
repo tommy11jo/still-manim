@@ -13,13 +13,16 @@ from smanim.constants import (
     DR,
     LEFT,
     ORIGIN,
+    OUT,
+    PI,
     RIGHT,
     UL,
     UP,
     UR,
 )
-from smanim.typing import InternalPoint3D_Array, Point3D, Vector3D
+from smanim.typing import InternalPoint3D_Array, Point2D, Point3D, Vector3D
 from smanim.utils.logger import logger
+from smanim.utils.space_ops import rotation_matrix
 
 
 class Mobject(ABC):
@@ -33,19 +36,24 @@ class Mobject(ABC):
     @abstractmethod
     def generate_points(self) -> InternalPoint3D_Array:
         """
-        `points` attr can represent the svg path points for VMobjects and the "general shape" for text and image
+        generated points represent the svg path points for VMobjects and the "general shape" for text and image objects
         """
         pass
 
     # Grouping
-    def add(self, *mobjects):
+    def add(self, *mobjects: Mobject, insert_before=False):
+        new_mobjects = []
         for mobject in mobjects:
             if mobject is self:
                 logger.error("Cannot add mobject to itself")
             if mobject in self.submobjects:
                 logger.warning(f"Mobject already added: {mobject}")
             else:
-                self.submobjects.append(mobject)
+                new_mobjects.append(mobject)
+        if not insert_before:
+            self.submobjects.extend(new_mobjects)
+        else:
+            self.submobjects = new_mobjects + self.submobjects
 
     def remove(self, *mobjects):
         for mobject in mobjects:
@@ -57,9 +65,12 @@ class Mobject(ABC):
                 self.submobjects.remove(mobject)
 
     def get_family(self):
-        return [self] + [s.get_family() for s in self.submobjects]
+        family = [self]
+        for s in self.submobjects:
+            family.extend(s.get_family())
+        return family
 
-    # Positioning
+    # Bounding Box Ops
     def get_critical_point(self, direction: Vector3D):
         """9 point bbox: 4 corners, 4 edge points, 1 center"""
         if not (-1 <= direction[0] <= 1 and -1 <= direction[1] <= 1):
@@ -91,6 +102,9 @@ class Mobject(ABC):
     def get_left(self):
         return self.get_critical_point(LEFT)
 
+    def get_right(self):
+        return self.get_critical_point(RIGHT)
+
     def get_center(self):
         return self.get_critical_point(ORIGIN)
 
@@ -99,6 +113,34 @@ class Mobject(ABC):
             raise ValueError("`direction` must be a corner")
         return self.get_critical_point(direction)
 
+    @property
+    def width(self):
+        return self.get_left() - self.get_right()
+
+    @property
+    def height(self):
+        return self.get_top() - self.get_bottom()
+
+    # Absolute Positioning
+    def set_position(self, coord: Point2D | Point3D) -> Self:
+        """Set the center of this mobject to `coord`."""
+        if len(coord) == 2:
+            coord = np.append(coord, 0)
+        return self.shift(coord - self.get_center())
+
+    def set_x(self, x: float) -> Self:
+        """Set x value of the center of this mobject"""
+        x_pt = self.get_center().copy()
+        x_pt[0] = x
+        return self.set_position(x_pt)
+
+    def set_y(self, y: float) -> Self:
+        """Set y value of the center of this mobject"""
+        y_pt = self.get_center().copy()
+        y_pt[1] = y
+        return self.set_position(y_pt)
+
+    # Relative Positioning
     def align_to(
         self,
         mobject_or_point: Mobject | Point3D,
@@ -148,4 +190,44 @@ class Mobject(ABC):
     def shift(self, vector: Vector3D) -> Self:
         for mob in self.get_family():
             mob.points += vector
+        return self
+
+    # Transformations
+    def rotate(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3D = OUT,
+        about_point: Point3D | None = None,
+    ) -> Self:
+        """Counter-clockwise rotation"""
+        if about_point is None:
+            about_point = self.get_critical_point(ORIGIN)
+        rot_matrix = rotation_matrix(angle, axis)
+        for mob in self.get_family():
+            mob.points -= about_point
+            mob.points = np.dot(mob.points, rot_matrix.T)
+            mob.points += about_point
+        return self
+
+    def scale(self, factor: float) -> Self:
+        for mob in self.get_family():
+            mob.points *= factor
+        return self
+
+    def stretch(self, factor: float, dim: int) -> Self:
+        for mob in self.get_family():
+            mob.points[:, dim] = factor
+
+    def stretch_to_fit_width(self, width: float, **kwargs) -> Self:
+        old_length = self.width()
+        if old_length == 0:
+            return self
+        self.stretch(width / old_length, dim=0)
+        return self
+
+    def stretch_to_fit_height(self, height: float, **kwargs) -> Self:
+        old_length = self.height()
+        if old_length == 0:
+            return self
+        self.stretch(height / old_length, dim=1)
         return self
