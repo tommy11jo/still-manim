@@ -22,4 +22,4 @@ Point3D_Array: TypeAlias = Union[
 ]
 
 # Vector Types
-Vector3: TypeAlias = npt.NDArray[PointDType]
+Vector3D: TypeAlias = npt.NDArray[PointDType]

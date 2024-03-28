@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from typing import List, Tuple
 
 import numpy as np
@@ -9,7 +8,7 @@ from smanim.typing import Point3D, Point3D_Array
 
 
 # Note: text is not a VMobject, it's a non-vectorized SVG el
-class VMobject(Mobject, ABC):
+class VMobject(Mobject):
     "base class for all objects represented by a path of bezier curves, with strokes or fills"
     points_per_curve = 4
 
@@ -22,19 +21,13 @@ class VMobject(Mobject, ABC):
         fill_color: ManimColor | None = None,
         fill_opacity: float = 0.0,
     ):
-        self.points = self.generate_points()
-
-        super().__init__(self.points)
+        super().__init__()
 
         self.fill_color = fill_color if fill_color else color
         self.fill_opacity = fill_opacity
         self.stroke_color = stroke_color if stroke_color else color
         self.stroke_opacity = stroke_opacity
         self.stroke_width = stroke_width
-
-    @abstractmethod
-    def generate_points(self) -> Point3D_Array:
-        pass
 
     def get_start_anchors(self) -> Point3D_Array:
         return self.points[:: self.points_per_curve]

@@ -6,8 +6,13 @@ class Test(Canvas):
         s = Square(side_length=0.5)
         self.add(s)
 
-        r = Rectangle(2, 4)
+        r = Rectangle(1, 2)
+        s.next_to(r, DOWN, aligned_edge=RIGHT)
         self.add(r)
+
+        t = Triangle()
+        t.next_to(s, RIGHT, aligned_edge=DOWN)
+        self.add(t)
         self.snapshot(preview=True)
         # self.add(s)
         # self.snapshot()

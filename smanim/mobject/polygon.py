@@ -4,7 +4,8 @@ from smanim.utils.bezier import interpolate
 from smanim.utils.color import RED, WHITE, ManimColor
 from smanim.constants import DL, DR, UL, UR
 from smanim.mobject.vmobject import VMobject
-from smanim.typing import Point3D, Point3D_Array
+from smanim.typing import InternalPoint3D_Array, ManimFloat, Point3D, Point3D_Array
+from smanim.utils.space_ops import regular_vertices
 
 
 class Polygon(VMobject):
@@ -12,7 +13,7 @@ class Polygon(VMobject):
         self.vertices = vertices
         super().__init__(color=color, **kwargs)
 
-    def generate_points(self) -> Point3D_Array:
+    def generate_points(self) -> InternalPoint3D_Array:
         """Override to generate points by interpolating between each pair of vertices"""
         points: List[Point3D] = []
         for start, end in zip(self.vertices, self.vertices[1:]):
@@ -21,11 +22,10 @@ class Polygon(VMobject):
                 for a in np.linspace(0, 1, VMobject.points_per_curve)
             ]
             points.extend(bezier_pts)
-        return np.array(points)
+        return np.array(points, dtype=ManimFloat)
 
     def get_vertices(self):
         return self.vertices
-        # return self.get_start_anchors()
 
     def __repr__(self):
         class_name = self.__class__.__qualname__
@@ -66,4 +66,16 @@ class Square(Polygon):
         return f"{class_name}(side_length={self.side_length})"
 
 
-# TODO: RegularPolygon and Triangle
+class RegularPolygon(Polygon):
+    def __init__(self, n: int = 6, radius: int = 1, start_angle: int | None = None):
+        vertices = regular_vertices(n, radius, start_angle)
+        super().__init__(vertices)
+        self.n = n
+        self.radius = radius
+        # angle in radians
+        self.start_angle = start_angle
+
+
+class Triangle(RegularPolygon):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(n=3, **kwargs)
