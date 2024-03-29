@@ -162,10 +162,10 @@ class ArrowTest(Canvas):
         # self.add(arrow)
 
         # unlike arrows, lines don't have automatic buff
-        pos1 = LEFT * 2
         # pos1 = LEFT * 2
-        pos2 = RIGHT * 2
-        # pos2 = UP * 1 + RIGHT * 2
+        pos1 = LEFT * 2
+        # pos2 = RIGHT * 2
+        pos2 = UP * 1 + RIGHT * 2
         s = Square().shift(pos1)
         self.add(s)
         s1 = Square().shift(pos2)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from typing import List
 from typing_extensions import Self
 
@@ -13,8 +12,6 @@ from smanim.constants import (
     DR,
     LEFT,
     ORIGIN,
-    OUT,
-    PI,
     RIGHT,
     UL,
     UP,
@@ -27,29 +24,18 @@ from smanim.typing import (
     Vector3D,
 )
 from smanim.utils.logger import logger
-from smanim.utils.space_ops import rotation_matrix
-
-# Maybe Mobject should know just about the "defining points" which are different than the "bezier curve points".
-# Constraint: These defining points must be a good repr of the polygon that surrounds this mobject. (If not, then arrows between mobjects won't work, for example)
-# Refactor by moving `generate_points`, moving transformations to VMobject. Include a way to init defining points here.
+from smanim.utils.space_ops import line_intersect
 
 
-class Mobject(ABC):
-    """base class for all objects that take up space."""
+class Mobject:
+    """base class for all objects that take up space.
+    `bounding_points` represents the bounding polygon for this mobject.
+    """
 
-    points_per_curve = 4
-
-    def __init__(self, z_index: int = 0):
-        self.points = self.generate_points()
+    def __init__(self, bounding_points: InternalPoint3D_Array, z_index: int = 0):
+        self.bounding_points = bounding_points
         self.z_index = z_index
         self.submobjects: List[Mobject] = []
-
-    @abstractmethod
-    def generate_points(self) -> InternalPoint3D_Array:
-        """
-        generated points represent the svg path points for VMobjects and the "general shape" for text and image objects
-        """
-        pass
 
     # Grouping
     def add(self, *mobjects: Mobject, insert_before=False):
@@ -124,19 +110,24 @@ class Mobject(ABC):
             raise ValueError("`direction` must be a corner")
         return self.get_critical_point(direction)
 
-    def get_boundary_point(self, direction: Vector3D) -> Point3D:
-        """Imagine the `direction` vector passing through the center of this mobject.
-        Which existing point is it closest to hitting?"""
-        all_points = np.array(self.get_all_points()) - self.get_center()
-        all_points_normed = all_points / np.linalg.norm(
-            all_points, axis=1, keepdims=True
-        )
-        mags = np.dot(all_points_normed, direction.T)
-        ray_index = np.argmax(mags)
-        return self.get_all_points()[ray_index]
-
-    def get_closest_intersecting_point(self):
-        """Treats curves as lines"""
+    def get_closest_intersecting_point(
+        self, ray_origin: Point2D, ray_direction: Point2D
+    ):
+        """Return the closest intersecting point between a ray and the bounding polygon of this mobject.
+        Handles rays shot from within or from outside the bounding polygon."""
+        points_ahead = np.roll(self.bounding_points, -1, axis=0)
+        line_segments = [(p1, p2) for p1, p2 in zip(self.bounding_points, points_ahead)]
+        intersections_and_params = []
+        for p1, p2 in line_segments:
+            intersection, param = line_intersect(ray_origin, ray_direction, p1, p2)
+            intersections_and_params.append(
+                (intersection, param) if intersection is not None else (None, np.inf)
+            )
+        intersection, param = min(intersections_and_params, key=lambda x: x[1])
+        if intersection is None:
+            logger.warning("No intersection point found. Illegal ray input.")
+            return self.get_center()
+        return intersection
 
     @property
     def width(self):
@@ -215,44 +206,4 @@ class Mobject(ABC):
     def shift(self, vector: Vector3D) -> Self:
         for mob in self.get_family():
             mob.points += vector
-        return self
-
-    # Transformations
-    def rotate(
-        self,
-        angle: float = PI / 4,
-        axis: Vector3D = OUT,
-        about_point: Point3D | None = None,
-    ) -> Self:
-        """Counter-clockwise rotation"""
-        if about_point is None:
-            about_point = self.get_critical_point(ORIGIN)
-        rot_matrix = rotation_matrix(angle, axis)
-        for mob in self.get_family():
-            mob.points -= about_point
-            mob.points = np.dot(mob.points, rot_matrix.T)
-            mob.points += about_point
-        return self
-
-    def scale(self, factor: float) -> Self:
-        for mob in self.get_family():
-            mob.points *= factor
-        return self
-
-    def stretch(self, factor: float, dim: int) -> Self:
-        for mob in self.get_family():
-            mob.points[:, dim] *= factor
-
-    def stretch_to_fit_width(self, width: float) -> Self:
-        old_width = self.width
-        if old_width == 0:
-            return self
-        self.stretch(width / old_width, dim=0)
-        return self
-
-    def stretch_to_fit_height(self, height: float) -> Self:
-        old_height = self.height
-        if old_height == 0:
-            return self
-        self.stretch(height / old_height, dim=1)
         return self

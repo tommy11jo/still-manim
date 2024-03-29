@@ -3,18 +3,22 @@ from typing_extensions import Self
 
 import numpy as np
 
-from smanim.constants import DEFAULT_STROKE_WIDTH
+from abc import ABC, abstractmethod
+from smanim.constants import DEFAULT_STROKE_WIDTH, ORIGIN, OUT, PI
 from smanim.utils import logger
 from smanim.utils.color import WHITE, ManimColor
 from smanim.mobject.mobject import Mobject
-from smanim.typing import InternalPoint3D_Array, Point3D, Point3D_Array
+from smanim.typing import InternalPoint3D_Array, Point3D, Point3D_Array, Vector3D
+from smanim.utils.space_ops import rotation_matrix
 
 
 # Note: text is not a VMobject, it's a non-vectorized SVG el
-class VMobject(Mobject):
+class VMobject(ABC, Mobject):
     """Base class for all objects represented by a path of bezier curves, with strokes or fills.
-    The `points` attr of instances represents the points in the path of bezier curves.
+    `points` is a list of the points that form bezier curves.
     """
+
+    points_per_curve = 4
 
     def __init__(
         self,
@@ -28,7 +32,10 @@ class VMobject(Mobject):
         default_stroke_color: ManimColor = WHITE,  # intended for use by subclasses
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        self.points = self.generate_points()
+        bounding_points: InternalPoint3D_Array = self.get_start_anchors()
+
+        super().__init__(bounding_points=bounding_points, **kwargs)
 
         if not stroke_color and not fill_color:
             self._stroke_color = default_stroke_color
@@ -43,14 +50,21 @@ class VMobject(Mobject):
         # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-dasharray
         self.stroke_dasharray = "8 8" if dashed else "none"
 
+    @abstractmethod
+    def generate_points(self) -> InternalPoint3D_Array:
+        """
+        generated points represent the svg path points for VMobjects and the "general shape" for text and image objects
+        """
+        pass
+
     # Point ops
-    def get_start_anchors(self) -> Point3D_Array:
-        return self.points[:: Mobject.points_per_curve]
+    def get_start_anchors(self) -> InternalPoint3D_Array:
+        return self.points[:: VMobject.points_per_curve]
 
-    def get_end_anchors(self) -> Point3D_Array:
-        return self.points[Mobject.points_per_curve - 1 :: Mobject.points_per_curve]
+    def get_end_anchors(self) -> InternalPoint3D_Array:
+        return self.points[VMobject.points_per_curve - 1 :: VMobject.points_per_curve]
 
-    def get_all_points(self):
+    def get_all_points(self) -> InternalPoint3D_Array:
         all_points = []
         for mob in self.get_family():
             all_points.extend(mob.points)
@@ -69,12 +83,13 @@ class VMobject(Mobject):
             self.points = np.append(self.points, new_points, axis=0)
 
     # Color ops
-    def set_fill(self, color: ManimColor, opacity: float = 1.0, family=False):
+    def set_fill(self, color: ManimColor, opacity: float = 1.0, family=False) -> Self:
         self._fill_color = color
         self.fill_opacity = opacity
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_fill(color=color, opacity=opacity, family=True)
+        return self
 
     @property
     def stroke_color(self):
@@ -105,13 +120,54 @@ class VMobject(Mobject):
         width: float = DEFAULT_STROKE_WIDTH,
         opacity: float = 1.0,
         family=False,
-    ):
+    ) -> Self:
         self._stroke_color = color
         self.stroke_width = width
         self.stroke_opacity = opacity
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_stroke(color=color, width=width, opacity=opacity, family=True)
+        return Self
+
+    # Transformations
+    def rotate(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3D = OUT,
+        about_point: Point3D | None = None,
+    ) -> Self:
+        """Counter-clockwise rotation"""
+        if about_point is None:
+            about_point = self.get_critical_point(ORIGIN)
+        rot_matrix = rotation_matrix(angle, axis)
+        for mob in self.get_family():
+            mob.points -= about_point
+            mob.points = np.dot(mob.points, rot_matrix.T)
+            mob.points += about_point
+        return self
+
+    def scale(self, factor: float) -> Self:
+        for mob in self.get_family():
+            mob.points *= factor
+        return self
+
+    def stretch(self, factor: float, dim: int) -> Self:
+        for mob in self.get_family():
+            mob.points[:, dim] *= factor
+
+    def stretch_to_fit_width(self, width: float) -> Self:
+        old_width = self.width
+        if old_width == 0:
+            return self
+        self.stretch(width / old_width, dim=0)
+        return self
+
+    def stretch_to_fit_height(self, height: float) -> Self:
+        old_height = self.height
+        if old_height == 0:
+            return self
+        self.stretch(height / old_height, dim=1)
+        return self
 
 
 class VGroup(VMobject):

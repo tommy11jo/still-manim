@@ -49,13 +49,10 @@ class Line(VMobject):
         rough_end = end.get_center() if isinstance(end, Mobject) else end
         dir = rough_end - rough_start
 
-        # TODO: fix this logic
-        # shoot through start and find closest line segment intersection with all lines formed by consecutive "defining points" in end mobject
-        # must refactor first
-        start_pt = (
-            start.get_boundary_point(dir) if isinstance(start, Mobject) else start
-        )
-        end_pt = end.get_boundary_point(-dir) if isinstance(end, Mobject) else end
+        start_pt = start.get_closest_intersecting_point(rough_start, dir)
+        new_dir = rough_end - start_pt
+        end_pt = end.get_closest_intersecting_point(start_pt, new_dir)
+
         return start_pt, end_pt
 
 

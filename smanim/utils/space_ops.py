@@ -1,6 +1,6 @@
 import numpy as np
 from smanim.constants import RIGHT, TAU, X_AXIS, Y_AXIS, Z_AXIS
-from smanim.typing import Point3D_Array, Vector3D
+from smanim.typing import Point2D, Point3D_Array, Vector3D
 from smanim.utils.logger import logger
 
 
@@ -81,3 +81,27 @@ def regular_vertices(
     vertices = compass_directions(n, start_vector)
 
     return vertices
+
+
+def line_intersect(
+    ray_origin: Point2D,
+    ray_direction: Point2D,
+    segment_start: Point2D,
+    segment_end: Point2D,
+) -> Point2D | None:
+    """Finds the line intersection using parametric equations.
+    Returns the intersection point and the parametric scalar along the ray corresponding to the intersection.
+    """
+    seg_dir = segment_end - segment_start
+    det_A = ray_direction[0] * seg_dir[1] - ray_direction[1] * seg_dir[0]
+    if det_A == 0:
+        return None, None
+
+    diff = segment_start - ray_origin
+    t = (diff[0] * seg_dir[1] - diff[1] * seg_dir[0]) / det_A
+    u = (diff[0] * ray_direction[1] - diff[1] * ray_direction[0]) / det_A
+
+    if t >= 0 and 0 <= u <= 1:
+        return ray_origin + t * ray_direction, t
+    else:
+        return None, None
