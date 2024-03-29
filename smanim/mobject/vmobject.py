@@ -2,6 +2,7 @@ from typing import List, Tuple
 from typing_extensions import Self
 
 import numpy as np
+
 from smanim.constants import DEFAULT_STROKE_WIDTH
 from smanim.utils import logger
 from smanim.utils.color import WHITE, ManimColor
@@ -15,8 +16,6 @@ class VMobject(Mobject):
     The `points` attr of instances represents the points in the path of bezier curves.
     """
 
-    points_per_curve = 4
-
     def __init__(
         self,
         stroke_color: ManimColor | None = None,
@@ -24,6 +23,8 @@ class VMobject(Mobject):
         stroke_width: float | None = DEFAULT_STROKE_WIDTH,
         fill_color: ManimColor | None = None,
         fill_opacity: float | None = None,
+        # When scaled, should dashes scale or remain the same size? Remain for now
+        dashed: bool = False,
         default_stroke_color: ManimColor = WHITE,  # intended for use by subclasses
         **kwargs,
     ):
@@ -38,12 +39,22 @@ class VMobject(Mobject):
         self.stroke_width = stroke_width
         self._fill_color = fill_color
         self.fill_opacity = fill_opacity
+        # Bug: Not quite evenly spaced, when it should be
+        # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-dasharray
+        self.stroke_dasharray = "8 8" if dashed else "none"
 
+    # Point ops
     def get_start_anchors(self) -> Point3D_Array:
-        return self.points[:: self.points_per_curve]
+        return self.points[:: Mobject.points_per_curve]
 
     def get_end_anchors(self) -> Point3D_Array:
-        return self.points[self.points_per_curve - 1 :: self.points_per_curve]
+        return self.points[Mobject.points_per_curve - 1 :: Mobject.points_per_curve]
+
+    def get_all_points(self):
+        all_points = []
+        for mob in self.get_family():
+            all_points.extend(mob.points)
+        return all_points
 
     def get_points_in_quads(
         self, points: Point3D_Array
@@ -57,6 +68,7 @@ class VMobject(Mobject):
         else:
             self.points = np.append(self.points, new_points, axis=0)
 
+    # Color ops
     def set_fill(self, color: ManimColor, opacity: float = 1.0, family=False):
         self._fill_color = color
         self.fill_opacity = opacity
@@ -100,18 +112,6 @@ class VMobject(Mobject):
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_stroke(color=color, width=width, opacity=opacity, family=True)
-
-    # Would rather avoid adding this to reduce confusion
-    # def set_color(self, color: ManimColor, opacity: float | None = None, family=False):
-    #     """Sets both the stroke and fill colors. Also sets their opacities if specified"""
-    #     self.stroke_color = color
-    #     self.fill_color = color
-    #     if opacity:
-    #         self.stroke_opacity = opacity
-    #         self.fill_opacity = opacity
-    #     if family:
-    #         for mem in self.get_family():
-    #             mem.set_color(color=color, opacity=opacity, family=True)
 
 
 class VGroup(VMobject):

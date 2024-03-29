@@ -110,7 +110,7 @@ class Canvas:
         def orNone(value: any):
             return value if value is not None else "none"
 
-        if vmobject.stroke_opacity != 0.0:
+        if vmobject.stroke_opacity > 0.0 and vmobject.stroke_width > 0.0:
             kwargs["stroke"] = orNone(
                 None
                 if not vmobject.stroke_color
@@ -123,6 +123,7 @@ class Canvas:
         kwargs["fill"] = orNone(
             None if not vmobject.fill_color else orNone(vmobject.fill_color.value)
         )
+        kwargs["stroke_dasharray"] = vmobject.stroke_dasharray
 
         return svg.Path(d=svg_path, **kwargs)
 

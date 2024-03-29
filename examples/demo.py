@@ -1,6 +1,23 @@
 from smanim import *
 
 
+class SquareTest(Canvas):
+    def construct(self):
+        s = Square()
+        self.add(s)
+        self.snapshot(preview=True)
+
+
+class StrokeTest(Canvas):
+    def construct(self):
+        s = Square()
+        self.add(s)
+        # this shows that SVG draws stroke equally on inner and outer (in other words, doees not change center of mass)
+        s1 = Square(stroke_color=BLUE, stroke_width=30).shift(LEFT * 2)
+        self.add(s1)
+        self.snapshot(preview=True)
+
+
 class AlignmentTest(Canvas):
     def construct(self):
         s = Square(side_length=0.5)
@@ -124,6 +141,53 @@ class ColorTest(Canvas):
         self.snapshot(preview=True)
 
 
+class LineTest(Canvas):
+    def construct(self):
+        s = Square().shift(UL)
+        r = Rectangle().shift(DR * 3)
+        line = Line(s, r, buff=0.2, dashed=True)
+        self.add(s)
+        self.add(r)
+        self.add(line)
+        self.snapshot(preview=True)
+
+
+class ArrowTest(Canvas):
+    def construct(self):
+        # s = Square().shift(UL)
+        # r = Rectangle().shift(DR * 3)
+        # arrow = Arrow(s, r, buff=0.2, dashed=True)
+        # self.add(s)
+        # self.add(r)
+        # self.add(arrow)
+
+        # unlike arrows, lines don't have automatic buff
+        pos1 = LEFT * 2
+        # pos1 = LEFT * 2
+        pos2 = RIGHT * 2
+        # pos2 = UP * 1 + RIGHT * 2
+        s = Square().shift(pos1)
+        self.add(s)
+        s1 = Square().shift(pos2)
+        self.add(s1)
+        # a = Line(s1, s)
+        a = Arrow(s, s1)
+        self.add(a)
+
+        # t = Triangle()
+        # self.add(t)
+        # a = Arrow(LEFT, RIGHT)
+        # a = ArrowTriangleFilledTip()
+        # self.add(a)
+        self.snapshot(preview=True)
+
+
+# canvas = SquareTest()
+# canvas.construct()
+
+# canvas = StrokeTest()
+# canvas.construct()
+
 # canvas = AlignmentTest()
 # canvas.construct()
 
@@ -137,8 +201,14 @@ class ColorTest(Canvas):
 # canvas = StrokeFamilyTest()
 # canvas.construct()
 
-canvas = GroupTest()
-canvas.construct()
+# canvas = GroupTest()
+# canvas.construct()
 
 # canvas = ColorTest()
 # canvas.construct()
+
+# canvas = LineTest()
+# canvas.construct()
+
+canvas = ArrowTest()
+canvas.construct()

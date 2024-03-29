@@ -18,7 +18,8 @@ class Polygon(VMobject):
     def generate_points(self) -> InternalPoint3D_Array:
         """Override to generate points by interpolating between each pair of vertices"""
         points: List[Point3D] = []
-        for start, end in zip(self.vertices, self.vertices[1:]):
+        vertices_ahead = np.roll(self.vertices, -1, axis=0)
+        for start, end in zip(self.vertices, vertices_ahead):
             bezier_pts = [
                 interpolate(start, end, a)
                 for a in np.linspace(0, 1, VMobject.points_per_curve)
@@ -27,7 +28,7 @@ class Polygon(VMobject):
         return np.array(points, dtype=ManimFloat)
 
     def get_vertices(self):
-        return self.vertices
+        return self.get_start_anchors()
 
     def __repr__(self):
         class_name = self.__class__.__qualname__
@@ -65,9 +66,11 @@ class Square(Polygon):
 
 
 class RegularPolygon(Polygon):
-    def __init__(self, n: int = 6, radius: int = 1, start_angle: int | None = None):
+    def __init__(
+        self, n: int = 6, radius: int = 1, start_angle: int | None = None, **kwargs
+    ):
         vertices = regular_vertices(n, radius, start_angle)
-        super().__init__(vertices)
+        super().__init__(vertices, **kwargs)
         self.n = n
         self.radius = radius
         # angle in radians

@@ -54,6 +54,7 @@ def rotation_matrix(angle_in_radians: float, axis: np.ndarray) -> np.ndarray:
 def rotate_vector(
     vector: Vector3D, angle: float, axis: np.ndarray = Z_AXIS
 ) -> np.ndarray:
+    """Counter-clockwise rotation"""
     if len(vector) > 3:
         raise ValueError("Vector must have the correct dimensions.")
     return rotation_matrix(angle, axis) @ vector
@@ -68,7 +69,7 @@ def compass_directions(n: int = 4, start_vect: np.ndarray = RIGHT) -> np.ndarray
 def regular_vertices(
     n: int, radius: float = 1, start_angle: float | None = None
 ) -> np.ndarray:
-    """Generates regularly spaced vertices around a circle centered at the origin."""
+    """Generates regularly spaced vertices around a circle centered at the origin in the counter-clockwise direction."""
 
     if start_angle is None:
         if n % 2 == 0:

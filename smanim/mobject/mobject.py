@@ -20,13 +20,24 @@ from smanim.constants import (
     UP,
     UR,
 )
-from smanim.typing import InternalPoint3D_Array, Point2D, Point3D, Vector3D
+from smanim.typing import (
+    InternalPoint3D_Array,
+    Point2D,
+    Point3D,
+    Vector3D,
+)
 from smanim.utils.logger import logger
 from smanim.utils.space_ops import rotation_matrix
 
+# Maybe Mobject should know just about the "defining points" which are different than the "bezier curve points".
+# Constraint: These defining points must be a good repr of the polygon that surrounds this mobject. (If not, then arrows between mobjects won't work, for example)
+# Refactor by moving `generate_points`, moving transformations to VMobject. Include a way to init defining points here.
+
 
 class Mobject(ABC):
-    """base class for all objects that take up space"""
+    """base class for all objects that take up space."""
+
+    points_per_curve = 4
 
     def __init__(self, z_index: int = 0):
         self.points = self.generate_points()
@@ -113,13 +124,27 @@ class Mobject(ABC):
             raise ValueError("`direction` must be a corner")
         return self.get_critical_point(direction)
 
+    def get_boundary_point(self, direction: Vector3D) -> Point3D:
+        """Imagine the `direction` vector passing through the center of this mobject.
+        Which existing point is it closest to hitting?"""
+        all_points = np.array(self.get_all_points()) - self.get_center()
+        all_points_normed = all_points / np.linalg.norm(
+            all_points, axis=1, keepdims=True
+        )
+        mags = np.dot(all_points_normed, direction.T)
+        ray_index = np.argmax(mags)
+        return self.get_all_points()[ray_index]
+
+    def get_closest_intersecting_point(self):
+        """Treats curves as lines"""
+
     @property
     def width(self):
-        return self.get_left() - self.get_right()
+        return (self.get_right() - self.get_left())[0]
 
     @property
     def height(self):
-        return self.get_top() - self.get_bottom()
+        return (self.get_top() - self.get_bottom())[1]
 
     # Absolute Positioning
     def set_position(self, coord: Point2D | Point3D) -> Self:
@@ -216,18 +241,18 @@ class Mobject(ABC):
 
     def stretch(self, factor: float, dim: int) -> Self:
         for mob in self.get_family():
-            mob.points[:, dim] = factor
+            mob.points[:, dim] *= factor
 
-    def stretch_to_fit_width(self, width: float, **kwargs) -> Self:
-        old_length = self.width()
-        if old_length == 0:
+    def stretch_to_fit_width(self, width: float) -> Self:
+        old_width = self.width
+        if old_width == 0:
             return self
-        self.stretch(width / old_length, dim=0)
+        self.stretch(width / old_width, dim=0)
         return self
 
-    def stretch_to_fit_height(self, height: float, **kwargs) -> Self:
-        old_length = self.height()
-        if old_length == 0:
+    def stretch_to_fit_height(self, height: float) -> Self:
+        old_height = self.height
+        if old_height == 0:
             return self
-        self.stretch(height / old_length, dim=1)
+        self.stretch(height / old_height, dim=1)
         return self
