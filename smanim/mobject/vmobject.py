@@ -4,7 +4,14 @@ from typing_extensions import Self
 import numpy as np
 
 from abc import ABC, abstractmethod
-from smanim.constants import DEFAULT_STROKE_WIDTH, ORIGIN, OUT, PI
+from smanim.constants import (
+    DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
+    DEFAULT_STROKE_WIDTH,
+    ORIGIN,
+    OUT,
+    PI,
+    RIGHT,
+)
 from smanim.utils import logger
 from smanim.utils.color import WHITE, ManimColor
 from smanim.mobject.mobject import Mobject
@@ -32,6 +39,7 @@ class VMobject(ABC, Mobject):
         default_stroke_color: ManimColor = WHITE,  # intended for use by subclasses
         **kwargs,
     ):
+        # self.set_points(self.generate_points())
         self.points = self.generate_points()
         bounding_points: InternalPoint3D_Array = self.get_start_anchors()
 
@@ -52,10 +60,20 @@ class VMobject(ABC, Mobject):
 
     @abstractmethod
     def generate_points(self) -> InternalPoint3D_Array:
-        """
-        generated points represent the svg path points for VMobjects and the "general shape" for text and image objects
-        """
         pass
+
+    @property
+    def points(self):
+        return self._points
+
+    @points.setter
+    def points(self, new_points: InternalPoint3D_Array):
+        """Enforces invariant that bounding_points stay updated with VMobject points"""
+        # `points` are read-only but can be reset via this function
+        new_points.flags.writeable = False
+        self._points = new_points
+        # update the bounding box whenever points are moved
+        super().set_bounding_points(self.get_start_anchors())
 
     # Point ops
     def get_start_anchors(self) -> InternalPoint3D_Array:
@@ -81,6 +99,46 @@ class VMobject(ABC, Mobject):
             self.points = new_points
         else:
             self.points = np.append(self.points, new_points, axis=0)
+
+    # Positioning ops
+    def next_to(
+        self,
+        mobject_or_point: Mobject | Point3D,
+        direction: Vector3D = RIGHT,
+        aligned_edge: Vector3D = ORIGIN,
+        buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
+    ) -> Self:
+        if (np.abs(direction) + np.abs(aligned_edge) >= 2).any():
+            raise ValueError(
+                "`direction` and `aligned edge` cannot be along the same axis"
+            )
+        if isinstance(mobject_or_point, Mobject):
+            dest_pt = mobject_or_point.get_critical_point(direction + aligned_edge)
+        else:
+            dest_pt = mobject_or_point
+
+        cur_pt = self.get_critical_point(-direction + aligned_edge)
+        to_shift = (dest_pt - cur_pt) + direction * buff
+        self.shift(to_shift)
+        return self
+
+    def move_to(
+        self, point_or_mobject: Point3D | Mobject, aligned_edge: Vector3D = ORIGIN
+    ) -> Self:
+        if isinstance(point_or_mobject, Mobject):
+            # Use of aligned edge deviates from original manim by placing at center, not `aligned_edge` point
+            dest_pt = point_or_mobject.get_critical_point(ORIGIN)
+        else:
+            dest_pt = point_or_mobject
+        cur_pt = self.get_critical_point(aligned_edge)
+        self.shift(dest_pt - cur_pt)
+
+        return self
+
+    def shift(self, vector: Vector3D) -> Self:
+        for mob in self.get_family():
+            mob.points = mob.points + vector
+        return self
 
     # Color ops
     def set_fill(self, color: ManimColor, opacity: float = 1.0, family=False) -> Self:
@@ -141,19 +199,23 @@ class VMobject(ABC, Mobject):
             about_point = self.get_critical_point(ORIGIN)
         rot_matrix = rotation_matrix(angle, axis)
         for mob in self.get_family():
-            mob.points -= about_point
-            mob.points = np.dot(mob.points, rot_matrix.T)
-            mob.points += about_point
+            new_points = mob.points.copy()
+            new_points -= about_point
+            new_points = np.dot(new_points, rot_matrix.T)
+            new_points += about_point
+            mob.points = new_points
         return self
 
     def scale(self, factor: float) -> Self:
         for mob in self.get_family():
-            mob.points *= factor
+            mob.points = mob.points * factor
         return self
 
     def stretch(self, factor: float, dim: int) -> Self:
         for mob in self.get_family():
-            mob.points[:, dim] *= factor
+            new_points = mob.points.copy()
+            new_points[:, dim] *= factor
+            mob.points = new_points
 
     def stretch_to_fit_width(self, width: float) -> Self:
         old_width = self.width

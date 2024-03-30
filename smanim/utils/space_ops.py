@@ -17,6 +17,7 @@ def to_pixel_coords(
     if not np.all(np.isfinite(points)):
         logger.warn("At least point is not finite. Using default (0, 0, 0).")
         points = np.zeros((1, 3))
+    points = points.copy()
     # assume points are 2D so last dimesion z is unused in [x, y, z]
     points[:, -1] = 1
     # instead of using a matrix within cairo or canvas

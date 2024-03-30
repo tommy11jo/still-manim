@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import List
 from typing_extensions import Self
 
@@ -36,6 +37,12 @@ class Mobject:
         self.bounding_points = bounding_points
         self.z_index = z_index
         self.submobjects: List[Mobject] = []
+
+    def set_bounding_points(
+        self,
+        bounding_points: InternalPoint3D_Array,
+    ):
+        self.bounding_points = bounding_points
 
     # Grouping
     def add(self, *mobjects: Mobject, insert_before=False):
@@ -157,19 +164,16 @@ class Mobject:
         return self.set_position(y_pt)
 
     # Relative Positioning
+    @abstractmethod
     def align_to(
         self,
         mobject_or_point: Mobject | Point3D,
         direction: Vector3D = ORIGIN,
     ) -> Self:
-        if isinstance(mobject_or_point, Mobject):
-            dest_pt = mobject_or_point.get_critical_point(direction)
-        else:
-            dest_pt = mobject_or_point
-        cur_pt = self.get_critical_point(-direction)
-        self.shift(dest_pt - cur_pt)
-        return self
+        # Subclass is responsible for setting bounding points whenever they are moved
+        raise NotImplementedError("Has to be implemented in subclass")
 
+    @abstractmethod
     def next_to(
         self,
         mobject_or_point: Mobject | Point3D,
@@ -177,33 +181,12 @@ class Mobject:
         aligned_edge: Vector3D = ORIGIN,
         buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     ) -> Self:
-        if (np.abs(direction) + np.abs(aligned_edge) >= 2).any():
-            raise ValueError(
-                "`direction` and `aligned edge` cannot be along the same axis"
-            )
-        if isinstance(mobject_or_point, Mobject):
-            dest_pt = mobject_or_point.get_critical_point(direction + aligned_edge)
-        else:
-            dest_pt = mobject_or_point
+        # Subclass is responsible for setting bounding points whenever they are moved
+        raise NotImplementedError("Has to be implemented in subclass")
 
-        cur_pt = self.get_critical_point(-direction + aligned_edge)
-        to_shift = (dest_pt - cur_pt) + direction * buff
-        self.shift(to_shift)
-        return self
-
+    @abstractmethod
     def move_to(
         self, point_or_mobject: Point3D | Mobject, aligned_edge: Vector3D = ORIGIN
     ) -> Self:
-        # Test: using aligned edge only makes sense with mobject right
-        if isinstance(point_or_mobject, Mobject):
-            dest_pt = point_or_mobject.get_critical_point(aligned_edge)
-        else:
-            dest_pt = point_or_mobject
-        cur_pt = self.get_critical_point(aligned_edge)
-        self.shift(dest_pt - cur_pt)
-        return self
-
-    def shift(self, vector: Vector3D) -> Self:
-        for mob in self.get_family():
-            mob.points += vector
-        return self
+        # Subclass is responsible for setting bounding points whenever they are moved
+        raise NotImplementedError("Has to be implemented in subclass")

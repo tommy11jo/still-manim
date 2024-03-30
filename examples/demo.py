@@ -12,7 +12,7 @@ class StrokeTest(Canvas):
     def construct(self):
         s = Square()
         self.add(s)
-        # this shows that SVG draws stroke equally on inner and outer (in other words, doees not change center of mass)
+        # this shows that SVG draws stroke equally on inner and outer border
         s1 = Square(stroke_color=BLUE, stroke_width=30).shift(LEFT * 2)
         self.add(s1)
         self.snapshot(preview=True)
@@ -45,7 +45,7 @@ class AlignmentTest(Canvas):
         # self.add(a)
 
 
-class PolygonTest(Canvas):
+class RotateTest(Canvas):
     def construct(self):
         p = RegularPolygon()
         p.rotate(PI / 30)
@@ -191,6 +191,8 @@ class ArrowTest(Canvas):
 # canvas = AlignmentTest()
 # canvas.construct()
 
+canvas = RotateTest()
+canvas.construct()
 # canvas = PosTest()
 # canvas.construct()
 
@@ -210,5 +212,5 @@ class ArrowTest(Canvas):
 # canvas = LineTest()
 # canvas.construct()
 
-canvas = ArrowTest()
-canvas.construct()
+# canvas = ArrowTest()
+# canvas.construct()
