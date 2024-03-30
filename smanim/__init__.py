@@ -9,3 +9,4 @@ from smanim.mobject.vmobject import *
 from smanim.mobject.polygon import *
 from smanim.mobject.line import *
 from smanim.mobject.arc import *
+from smanim.mobject.brace import *

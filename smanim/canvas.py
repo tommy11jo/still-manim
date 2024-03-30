@@ -104,7 +104,9 @@ class Canvas:
         svg_path.append(svg.M(*start[:2]))
         for _p0, p1, p2, p3 in quads:
             svg_path.append(svg.C(*p1[:2], *p2[:2], *p3[:2]))
-        svg_path.append(svg.Z())
+
+        if vmobject.is_closed:
+            svg_path.append(svg.Z())
         kwargs = {}
 
         def orNone(value: any):

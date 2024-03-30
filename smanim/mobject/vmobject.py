@@ -36,18 +36,30 @@ class VMobject(ABC, Mobject):
         fill_opacity: float | None = None,
         # When scaled, should dashes scale or remain the same size? Remain for now
         dashed: bool = False,
-        default_stroke_color: ManimColor = WHITE,  # intended for use by subclasses
+        default_stroke_color: (
+            ManimColor | None
+        ) = None,  # intended for use by subclasses, takes precedence over `default_fill_color`
+        default_fill_color: ManimColor | None = None,  # intended for use by subclasses
+        is_closed: bool = True,  # refers to whether the path is closed, used for determining bounding points in `points` setter and adding Z when drawing
         **kwargs,
     ):
-        # self.set_points(self.generate_points())
-        self.points = self.generate_points()
-        bounding_points: InternalPoint3D_Array = self.get_start_anchors()
+        super().__init__(**kwargs)
+        self.is_closed = is_closed
+        self.generate_points()
 
-        super().__init__(bounding_points=bounding_points, **kwargs)
-
-        if not stroke_color and not fill_color:
-            self._stroke_color = default_stroke_color
-        self.default_stroke_color = default_stroke_color
+        if (
+            default_fill_color is not None
+            and fill_color is None
+            and stroke_color is None
+            and default_stroke_color is None
+        ):
+            fill_color = default_fill_color
+            fill_opacity = 1.0
+            self.default_stroke_color = None
+        elif stroke_color is None and fill_color is None:
+            self.default_stroke_color = default_stroke_color or WHITE
+        else:
+            self.default_stroke_color = default_stroke_color
 
         self._stroke_color = stroke_color
         self.stroke_opacity = stroke_opacity
@@ -59,7 +71,8 @@ class VMobject(ABC, Mobject):
         self.stroke_dasharray = "8 8" if dashed else "none"
 
     @abstractmethod
-    def generate_points(self) -> InternalPoint3D_Array:
+    def generate_points(self) -> None:
+        """Generates and sets the VMobject's `points` attr with the points that form bezier curves"""
         pass
 
     @property
@@ -69,18 +82,26 @@ class VMobject(ABC, Mobject):
     @points.setter
     def points(self, new_points: InternalPoint3D_Array):
         """Enforces invariant that bounding_points stay updated with VMobject points"""
+        assert (
+            len(new_points) % VMobject.points_per_curve == 0
+        ), f"len(new_points) must be divisible by {VMobject.points_per_curve}"
         # `points` are read-only but can be reset via this function
         new_points.flags.writeable = False
         self._points = new_points
         # update the bounding box whenever points are moved
-        super().set_bounding_points(self.get_start_anchors())
+        bounding_points = self.get_start_anchors()
+        if not self.is_closed:
+            bounding_points = np.append(
+                bounding_points, [self.get_end_anchors()[-1]], axis=0
+            )
+        super().set_bounding_points(bounding_points)
 
     # Point ops
     def get_start_anchors(self) -> InternalPoint3D_Array:
-        return self.points[:: VMobject.points_per_curve]
+        return self._points[:: VMobject.points_per_curve]
 
     def get_end_anchors(self) -> InternalPoint3D_Array:
-        return self.points[VMobject.points_per_curve - 1 :: VMobject.points_per_curve]
+        return self._points[VMobject.points_per_curve - 1 :: VMobject.points_per_curve]
 
     def get_all_points(self) -> InternalPoint3D_Array:
         all_points = []
@@ -206,9 +227,16 @@ class VMobject(ABC, Mobject):
             mob.points = new_points
         return self
 
-    def scale(self, factor: float) -> Self:
+    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:
         for mob in self.get_family():
-            mob.points = mob.points * factor
+            new_points = mob.points.copy()
+            if (about_point == ORIGIN).all():
+                new_points = new_points * factor
+            else:
+                new_points -= about_point
+                new_points = new_points * factor
+                new_points += about_point
+            mob.points = new_points
         return self
 
     def stretch(self, factor: float, dim: int) -> Self:
@@ -237,9 +265,9 @@ class VGroup(VMobject):
         super().__init__(**kwargs)
         self.add(*vmobjects)
 
-    def generate_points(self) -> InternalPoint3D_Array:  # override
+    def generate_points(self) -> None:  # override
         # VGroup is a shell for holding VMobjects so adds no points itself
-        return []
+        self.points = np.array([])
 
     def __repr__(self) -> str:
         return f'{self.__class__.__qualname__}({", ".join(str(mob) for mob in self.submobjects)})'

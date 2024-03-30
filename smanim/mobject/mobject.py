@@ -20,6 +20,7 @@ from smanim.constants import (
 )
 from smanim.typing import (
     InternalPoint3D_Array,
+    ManimFloat,
     Point2D,
     Point3D,
     Vector3D,
@@ -33,7 +34,11 @@ class Mobject:
     `bounding_points` represents the bounding polygon for this mobject.
     """
 
-    def __init__(self, bounding_points: InternalPoint3D_Array, z_index: int = 0):
+    def __init__(
+        self, bounding_points: InternalPoint3D_Array | None = None, z_index: int = 0
+    ):
+        if bounding_points is None:
+            bounding_points = np.array([], dtype=ManimFloat)
         self.bounding_points = bounding_points
         self.z_index = z_index
         self.submobjects: List[Mobject] = []
@@ -83,8 +88,9 @@ class Mobject:
             )
         direction = direction.astype(int)
 
-        # Future: can create `bbox_stale` marker and reuse bbox values when object is not changed
-        all_points = np.concatenate(np.array([mob.points for mob in self.get_family()]))
+        all_points = np.concatenate(
+            np.array([mob.bounding_points for mob in self.get_family()])
+        )
         x_min, y_min, _ = np.min(all_points, axis=0)
         x_max, y_max, _ = np.max(all_points, axis=0)
         x_mid, y_mid = x_min + (x_max - x_min) / 2, y_min + (y_max - y_min) / 2
@@ -117,7 +123,7 @@ class Mobject:
             raise ValueError("`direction` must be a corner")
         return self.get_critical_point(direction)
 
-    def get_closest_intersecting_point(
+    def get_closest_intersecting_point_2d(
         self, ray_origin: Point2D, ray_direction: Point2D
     ):
         """Return the closest intersecting point between a ray and the bounding polygon of this mobject.
@@ -126,7 +132,9 @@ class Mobject:
         line_segments = [(p1, p2) for p1, p2 in zip(self.bounding_points, points_ahead)]
         intersections_and_params = []
         for p1, p2 in line_segments:
-            intersection, param = line_intersect(ray_origin, ray_direction, p1, p2)
+            intersection, param = line_intersect(
+                ray_origin, ray_direction, p1[:2], p2[:2]
+            )
             intersections_and_params.append(
                 (intersection, param) if intersection is not None else (None, np.inf)
             )
@@ -134,7 +142,7 @@ class Mobject:
         if intersection is None:
             logger.warning("No intersection point found. Illegal ray input.")
             return self.get_center()
-        return intersection
+        return np.array([intersection[0], intersection[1], 0])
 
     @property
     def width(self):

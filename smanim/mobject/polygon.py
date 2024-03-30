@@ -4,7 +4,7 @@ from smanim.utils.bezier import interpolate
 from smanim.utils.color import RED, ManimColor
 from smanim.constants import DL, DR, UL, UR
 from smanim.mobject.vmobject import VMobject
-from smanim.typing import InternalPoint3D_Array, ManimFloat, Point3D, Point3D_Array
+from smanim.typing import ManimFloat, Point3D, Point3D_Array
 from smanim.utils.space_ops import regular_vertices
 
 
@@ -15,7 +15,7 @@ class Polygon(VMobject):
         self.vertices = vertices
         super().__init__(default_stroke_color=default_stroke_color, **kwargs)
 
-    def generate_points(self) -> InternalPoint3D_Array:
+    def generate_points(self) -> None:
         """Override to generate points by interpolating between each pair of vertices"""
         points: List[Point3D] = []
         vertices_ahead = np.roll(self.vertices, -1, axis=0)
@@ -25,7 +25,7 @@ class Polygon(VMobject):
                 for a in np.linspace(0, 1, VMobject.points_per_curve)
             ]
             points.extend(bezier_pts)
-        return np.array(points, dtype=ManimFloat)
+        self.points = np.array(points, dtype=ManimFloat)
 
     def get_vertices(self):
         return self.get_start_anchors()

@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 from smanim.constants import RIGHT, TAU, X_AXIS, Y_AXIS, Z_AXIS
 from smanim.typing import Point2D, Point3D_Array, Vector3D
@@ -89,18 +90,19 @@ def line_intersect(
     ray_direction: Point2D,
     segment_start: Point2D,
     segment_end: Point2D,
-) -> Point2D | None:
+) -> Tuple[Point2D, float] | Tuple[None, None]:
     """Finds the line intersection using parametric equations.
     Returns the intersection point and the parametric scalar along the ray corresponding to the intersection.
     """
     seg_dir = segment_end - segment_start
-    det_A = ray_direction[0] * seg_dir[1] - ray_direction[1] * seg_dir[0]
+
+    det_A = np.cross(ray_direction, seg_dir)
     if det_A == 0:
         return None, None
 
     diff = segment_start - ray_origin
-    t = (diff[0] * seg_dir[1] - diff[1] * seg_dir[0]) / det_A
-    u = (diff[0] * ray_direction[1] - diff[1] * ray_direction[0]) / det_A
+    t = np.cross(diff, seg_dir) / det_A
+    u = np.cross(diff, ray_direction) / det_A
 
     if t >= 0 and 0 <= u <= 1:
         return ray_origin + t * ray_direction, t

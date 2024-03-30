@@ -8,6 +8,13 @@ class SquareTest(Canvas):
         self.snapshot(preview=True)
 
 
+class TriangleTest(Canvas):
+    def construct(self):
+        t = Triangle()
+        self.add(t)
+        self.snapshot(preview=True)
+
+
 class StrokeTest(Canvas):
     def construct(self):
         s = Square()
@@ -71,9 +78,7 @@ class StrokeFillTest(Canvas):
         # now, the stroke will show but the fill will not, since stroke shows by default
         # self.add(s1)
         # self.snapshot(preview=True)
-        # it's recommended to set the fill using the `fill_color` attr
-        # fill opacity must also be set and is not a default
-        s2 = Square(fill_color=RED, fill_opacity=1.0).shift(LEFT * 1.5)
+        s2 = Square(fill_color=RED).shift(LEFT * 1.5)
         self.add(s2)
 
         s3 = Square(side_length=2, color=BLUE).shift(DOWN)
@@ -182,7 +187,79 @@ class ArrowTest(Canvas):
         self.snapshot(preview=True)
 
 
+class ArcTest(Canvas):
+    def construct(self):
+        arc = Arc()
+        self.add(arc)
+        circle = Circle(fill_color=BLUE)
+        circle.next_to(arc)
+        self.add(circle)
+
+        arc2 = ArcBetweenPoints(UR, DR, radius=1)
+        arc2.next_to(arc, LEFT)
+        self.add(arc2)
+        self.snapshot(preview=True)
+
+
+class ArrowBetweenArcTest(Canvas):
+    def construct(self):
+        arc = Arc()
+        self.add(arc)
+
+        arc2 = ArcBetweenPoints(UR, DR, radius=1)
+        arc2.shift(UL * 2)
+        # example of janky bounding polygon debugging
+        self.add(arc2)
+        a = Arrow(arc, arc2)
+        self.add(a)
+
+        # demonstrates how the the start anchors of an unclosed shape are not enough for bounding polygon
+        # must add one extra end anchor
+        # see vmobject `points` setter for more
+        for pt in arc2.bounding_points:
+            d = Dot(np.array(pt), fill_color=BLUE)
+            self.add(d)
+
+        self.snapshot(preview=True)
+
+
+class ArrowBetweenCircleTest(Canvas):
+    def construct(self):
+        circle = Circle().shift(LEFT)
+        self.add(circle)
+
+        circle2 = Circle().shift(UR * 2)
+        self.add(circle2)
+        a = Arrow(circle, circle2)
+        self.add(a)
+        self.snapshot(preview=True)
+
+
+class BraceTest(Canvas):
+    def construct(self):
+        # c = Circle()
+        # self.add(c)
+        # b = Brace(c)
+        # self.add(b)
+
+        # d = Square().shift(UR * 3)
+        # self.add(d)
+        s1 = Square().shift(LEFT * 2)
+        self.add(s1)
+        s2 = Square().shift(RIGHT * 2)
+        self.add(s2)
+        # b = Line(s1, s2)
+        # l1 = Line((0, 0, 0), (1, 0, 0))
+        # b = Brace(l1)
+        b = BraceBetween(s1, s2)
+        self.add(b)
+        self.snapshot(preview=True)
+
+
 # canvas = SquareTest()
+# canvas.construct()
+
+# canvas = TriangleTest()
 # canvas.construct()
 
 # canvas = StrokeTest()
@@ -191,8 +268,9 @@ class ArrowTest(Canvas):
 # canvas = AlignmentTest()
 # canvas.construct()
 
-canvas = RotateTest()
-canvas.construct()
+# canvas = RotateTest()
+# canvas.construct()
+
 # canvas = PosTest()
 # canvas.construct()
 
@@ -214,3 +292,15 @@ canvas.construct()
 
 # canvas = ArrowTest()
 # canvas.construct()
+
+# canvas = ArcTest()
+# canvas.construct()
+
+# canvas = ArrowBetweenArcTest()
+# canvas.construct()
+
+# canvas = ArrowBetweenCircleTest()
+# canvas.construct()
+
+canvas = BraceTest()
+canvas.construct()

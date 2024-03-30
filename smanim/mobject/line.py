@@ -4,7 +4,8 @@ from smanim.constants import PI, SMALL_BUFF
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.tips import ArrowTip, ArrowTriangleFilledTip
 from smanim.mobject.vmobject import VMobject
-from smanim.typing import InternalPoint3D_Array, ManimFloat, Point3D
+from smanim.typing import ManimFloat, Point3D
+from smanim.utils.logger import logger
 
 
 class Line(VMobject):
@@ -19,11 +20,16 @@ class Line(VMobject):
         self.start_pt = start_pt + buff * dir
         self.end_pt = end_pt - buff * dir
         self.buff = buff
-        super().__init__(**kwargs)
+        # set is_closed to False to include the end anchor point in "bounding polygon"
+        super().__init__(is_closed=False, **kwargs)
 
-    def generate_points(self) -> InternalPoint3D_Array:  # override
+    def __repr__(self):
+        class_name = self.__class__.__qualname__
+        return f"{class_name}(start={self.start_pt}, end={self.end_pt})"
+
+    def generate_points(self) -> None:  # override
         dir = self.end_pt - self.start_pt
-        return np.array(
+        self.points = np.array(
             [
                 self.start_pt,
                 self.start_pt + dir / 3,
@@ -45,14 +51,29 @@ class Line(VMobject):
     ) -> Tuple[Point3D, Point3D]:
         # for points, use them as is
         # for mobjects, determine rough direction, then use it to find exact boundaries
+        start = np.array(start) if isinstance(start, Tuple) else start
+        end = np.array(end) if isinstance(start, Tuple) else end
         rough_start = start.get_center() if isinstance(start, Mobject) else start
         rough_end = end.get_center() if isinstance(end, Mobject) else end
         dir = rough_end - rough_start
 
-        start_pt = start.get_closest_intersecting_point(rough_start, dir)
+        start_pt = (
+            start
+            if not isinstance(start, Mobject)
+            else start.get_closest_intersecting_point_2d(rough_start[:2], dir[:2])
+        )
         new_dir = rough_end - start_pt
-        end_pt = end.get_closest_intersecting_point(start_pt, new_dir)
+        end_pt = (
+            end
+            if not isinstance(end, Mobject)
+            else end.get_closest_intersecting_point_2d(start_pt[:2], new_dir[:2])
+        )
 
+        if np.array_equal(start_pt, end_pt):
+            logger.warning(
+                "Line end points are equal. Increasing end slightly to avoid errors."
+            )
+            end_pt += 0.0001
         return start_pt, end_pt
 
 
@@ -98,9 +119,7 @@ class Arrow(Line):
         line_start = self.points[0].copy()
         line_length = self.get_length()
         line_dir = self.get_direction()
-        self.shift(-line_start)
-        self.scale((line_length - tip_length) / line_length)
-        self.shift(line_start)
+        self.scale((line_length - tip_length) / line_length, about_point=line_start)
         if at_start:
             # make room at start anchor instead of end anchor
             self.shift(line_dir * tip_length)
