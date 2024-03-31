@@ -2,7 +2,7 @@ from typing import Tuple
 import numpy as np
 from smanim.constants import RIGHT, TAU, X_AXIS, Y_AXIS, Z_AXIS
 from smanim.typing import Point2D, Point3D_Array, Vector3D
-from smanim.utils.logger import logger
+from smanim.utils.logger import log
 
 
 # pixel scalar => manim scalar
@@ -26,7 +26,7 @@ def to_pixel_coords(
     if len(points) == 0:
         return []
     if not np.all(np.isfinite(points)):
-        logger.warn("At least point is not finite. Using default (0, 0, 0).")
+        log.warn("At least point is not finite. Using default (0, 0, 0).")
         points = np.zeros((1, 3))
     points = points.copy()
     # assume points are 2D so last dimesion z is unused in [x, y, z]
@@ -46,7 +46,7 @@ def to_pixel_coords(
 
 def rotation_matrix(angle_in_radians: float, axis: np.ndarray) -> np.ndarray:
     """Counter-clockwise rotation"""
-    if not any((axis == a).all() for a in (X_AXIS, Y_AXIS, Z_AXIS)):
+    if not any(np.array_equal(axis, a) for a in (X_AXIS, Y_AXIS, Z_AXIS)):
         raise ValueError("Axis must be one of (X_AXIS, Y_AXIS, Z_AXIS)")
 
     c = np.cos(angle_in_radians)

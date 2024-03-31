@@ -21,7 +21,7 @@ def strokeTest():
     canvas.snapshot(preview=True)
 
 
-def alignmentTest():
+def nextToTest():
     s = Square(side_length=0.5)
     canvas.add(s)
 
@@ -45,6 +45,18 @@ def alignmentTest():
     # a = Arrow(s, c)
     # t = Text("hi")
     # canvas.add(a)
+
+
+def alignToTest():
+    s = Square(side_length=0.5)
+    s1 = Square().scale(2)
+    s.align_to(s1, edge=UP)
+    canvas.add(s)
+    canvas.add(s1)
+    canvas.snapshot(preview=True)
+
+
+# alignToTest()
 
 
 def rotateTest():
@@ -199,7 +211,7 @@ def arrowBetweenTest():
     # demonstrates how the the start anchors of an unclosed shape are not enough for bounding polygon
     # must add one extra end anchor
     # see vmobject `points` setter for more
-    for pt in arc2.bounding_points:
+    for pt in arc2.bounding:
         d = Dot(np.array(pt), fill_color=BLUE)
         canvas.add(d)
 
@@ -247,9 +259,80 @@ def textTest():
     t = Text(
         "hi there the terminal is beautiful and dark like the night sky",
         fill_opacity=0.3,
-    )
+    ).rotate()
+    t.next_to(s)
     canvas.add(t)
     canvas.snapshot(preview=True)
 
 
-textTest()
+# textTest()
+def textBbox():
+    t = Text("hi there").shift(UR * 2)
+    s = Square().shift(DL)
+    canvas.add(s)
+    canvas.add(t)
+    a = Arrow(t, s)
+    canvas.add(a)
+    canvas.snapshot(preview=True)
+
+
+# textBbox()
+def arrowScale():
+    # a = Arrow(LEFT, RIGHT)
+    a = Arrow(DL, UR)
+    # a.scale(2)
+    a.scale(0.5)
+    canvas.add(a)
+    canvas.snapshot(preview=True)
+
+
+# arrowScale()
+def submobjectScale():
+    s = Square().shift(UR * 3)
+    s.add(Square().shift(UR))
+    s.scale(0.6)
+    canvas.add(s)
+    canvas.snapshot(preview=True)
+
+
+# submobjectScale()
+
+
+def scaleGroup1():
+    s = Square().shift(DL)
+    # s1 = Square().shift(UR * 2)
+    s1 = Text("hi there", border=True).shift(UR * 2)
+    line = Line(s, s1)
+    g = Group(s, s1, line)
+    g.scale(0.5)
+    canvas.add(g)
+    canvas.snapshot(preview=True)
+
+
+# scaleGroup1()
+
+
+# test scale group and test border rotation
+# TODO: having to specify about_point=None is not intuitive for "scaling in place"
+def scaleGroup():
+    g = Group()
+    t = (
+        Text("hi there", border=True)
+        .shift(UR * 2)
+        .rotate(-PI / 2)
+        .scale(2, about_point=None)
+    )
+    s = Square().shift(DL)
+    g.add(s)
+    g.add(t)
+    # a = Arrow(t, s)
+    line = Line(t, s)
+    g.add(line)
+    # g.add(a)
+    # g.scale(0.2)
+
+    canvas.add(g)
+    canvas.snapshot(preview=True)
+
+
+scaleGroup()

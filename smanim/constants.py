@@ -46,6 +46,7 @@ Z_AXIS: Vector3D = np.array((0.0, 0.0, 1.0))
 PI = np.pi
 TAU = 2 * PI
 DEGREES = TAU / 360
+RADIANS = 360 / TAU
 
 # Padding
 # Default buffers (padding)

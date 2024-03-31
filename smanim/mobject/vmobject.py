@@ -10,15 +10,14 @@ from smanim.constants import (
     OUT,
     PI,
 )
-from smanim.utils import logger
+from smanim.mobject.transformable import TransformableMobject
+from smanim.utils.logger import log
 from smanim.utils.color import WHITE, ManimColor
-from smanim.mobject.mobject import Mobject
 from smanim.typing import InternalPoint3D_Array, Point3D, Point3D_Array, Vector3D
-from smanim.utils.space_ops import rotation_matrix
 
 
 # Note: text is not a VMobject, it's a non-vectorized SVG el
-class VMobject(ABC, Mobject):
+class VMobject(TransformableMobject, ABC):
     """Base class for all objects represented by a path of bezier curves, with strokes or fills.
     `points` is a list of the points that form bezier curves.
     """
@@ -70,7 +69,7 @@ class VMobject(ABC, Mobject):
 
     @abstractmethod
     def generate_points(self) -> None:
-        """Generates and sets the VMobject's `points` attr with the points that form bezier curves"""
+        """Generates and sets the VMobject's `points` with the points that form bezier curves"""
         pass
 
     @property
@@ -79,7 +78,7 @@ class VMobject(ABC, Mobject):
 
     @points.setter
     def points(self, new_points: InternalPoint3D_Array):
-        """Enforces invariant that bounding_points stay updated with VMobject points"""
+        """Enforces invariant that `bounding_points` stay updated with VMobject `points`"""
         assert (
             len(new_points) % VMobject.points_per_curve == 0
         ), f"len(new_points) must be divisible by {VMobject.points_per_curve}"
@@ -173,54 +172,28 @@ class VMobject(ABC, Mobject):
         axis: Vector3D = OUT,
         about_point: Point3D | None = None,
     ) -> Self:
-        """Counter-clockwise rotation"""
-        if about_point is None:
-            about_point = self.get_critical_point(ORIGIN)
-        rot_matrix = rotation_matrix(angle, axis)
-        for mob in self.get_family():
-            new_points = mob.points.copy()
-            new_points -= about_point
-            new_points = np.dot(new_points, rot_matrix.T)
-            new_points += about_point
-            mob.points = new_points
+        self.points = super().rotate_points(self.points, angle, axis, about_point)
+        for mob in self.submobjects:
+            # cannot just call super().rotate because this mobject might have different rotating functionality
+            mob.rotate(angle, axis, about_point)
         return self
 
-    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:  # override
-        for mob in self.get_family():
-            new_points = mob.points.copy()
-            if (about_point == ORIGIN).all():
-                new_points = new_points * factor
-            else:
-                new_points -= about_point
-                new_points = new_points * factor
-                new_points += about_point
-            mob.points = new_points
+    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:
+        self.points = super().scale_points(self.points, factor, about_point)
+        for mob in self.submobjects:
+            mob.scale(factor, about_point)
         return self
 
-    def stretch(self, factor: float, dim: int) -> Self:  # override
-        for mob in self.get_family():
-            new_points = mob.points.copy()
-            new_points[:, dim] *= factor
-            mob.points = new_points
+    def stretch(self, factor: float, dim: int) -> Self:
+        self.points = super().stretch_points(self.points, factor, dim)
+        for mob in self.submobjects:
+            mob.stretch(factor, dim)
+        return self
 
     def shift(self, vector: Vector3D) -> Self:
-        for mob in self.get_family():
-            mob.points = mob.points + vector
-        return self
-
-    # More specific transformations that require core transformations
-    def stretch_to_fit_width(self, width: float) -> Self:
-        old_width = self.width
-        if old_width == 0:
-            return self
-        self.stretch(width / old_width, dim=0)
-        return self
-
-    def stretch_to_fit_height(self, height: float) -> Self:
-        old_height = self.height
-        if old_height == 0:
-            return self
-        self.stretch(height / old_height, dim=1)
+        self.points = super().shift_points(self.points, vector)
+        for mob in self.submobjects:
+            mob.shift(vector)
         return self
 
 
@@ -246,7 +219,7 @@ class VGroup(VMobject):
         to_add = []
         for vmobject in vmobjects:
             if not isinstance(vmobject, VMobject):
-                logger.warning(f"Object must be VMobject to be added: {vmobject}")
+                log.warning(f"Object must be VMobject to be added: {vmobject}")
             else:
                 to_add.append(vmobject)
         super().add(*to_add)

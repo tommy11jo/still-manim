@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from typing import List
 from typing_extensions import Self
 
@@ -12,6 +13,8 @@ from smanim.constants import (
     DR,
     LEFT,
     ORIGIN,
+    OUT,
+    PI,
     RIGHT,
     UL,
     UP,
@@ -24,13 +27,13 @@ from smanim.typing import (
     Point3D,
     Vector3D,
 )
-from smanim.utils.logger import logger
+from smanim.utils.logger import log
 from smanim.utils.space_ops import line_intersect
 
 
-class Mobject:
+class Mobject(ABC):
     """Base class for all objects that take up space.
-    `bounding_points` represents the bounding polygon for this mobject.
+    `bounding_points` represents the bounding polygon for this mobject (they do not include submobjects).
     Subclasses are responsible for setting the `bounding_points`.
     """
 
@@ -54,9 +57,9 @@ class Mobject:
         new_mobjects = []
         for mobject in mobjects:
             if mobject is self:
-                logger.error("Cannot add mobject to itself")
+                log.error("Cannot add mobject to itself")
             if mobject in self.submobjects:
-                logger.warning(f"Mobject already added: {mobject}")
+                log.warning(f"Mobject already added: {mobject}")
             else:
                 new_mobjects.append(mobject)
         if not insert_before:
@@ -67,9 +70,9 @@ class Mobject:
     def remove(self, *mobjects):
         for mobject in mobjects:
             if mobject is self:
-                logger.error("Cannot remove mobject from itself")
+                log.error("Cannot remove mobject from itself")
             if mobject not in self.submobjects:
-                logger.warning(f"Mobject not found: {mobject}")
+                log.warning(f"Mobject not found: {mobject}")
             else:
                 self.submobjects.remove(mobject)
 
@@ -119,7 +122,7 @@ class Mobject:
         return self.get_critical_point(ORIGIN)
 
     def get_corner(self, direction: Vector3D):
-        if not any((direction == cdir).all() for cdir in [UL, UR, DR, DL]):
+        if not any(np.array_equal(direction, cdir) for cdir in [UL, UR, DR, DL]):
             raise ValueError("`direction` must be a corner")
         return self.get_critical_point(direction)
 
@@ -140,7 +143,7 @@ class Mobject:
             )
         intersection, param = min(intersections_and_params, key=lambda x: x[1])
         if intersection is None:
-            logger.warning("No intersection point found. Illegal ray input.")
+            log.warning("No intersection point found. Illegal ray input.")
             return self.get_center()
         return np.array([intersection[0], intersection[1], 0])
 
@@ -171,7 +174,7 @@ class Mobject:
         y_pt[1] = y
         return self.set_position(y_pt)
 
-    # Relative Positioning
+    # Relative Positioning, using core transformations
     def next_to(
         self,
         mobject_or_point: Mobject | Point3D,
@@ -204,4 +207,86 @@ class Mobject:
         cur_pt = self.get_critical_point(aligned_edge)
         self.shift(dest_pt - cur_pt)
 
+        return self
+
+    # changed from original Manim to only take in mobjects and to use only edges, not corners or center
+    def align_to(
+        self,
+        mobject: Mobject,
+        edge: Vector3D = UP,
+    ) -> Self:
+        """Align to the edge of another mobject"""
+        if not any([np.array_equal(edge, e) for e in (UP, DOWN, LEFT, RIGHT)]):
+            raise ValueError("Edge must be one of (UP, DOWN, LEFT, RIGHT)")
+        dest = mobject.get_critical_point(edge)
+        cur = self.get_critical_point(edge)
+        if np.array_equal(edge, UP) or np.array_equal(edge, DOWN):
+            self.shift(np.array([0, dest[1] - cur[1], 0]))
+        if np.array_equal(edge, LEFT) or np.array_equal(edge, RIGHT):
+            self.shift(np.array([dest[0] - cur[0], 0, 0]))
+        return self
+
+    # If I find a submobject that isn't supposed to do a transformation, then I can delete these "defensive errors"
+    # Core transformations must be overridden by all subclasses
+    @abstractmethod
+    def rotate(self, angle: float, axis: Vector3D, about_point: Point3D | None) -> Self:
+        raise NotImplementedError("Has to be implemented in subclass")
+
+    @abstractmethod
+    def scale(self, factor: float, about_point: Point3D) -> Self:
+        raise NotImplementedError("Has to be implemented in subclass")
+
+    @abstractmethod
+    def stretch(self, factor: float, dim: int) -> Self:
+        raise NotImplementedError("Has to be implemented in subclass")
+
+    @abstractmethod
+    def shift(self, vector: Vector3D) -> Self:
+        raise NotImplementedError("Has to be implemented in subclass")
+
+
+class Group(Mobject):
+    def __init__(self, *mobjects, **kwargs):
+        super().__init__(**kwargs)
+        self.add(*mobjects)
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__qualname__}({", ".join(str(mob) for mob in self.submobjects)})'
+
+    def __iter__(self):
+        return iter(self.submobjects)
+
+    def __getitem__(self, index: int) -> Mobject:
+        return self.submobjects[index]
+
+    def add(self, *mobjects: Mobject) -> Self:
+        to_add = []
+        for mobject in mobjects:
+            to_add.append(mobject)
+        super().add(*to_add)
+        return self
+
+    def rotate(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3D = OUT,
+        about_point: Point3D | None = None,
+    ) -> Self:
+        for mob in self.submobjects:
+            mob.rotate(angle, axis, about_point)
+        return self
+
+    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:
+        for mob in self.submobjects:
+            mob.scale(factor, about_point)
+        return self
+
+    def stretch(self, factor: float, dim: int) -> Self:
+        for mob in self.submobjects:
+            mob.stretch(factor, dim)
+        return self
+
+    def shift(self, vector: Vector3D) -> Self:
+        for mob in self.submobjects:
+            mob.shift(vector)
         return self

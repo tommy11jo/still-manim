@@ -1,13 +1,17 @@
 from pathlib import Path
-from typing_extensions import Literal
+from typing_extensions import Literal, Self
 import numpy as np
 from smanim.constants import (
+    ORIGIN,
+    OUT,
+    PI,
     TEXT_X_PADDING,
     TEXT_Y_PADDING,
     UL,
 )
-from smanim.mobject.mobject import Mobject
-from smanim.typing import Point3D
+from smanim.mobject.polygon import Polygon
+from smanim.mobject.transformable import TransformableMobject
+from smanim.typing import Point3D, Vector3D
 from smanim.config import CONFIG
 from smanim.utils.color import WHITE, ManimColor
 from smanim.utils.space_ops import to_manim_len, to_pixel_len
@@ -39,7 +43,7 @@ font_paths_by_style = {
 # FUTURE: Add two text elements together
 
 
-class Text(Mobject):
+class Text(TransformableMobject):
     def __init__(
         self,
         text: str,
@@ -48,7 +52,7 @@ class Text(Mobject):
         fill_color: ManimColor = WHITE,
         fill_opacity: float = 1.0,
         max_width: float | None = 2.0,  # in internal manim units
-        font_size: int = 20,
+        font_size: float = 20,
         text_decoration: Literal[
             "none", "underline", "overline", "line-through"
         ] = "none",
@@ -56,12 +60,16 @@ class Text(Mobject):
         italics: bool = False,
         x_padding: float = TEXT_X_PADDING,
         y_padding: float = TEXT_Y_PADDING,
-        **kwargs
+        border: bool = False,
+        border_buff: float = 0.1,
+        **kwargs,
     ):
+        if len(text) == 0:
+            raise ValueError("Text cannot be empty")
         super().__init__(**kwargs)
         # FUTURE: will need to sanitize if these diagrams can be shared
         self.raw_text = text
-        self.heading = start_angle
+        self._heading = start_angle
 
         self.fill_color = fill_color
         self.fill_opacity = fill_opacity
@@ -82,11 +90,18 @@ class Text(Mobject):
             font_size=font_size,
             max_width_in_pixels=max_width_in_pixels,
         )
-        self.font_widths = [pair[0] + x_padding_in_pixels * 2 for pair in dims]
-        self.font_heights = [
-            pair[1] + 2 * y_padding_in_pixels for pair in dims
-        ]  # used for drawing
-        width_in_munits = to_manim_len(max(self.font_widths), CONFIG.pw, CONFIG.fw)
+        self.font_widths = np.array(
+            [pair[0] + x_padding_in_pixels * 2 for pair in dims]
+        )
+        # TODO: investigate uneven spacing for multi line text
+        self.font_heights = np.array(
+            [pair[1] + 2 * y_padding_in_pixels for pair in dims]
+        )  # used for drawing
+        width_in_munits = (
+            max_width + 2 * x_padding
+            if len(text_tokens) > 1
+            else to_manim_len(max(self.font_widths), CONFIG.pw, CONFIG.fw)
+        )
         height_in_munits = to_manim_len(sum(self.font_heights), CONFIG.pw, CONFIG.fw)
 
         self.text_tokens = text_tokens
@@ -95,39 +110,82 @@ class Text(Mobject):
         dl = ul - np.eye(3)[1] * height_in_munits
         dr = ur - np.eye(3)[1] * height_in_munits
         self.set_bounding_points(np.array([ur, ul, dl, dr]))
-        self.svg_x = ul[0]  # these points do not change during rotate
-        self.svg_y = ul[1]
 
-    # TODO: layout and transformations
-    # @property
-    # def points(self) -> Vector3D:
-    #     # These points can only be changed by setting them or by changing the heading (rotating)
-    #     return self.bounding_points
+        # Note: this point doesn't change during rotate because SVG applies it after. It still changes for other transformations
+        # So, `svg_upper_left` can get out of sync with `bounding_points`. Be careful.
+        self.svg_upper_left = ul.copy()
 
-    # @points.setter
-    # def points(self, value: Vector3D):
-    #     value.flags.writeable = False
-    #     super().set_bounding_points(value)
+        if border:
+            border_with_buff = super().scale_points(
+                self.bounding_points, 1 + border_buff
+            )
+            border_polygon = Polygon(
+                vertices=border_with_buff,
+                default_stroke_color=WHITE,
+                stroke_width=0.8,
+            )
+            self.add(border_polygon)
 
-    # @property
-    # def heading(self) -> float:
-    #     return self._heading
+    @property
+    def heading(self) -> float:
+        return self._heading
 
-    # @heading.setter
-    # def heading(self, value: float) -> None:
-    #     self._heading = value
-    # new_points = Transformable.rotate()
-    # super().set_bounding_points(new_points)
+    @heading.setter
+    def heading(self, value: float) -> None:
+        rot = value - self._heading
+        self._heading = value
+        bounding_points = super().rotate_points(self.bounding_points, rot, OUT, None)
+        super().set_bounding_points(bounding_points)
 
-    # def rotate(
-    #     self,
-    #     angle: float = PI / 4,
-    #     axis: Vector3D = OUT,
-    #     about_point: Point3D | None = CENTER,
-    # ) -> Self:
-    #     if not all(about_point == CENTER):
-    #         raise ValueError("Can only rotate text about the CENTER")
-    #     self.heading += angle
-    # leave `svg_x_pt` and `svg_y_pt` alone
-    # return super().rotate(angle, axis, about_point)
-    # The only ways an objects points can be moved is by shifting them, stretching them, or rotating them
+    def rotate(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3D = OUT,
+        about_point: Point3D | None = None,
+    ) -> Self:
+        # must commute with all other transformations, since it is applied last
+        if about_point is not None:
+            raise ValueError("Rotation of text mobject must not set `about_point`.")
+        # Leaves the `svg_upper_left` unchanged, since a rotation will be applied to it during svg generation
+        self.heading = self.heading + angle  # see `heading` setter
+        for mob in self.submobjects:
+            mob.rotate(angle, axis, about_point)
+        return self
+
+    # scales both text and bbox, assumes font size is exactly proportional
+    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:
+        bounding_points = super().scale_points(
+            self.bounding_points, factor, about_point
+        )
+        super().set_bounding_points(bounding_points)
+        self.svg_upper_left = super().scale_points(
+            np.array([self.svg_upper_left]), factor, about_point
+        )[0]
+        self.font_size *= factor
+        self.font_widths *= factor
+        self.font_heights *= factor
+        for mob in self.submobjects:
+            mob.scale(factor, about_point)
+        return self
+
+    # stretches bbox, not the text itself
+    def stretch(self, factor: float, dim: int) -> Self:
+        bounding_points = super().stretch_points(self.bounding_points, factor, dim)
+        super().set_bounding_points(bounding_points)
+        self.svg_upper_left = super().stretch_points(
+            np.array([self.svg_upper_left]), factor, dim
+        )[0]
+        for mob in self.submobjects:
+            mob.stretch(factor, dim)
+        return self
+
+    # shifts the text and text bbox
+    def shift(self, vector: Vector3D) -> Self:
+        bounding_points = super().shift_points(self.bounding_points, vector)
+        super().set_bounding_points(bounding_points)
+        self.svg_upper_left = super().shift_points(
+            np.array([self.svg_upper_left]), vector
+        )[0]
+        for mob in self.submobjects:
+            mob.shift(vector)
+        return self

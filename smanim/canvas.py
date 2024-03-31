@@ -7,10 +7,12 @@ from typing import List, Sequence
 import numpy as np
 
 from smanim.config import CONFIG, Config
+from smanim.constants import RADIANS
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.vmobject import VMobject
 from smanim.mobject.text_mobject import Text
-from smanim.utils.logger import logger
+from smanim.typing import InternalPoint3D_Array, Point3D
+from smanim.utils.logger import log
 
 import itertools as it
 import svg
@@ -31,14 +33,14 @@ class Canvas:
     def add(self, *mobjects):
         for mobject in mobjects:
             if mobject in self.mobjects:
-                logger.warning(f"Mobject already added: {mobject}")
+                log.warning(f"Mobject already added: {mobject}")
             else:
                 self.mobjects.append(mobject)
 
     def remove(self, *mobjects):
         for mobject in mobjects:
             if mobject not in self.mobjects:
-                logger.warning(f"Mobject not found: {mobject}")
+                log.warning(f"Mobject not found: {mobject}")
             else:
                 self.mobjects.remove(mobject)
 
@@ -59,7 +61,7 @@ class Canvas:
         to_svg_funcs = {
             VMobject: self.vmobject_to_svg_el,
             Text: self.text_to_svg_el,
-            Mobject: lambda mobject: mobject,  # do nothing
+            Mobject: None,
         }
         for _type in to_svg_funcs:
             if isinstance(mobject, _type):
@@ -72,7 +74,10 @@ class Canvas:
             svg.Rect(width="100%", height="100%", fill=self.config.bg_color.value)
         ]
         for mobject in mobjects_in_order:
-            new_svg_els = self.get_to_svg_func(mobject)(mobject)
+            svg_func = self.get_to_svg_func(mobject)
+            if svg_func is None:
+                continue
+            new_svg_els = svg_func(mobject)
             svg_els_lst.extend(new_svg_els)
         svg_view_obj = svg.SVG(
             viewBox=svg.ViewBoxSpec(0, 0, self.config.pw, self.config.ph),
@@ -126,16 +131,31 @@ class Canvas:
 
         return (svg.Path(d=svg_path, **kwargs),)
 
+    def _to_pixel_coords(self, points: Point3D | InternalPoint3D_Array):
+        if points.shape == (3,):
+            point = points
+            return to_pixel_coords(
+                np.array([point]),
+                self.config.pw,
+                self.config.ph,
+                self.config.fw,
+                self.config.fh,
+                self.config.fc,
+            )[0]
+        else:
+            return to_pixel_coords(
+                points,
+                self.config.pw,
+                self.config.ph,
+                self.config.fw,
+                self.config.fh,
+                self.config.fc,
+            )
+
     def text_to_svg_el(self, text_obj: Text):
 
-        start_pt = to_pixel_coords(
-            np.array([np.array([text_obj.svg_x, text_obj.svg_y, 0])]),
-            self.config.pw,
-            self.config.ph,
-            self.config.fw,
-            self.config.fh,
-            self.config.fc,
-        )[0]
+        start_pt = self._to_pixel_coords(text_obj.svg_upper_left)
+
         font_family = text_obj.font_family
         font_size = text_obj.font_size
         # for browser, should be able to set font path to be in pyodide native FS
@@ -150,7 +170,7 @@ class Canvas:
             .styleClass {{
                 text-decoration: {font_family};
                 fill: {text_obj.fill_color.value};
-                font-size: {font_size};
+                font-size: {font_size}px;
                 fill-opacity: {text_obj.fill_opacity};
                 font-family: {font_family};
             }}
@@ -167,13 +187,17 @@ class Canvas:
                     x=start_pt[0],
                     dy=text_obj.font_heights[i],
                 )
-                # svg.TSpan(text=raw_text, x=start_pt[0], dy=0)
             )
+        x_center, y_center = self._to_pixel_coords(text_obj.get_center())[:2]
         text_svg_obj = svg.Text(
             elements=text_tspan_objs,
             x=start_pt[0],
             y=start_pt[1],
             class_=["styleClass"],
+            # svg transform is clockwise, so negate it
+            transform=[
+                svg.Rotate(a=-text_obj.heading * RADIANS, x=x_center, y=y_center)
+            ],
         )
 
         return svg.Style(text=font_style_inline_font), text_svg_obj

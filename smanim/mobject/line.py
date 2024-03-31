@@ -5,7 +5,7 @@ from smanim.mobject.mobject import Mobject
 from smanim.mobject.tips import ArrowTip, ArrowTriangleFilledTip
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import ManimFloat, Point3D
-from smanim.utils.logger import logger
+from smanim.utils.logger import log
 
 
 class Line(VMobject):
@@ -70,7 +70,7 @@ class Line(VMobject):
         )
 
         if np.array_equal(start_pt, end_pt):
-            logger.warning(
+            log.warning(
                 "Line end points are equal. Increasing end slightly to avoid errors."
             )
             end_pt += 0.0001
