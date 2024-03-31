@@ -2,7 +2,7 @@ import numpy as np
 from smanim.constants import DOWN, LEFT, PI, RIGHT, SMALL_BUFF, UP
 from smanim.mobject.line import Line
 from smanim.mobject.mobject import Mobject
-from smanim.mobject.svg_object import VMobjectFromSVGPath
+from smanim.mobject.svg_mobject import VMobjectFromSVGPath
 from smanim.typing import Point3D
 from smanim.utils.color import WHITE, ManimColor
 

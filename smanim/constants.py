@@ -5,6 +5,7 @@ from smanim.typing import Vector3D
 
 # Vector
 ORIGIN: Vector3D = np.array((0.0, 0.0, 0.0))
+CENTER = ORIGIN
 """The center of the coordinate system."""
 
 UP: Vector3D = np.array((0.0, 1.0, 0.0))
@@ -54,6 +55,9 @@ MED_LARGE_BUFF = 0.5
 LARGE_BUFF = 1
 DEFAULT_MOBJECT_TO_EDGE_BUFFER = MED_LARGE_BUFF
 DEFAULT_MOBJECT_TO_MOBJECT_BUFFER = MED_SMALL_BUFF
+
+TEXT_X_PADDING = 0.02
+TEXT_Y_PADDING = 0.02
 
 # Misc
 DEFAULT_STROKE_WIDTH = 4.0

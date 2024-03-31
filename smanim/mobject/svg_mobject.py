@@ -71,3 +71,6 @@ class VMobjectFromSVGPath(VMobject):
             else:
                 raise AssertionError(f"Not implemented: {segment_class}")
         self.points = np.array(all_points, dtype=ManimFloat)
+
+
+# TODO: Allow parsing any SVG, so that users can load existing svgs

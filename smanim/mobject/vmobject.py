@@ -5,12 +5,10 @@ import numpy as np
 
 from abc import ABC, abstractmethod
 from smanim.constants import (
-    DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     DEFAULT_STROKE_WIDTH,
     ORIGIN,
     OUT,
     PI,
-    RIGHT,
 )
 from smanim.utils import logger
 from smanim.utils.color import WHITE, ManimColor
@@ -121,46 +119,6 @@ class VMobject(ABC, Mobject):
         else:
             self.points = np.append(self.points, new_points, axis=0)
 
-    # Positioning ops
-    def next_to(
-        self,
-        mobject_or_point: Mobject | Point3D,
-        direction: Vector3D = RIGHT,
-        aligned_edge: Vector3D = ORIGIN,
-        buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
-    ) -> Self:
-        if (np.abs(direction) + np.abs(aligned_edge) >= 2).any():
-            raise ValueError(
-                "`direction` and `aligned edge` cannot be along the same axis"
-            )
-        if isinstance(mobject_or_point, Mobject):
-            dest_pt = mobject_or_point.get_critical_point(direction + aligned_edge)
-        else:
-            dest_pt = mobject_or_point
-
-        cur_pt = self.get_critical_point(-direction + aligned_edge)
-        to_shift = (dest_pt - cur_pt) + direction * buff
-        self.shift(to_shift)
-        return self
-
-    def move_to(
-        self, point_or_mobject: Point3D | Mobject, aligned_edge: Vector3D = ORIGIN
-    ) -> Self:
-        if isinstance(point_or_mobject, Mobject):
-            # Use of aligned edge deviates from original manim by placing at center, not `aligned_edge` point
-            dest_pt = point_or_mobject.get_critical_point(ORIGIN)
-        else:
-            dest_pt = point_or_mobject
-        cur_pt = self.get_critical_point(aligned_edge)
-        self.shift(dest_pt - cur_pt)
-
-        return self
-
-    def shift(self, vector: Vector3D) -> Self:
-        for mob in self.get_family():
-            mob.points = mob.points + vector
-        return self
-
     # Color ops
     def set_fill(self, color: ManimColor, opacity: float = 1.0, family=False) -> Self:
         self._fill_color = color
@@ -208,7 +166,7 @@ class VMobject(ABC, Mobject):
                 mem.set_stroke(color=color, width=width, opacity=opacity, family=True)
         return Self
 
-    # Transformations
+    # Core transformations
     def rotate(
         self,
         angle: float = PI / 4,
@@ -227,7 +185,7 @@ class VMobject(ABC, Mobject):
             mob.points = new_points
         return self
 
-    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:
+    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:  # override
         for mob in self.get_family():
             new_points = mob.points.copy()
             if (about_point == ORIGIN).all():
@@ -239,12 +197,18 @@ class VMobject(ABC, Mobject):
             mob.points = new_points
         return self
 
-    def stretch(self, factor: float, dim: int) -> Self:
+    def stretch(self, factor: float, dim: int) -> Self:  # override
         for mob in self.get_family():
             new_points = mob.points.copy()
             new_points[:, dim] *= factor
             mob.points = new_points
 
+    def shift(self, vector: Vector3D) -> Self:
+        for mob in self.get_family():
+            mob.points = mob.points + vector
+        return self
+
+    # More specific transformations that require core transformations
     def stretch_to_fit_width(self, width: float) -> Self:
         old_width = self.width
         if old_width == 0:

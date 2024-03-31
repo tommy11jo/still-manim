@@ -5,6 +5,16 @@ from smanim.typing import Point2D, Point3D_Array, Vector3D
 from smanim.utils.logger import logger
 
 
+# pixel scalar => manim scalar
+def to_pixel_len(scalar: float, pw: float, fw: float):
+    return scalar * (pw / fw)
+
+
+# manim scalar => pixel scalar
+def to_manim_len(scalar: float, pw: float, fw: float):
+    return scalar * (fw / pw)
+
+
 def to_pixel_coords(
     points: Point3D_Array,
     pw: float,

@@ -10,3 +10,4 @@ from smanim.mobject.polygon import *
 from smanim.mobject.line import *
 from smanim.mobject.arc import *
 from smanim.mobject.brace import *
+from smanim.mobject.text_mobject import *

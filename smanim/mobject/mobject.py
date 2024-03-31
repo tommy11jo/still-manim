@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import List
 from typing_extensions import Self
 
@@ -30,8 +29,9 @@ from smanim.utils.space_ops import line_intersect
 
 
 class Mobject:
-    """base class for all objects that take up space.
+    """Base class for all objects that take up space.
     `bounding_points` represents the bounding polygon for this mobject.
+    Subclasses are responsible for setting the `bounding_points`.
     """
 
     def __init__(
@@ -172,16 +172,6 @@ class Mobject:
         return self.set_position(y_pt)
 
     # Relative Positioning
-    @abstractmethod
-    def align_to(
-        self,
-        mobject_or_point: Mobject | Point3D,
-        direction: Vector3D = ORIGIN,
-    ) -> Self:
-        # Subclass is responsible for setting bounding points whenever they are moved
-        raise NotImplementedError("Has to be implemented in subclass")
-
-    @abstractmethod
     def next_to(
         self,
         mobject_or_point: Mobject | Point3D,
@@ -189,12 +179,29 @@ class Mobject:
         aligned_edge: Vector3D = ORIGIN,
         buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     ) -> Self:
-        # Subclass is responsible for setting bounding points whenever they are moved
-        raise NotImplementedError("Has to be implemented in subclass")
+        if (np.abs(direction) + np.abs(aligned_edge) >= 2).any():
+            raise ValueError(
+                "`direction` and `aligned edge` cannot be along the same axis"
+            )
+        if isinstance(mobject_or_point, Mobject):
+            dest_pt = mobject_or_point.get_critical_point(direction + aligned_edge)
+        else:
+            dest_pt = mobject_or_point
 
-    @abstractmethod
+        cur_pt = self.get_critical_point(-direction + aligned_edge)
+        to_shift = (dest_pt - cur_pt) + direction * buff
+        self.shift(to_shift)
+        return self
+
     def move_to(
         self, point_or_mobject: Point3D | Mobject, aligned_edge: Vector3D = ORIGIN
     ) -> Self:
-        # Subclass is responsible for setting bounding points whenever they are moved
-        raise NotImplementedError("Has to be implemented in subclass")
+        if isinstance(point_or_mobject, Mobject):
+            # Use of aligned edge deviates from original manim by placing at center, not `aligned_edge` point
+            dest_pt = point_or_mobject.get_critical_point(ORIGIN)
+        else:
+            dest_pt = point_or_mobject
+        cur_pt = self.get_critical_point(aligned_edge)
+        self.shift(dest_pt - cur_pt)
+
+        return self

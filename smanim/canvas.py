@@ -1,41 +1,32 @@
+import base64
 from pathlib import Path
 import subprocess
-from typing import List
+from textwrap import dedent
+from typing import List, Sequence
 
-from smanim.constants import ORIGIN
+import numpy as np
+
+from smanim.config import CONFIG, Config
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.vmobject import VMobject
+from smanim.mobject.text_mobject import Text
 from smanim.utils.logger import logger
-from smanim.utils.color import BLACK, ManimColor
 
 import itertools as it
 import svg
 
 from smanim.utils.space_ops import to_pixel_coords
 
+__all__ = ["canvas"]
+
 
 class Canvas:
-    def __init__(
-        self,
-        pixel_height: float = 900,
-        frame_height: float = 8,
-        aspect_ratio: float = 16 / 9,
-        frame_center: float = ORIGIN,
-        bg_color: ManimColor = BLACK,
-        save_file_dir: str = "/Users/tommyjoseph/Desktop/projects/still-manim/examples/media/",
-    ):
-        self.ph = pixel_height
-        self.pw = pixel_height * aspect_ratio
-        self.fh = frame_height
-        self.fw = frame_height * aspect_ratio
-        self.fc = frame_center
-
-        self.bg_color = bg_color
+    def __init__(self, config: Config):
+        self.config = config
 
         # Should this be a VGroup?
         self.mobjects: List[Mobject] = []
         self.num_snapshots = 0
-        self.save_file_dir = save_file_dir
 
     def add(self, *mobjects):
         for mobject in mobjects:
@@ -67,6 +58,7 @@ class Canvas:
     def get_to_svg_func(self, mobject: Mobject):
         to_svg_funcs = {
             VMobject: self.vmobject_to_svg_el,
+            Text: self.text_to_svg_el,
             Mobject: lambda mobject: mobject,  # do nothing
         }
         for _type in to_svg_funcs:
@@ -76,23 +68,28 @@ class Canvas:
 
     def snapshot(self, preview=False):
         mobjects_in_order = self.get_mobjects_to_display()
-        svg_els: List[svg.Element] = [
-            svg.Rect(width="100%", height="100%", fill=self.bg_color.value)
+        svg_els_lst: List[svg.Element] = [
+            svg.Rect(width="100%", height="100%", fill=self.config.bg_color.value)
         ]
         for mobject in mobjects_in_order:
-            svg_el = self.get_to_svg_func(mobject)(mobject)
-            svg_els.append(svg_el)
+            new_svg_els = self.get_to_svg_func(mobject)(mobject)
+            svg_els_lst.extend(new_svg_els)
         svg_view_obj = svg.SVG(
-            viewBox=svg.ViewBoxSpec(0, 0, self.pw, self.ph),
-            elements=svg_els,
+            viewBox=svg.ViewBoxSpec(0, 0, self.config.pw, self.config.ph),
+            elements=svg_els_lst,
         )
         self.save_svg(svg_view_obj, preview=preview, suffix=self.num_snapshots)
 
         self.num_snapshots += 1
 
-    def vmobject_to_svg_el(self, vmobject: VMobject):
+    def vmobject_to_svg_el(self, vmobject: VMobject) -> Sequence[svg.Element]:
         points = to_pixel_coords(
-            vmobject.points, self.pw, self.ph, self.fw, self.fh, self.fc
+            vmobject.points,
+            self.config.pw,
+            self.config.ph,
+            self.config.fw,
+            self.config.fh,
+            self.config.fc,
         )
         if len(points) == 0:
             return
@@ -127,7 +124,59 @@ class Canvas:
         )
         kwargs["stroke_dasharray"] = vmobject.stroke_dasharray
 
-        return svg.Path(d=svg_path, **kwargs)
+        return (svg.Path(d=svg_path, **kwargs),)
+
+    def text_to_svg_el(self, text_obj: Text):
+
+        start_pt = to_pixel_coords(
+            np.array([np.array([text_obj.svg_x, text_obj.svg_y, 0])]),
+            self.config.pw,
+            self.config.ph,
+            self.config.fw,
+            self.config.fh,
+            self.config.fc,
+        )[0]
+        font_family = text_obj.font_family
+        font_size = text_obj.font_size
+        # for browser, should be able to set font path to be in pyodide native FS
+        with open(text_obj.font_path, "rb") as font_file:
+            font_data = font_file.read()
+        base64_font = base64.b64encode(font_data).decode("utf-8")
+
+        # can use foreign object to handle max_width and text wrapping in browser envs, but not for local svg
+        font_style_inline_font = dedent(
+            f"""
+            @font-face {{ font-family: {font_family}; src: url(data:font/otf;base64,{base64_font}) format('opentype'); }}
+            .styleClass {{
+                text-decoration: {font_family};
+                fill: {text_obj.fill_color.value};
+                font-size: {font_size};
+                fill-opacity: {text_obj.fill_opacity};
+                font-family: {font_family};
+            }}
+            
+            """
+        )
+
+        text_tspan_objs = []
+
+        for i, raw_text in enumerate(text_obj.text_tokens):
+            text_tspan_objs.append(
+                svg.TSpan(
+                    text=raw_text,
+                    x=start_pt[0],
+                    dy=text_obj.font_heights[i],
+                )
+                # svg.TSpan(text=raw_text, x=start_pt[0], dy=0)
+            )
+        text_svg_obj = svg.Text(
+            elements=text_tspan_objs,
+            x=start_pt[0],
+            y=start_pt[1],
+            class_=["styleClass"],
+        )
+
+        return svg.Style(text=font_style_inline_font), text_svg_obj
 
     def save_svg(
         self,
@@ -136,10 +185,13 @@ class Canvas:
         preview: bool = False,
         suffix: int | str = "",
     ):
-        script_dir = Path(self.save_file_dir)
+        script_dir = Path(self.config.save_file_dir)
         fpath = script_dir / f"{name}{suffix}.svg"
 
         with open(fpath, "w") as file:
             file.write(str(svg_obj))
         if preview:
             subprocess.run(["open", fpath])
+
+
+canvas = Canvas(CONFIG)
