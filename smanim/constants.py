@@ -1,46 +1,46 @@
 # Geometry: directions
 import numpy as np
 
-from smanim.typing import Vector3D
+from smanim.typing import Vector3
 
 # Vector
-ORIGIN: Vector3D = np.array((0.0, 0.0, 0.0))
+ORIGIN: Vector3 = np.array((0.0, 0.0, 0.0))
 CENTER = ORIGIN
 """The center of the coordinate system."""
 
-UP: Vector3D = np.array((0.0, 1.0, 0.0))
+UP: Vector3 = np.array((0.0, 1.0, 0.0))
 """One unit step in the positive Y direction."""
 
-DOWN: Vector3D = np.array((0.0, -1.0, 0.0))
+DOWN: Vector3 = np.array((0.0, -1.0, 0.0))
 """One unit step in the negative Y direction."""
 
-RIGHT: Vector3D = np.array((1.0, 0.0, 0.0))
+RIGHT: Vector3 = np.array((1.0, 0.0, 0.0))
 """One unit step in the positive X direction."""
 
-LEFT: Vector3D = np.array((-1.0, 0.0, 0.0))
+LEFT: Vector3 = np.array((-1.0, 0.0, 0.0))
 """One unit step in the negative X direction."""
 
-IN: Vector3D = np.array((0.0, 0.0, -1.0))
+IN: Vector3 = np.array((0.0, 0.0, -1.0))
 """One unit step in the negative Z direction."""
 
-OUT: Vector3D = np.array((0.0, 0.0, 1.0))
+OUT: Vector3 = np.array((0.0, 0.0, 1.0))
 """One unit step in the positive Z direction."""
-UL: Vector3D = UP + LEFT
+UL: Vector3 = UP + LEFT
 """One step up plus one step left."""
 
-UR: Vector3D = UP + RIGHT
+UR: Vector3 = UP + RIGHT
 """One step up plus one step right."""
 
-DL: Vector3D = DOWN + LEFT
+DL: Vector3 = DOWN + LEFT
 """One step down plus one step left."""
 
-DR: Vector3D = DOWN + RIGHT
+DR: Vector3 = DOWN + RIGHT
 """One step down plus one step right."""
 
 # Geometry: axes
-X_AXIS: Vector3D = np.array((1.0, 0.0, 0.0))
-Y_AXIS: Vector3D = np.array((0.0, 1.0, 0.0))
-Z_AXIS: Vector3D = np.array((0.0, 0.0, 1.0))
+X_AXIS: Vector3 = np.array((1.0, 0.0, 0.0))
+Y_AXIS: Vector3 = np.array((0.0, 1.0, 0.0))
+Z_AXIS: Vector3 = np.array((0.0, 0.0, 1.0))
 
 # Mathematical
 PI = np.pi
@@ -49,7 +49,6 @@ DEGREES = TAU / 360
 RADIANS = 360 / TAU
 
 # Padding
-# Default buffers (padding)
 SMALL_BUFF = 0.1
 MED_SMALL_BUFF = 0.25
 MED_LARGE_BUFF = 0.5

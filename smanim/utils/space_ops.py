@@ -1,7 +1,7 @@
 from typing import Tuple
 import numpy as np
 from smanim.constants import RIGHT, TAU, X_AXIS, Y_AXIS, Z_AXIS
-from smanim.typing import Point2D, Point3D_Array, Vector3D
+from smanim.typing import Point2D, Point3D_Array, Vector3
 from smanim.utils.logger import log
 
 
@@ -21,7 +21,7 @@ def to_pixel_coords(
     ph: float,
     fw: float,
     fh: float,
-    fc: Vector3D,
+    fc: Vector3,
 ):
     if len(points) == 0:
         return []
@@ -64,7 +64,7 @@ def rotation_matrix(angle_in_radians: float, axis: np.ndarray) -> np.ndarray:
 
 
 def rotate_vector(
-    vector: Vector3D, angle: float, axis: np.ndarray = Z_AXIS
+    vector: Vector3, angle: float, axis: np.ndarray = Z_AXIS
 ) -> np.ndarray:
     """Counter-clockwise rotation"""
     if len(vector) > 3:

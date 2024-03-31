@@ -11,11 +11,12 @@ from smanim.constants import (
 )
 from smanim.mobject.polygon import Polygon
 from smanim.mobject.transformable import TransformableMobject
-from smanim.typing import Point3D, Vector3D
+from smanim.typing import Point3D, Vector3
 from smanim.config import CONFIG
 from smanim.utils.color import WHITE, ManimColor
 from smanim.utils.space_ops import to_manim_len, to_pixel_len
 from smanim.utils.text_ops import wrap_text
+from PIL import ImageFont
 
 current_script_directory = Path(__file__).parent
 
@@ -30,16 +31,6 @@ font_paths_by_style = {
 }
 
 
-# If I don't inherit from VMobject, then I can't make them a family.
-# I think I need to create a separate class that allows for "transformable" objects, since this can't be a VMObject (since it doesn't have bezier curves)
-# Instead of transforming each of the points for each submobject, we should call the transformable function on submobjects.
-# Each transformable requires a getter and setter for points (numpy array) as well as rotate, stretch, shift.
-# The base transformable class handles the points and the subclasses can handle additional logic.
-
-# But making this rotatable is a pain since then I need to track pre-rotated points too:
-# Example: (50, 50) is center here
-# <text x="50" y="50" transform="rotate(45,50,50)" fill="black">Rotated Text</text>
-
 # FUTURE: Add two text elements together
 
 
@@ -51,7 +42,7 @@ class Text(TransformableMobject):
         start_angle: float = 0,  # in radians
         fill_color: ManimColor = WHITE,
         fill_opacity: float = 1.0,
-        max_width: float | None = 2.0,  # in internal manim units
+        max_width: float | None = 6.0,  # in internal manim units
         font_size: float = 20,
         text_decoration: Literal[
             "none", "underline", "overline", "line-through"
@@ -90,19 +81,23 @@ class Text(TransformableMobject):
             font_size=font_size,
             max_width_in_pixels=max_width_in_pixels,
         )
+        font = ImageFont.truetype(self.font_path, font_size)
+
+        # there might be a cleaner approach
+        # really I need the top and bottoms of a line spacing, "g" is a good char because it hangs down and "K" is capitalized
+        line_bbox = font.getbbox("Kg")
+        line_height = line_bbox[3] - line_bbox[1]
+
         self.font_widths = np.array(
             [pair[0] + x_padding_in_pixels * 2 for pair in dims]
         )
-        # TODO: investigate uneven spacing for multi line text
-        self.font_heights = np.array(
-            [pair[1] + 2 * y_padding_in_pixels for pair in dims]
-        )  # used for drawing
+        self.font_height = line_height + 2 * y_padding_in_pixels
         width_in_munits = (
             max_width + 2 * x_padding
             if len(text_tokens) > 1
-            else to_manim_len(max(self.font_widths), CONFIG.pw, CONFIG.fw)
+            else to_manim_len(self.font_widths[0], CONFIG.pw, CONFIG.fw)
         )
-        height_in_munits = to_manim_len(sum(self.font_heights), CONFIG.pw, CONFIG.fw)
+        height_in_munits = to_manim_len(self.font_height, CONFIG.pw, CONFIG.fw)
 
         self.text_tokens = text_tokens
         ur = position + np.eye(3)[0] * width_in_munits
@@ -140,7 +135,7 @@ class Text(TransformableMobject):
     def rotate(
         self,
         angle: float = PI / 4,
-        axis: Vector3D = OUT,
+        axis: Vector3 = OUT,
         about_point: Point3D | None = None,
     ) -> Self:
         # must commute with all other transformations, since it is applied last
@@ -180,7 +175,7 @@ class Text(TransformableMobject):
         return self
 
     # shifts the text and text bbox
-    def shift(self, vector: Vector3D) -> Self:
+    def shift(self, vector: Vector3) -> Self:
         bounding_points = super().shift_points(self.bounding_points, vector)
         super().set_bounding_points(bounding_points)
         self.svg_upper_left = super().shift_points(

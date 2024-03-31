@@ -2,7 +2,7 @@ from typing_extensions import Self
 import numpy as np
 from smanim.constants import ORIGIN, OUT, PI
 from smanim.mobject.mobject import Mobject
-from smanim.typing import InternalPoint3D_Array, Point3D, Vector3D
+from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
 from smanim.utils.space_ops import rotation_matrix
 
 
@@ -12,7 +12,7 @@ class TransformableMobject(Mobject):
         self,
         points: InternalPoint3D_Array,
         angle: float = PI / 4,
-        axis: Vector3D = OUT,
+        axis: Vector3 = OUT,
         about_point: Point3D | None = None,
     ) -> InternalPoint3D_Array:
         """Counter-clockwise rotation"""
@@ -50,7 +50,7 @@ class TransformableMobject(Mobject):
         return points
 
     def shift_points(
-        self, points: InternalPoint3D_Array, vector: Vector3D
+        self, points: InternalPoint3D_Array, vector: Vector3
     ) -> InternalPoint3D_Array:
         points = points.copy()
         points += vector
@@ -61,12 +61,12 @@ class TransformableMobject(Mobject):
         old_width = self.width
         if old_width == 0:
             return self
-        self.stretch_points(width / old_width, dim=0)
+        self.stretch(width / old_width, dim=0)
         return self
 
     def stretch_to_fit_height(self, height: float) -> Self:
         old_height = self.height
         if old_height == 0:
             return self
-        self.stretch_points(height / old_height, dim=1)
+        self.stretch(height / old_height, dim=1)
         return self

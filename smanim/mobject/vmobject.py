@@ -13,7 +13,7 @@ from smanim.constants import (
 from smanim.mobject.transformable import TransformableMobject
 from smanim.utils.logger import log
 from smanim.utils.color import WHITE, ManimColor
-from smanim.typing import InternalPoint3D_Array, Point3D, Point3D_Array, Vector3D
+from smanim.typing import InternalPoint3D_Array, Point3D, Point3D_Array, Vector3
 
 
 # Note: text is not a VMobject, it's a non-vectorized SVG el
@@ -169,7 +169,7 @@ class VMobject(TransformableMobject, ABC):
     def rotate(
         self,
         angle: float = PI / 4,
-        axis: Vector3D = OUT,
+        axis: Vector3 = OUT,
         about_point: Point3D | None = None,
     ) -> Self:
         self.points = super().rotate_points(self.points, angle, axis, about_point)
@@ -190,7 +190,7 @@ class VMobject(TransformableMobject, ABC):
             mob.stretch(factor, dim)
         return self
 
-    def shift(self, vector: Vector3D) -> Self:
+    def shift(self, vector: Vector3) -> Self:
         self.points = super().shift_points(self.points, vector)
         for mob in self.submobjects:
             mob.shift(vector)

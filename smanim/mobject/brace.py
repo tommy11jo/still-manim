@@ -87,3 +87,6 @@ class BraceBetween(Brace):
         line = Line(start, end)
         self.start_pt, self.end_pt = line.start_pt, line.end_pt
         super().__init__(line, direction=direction, **kwargs)
+
+
+# TODO: BraceLabel

@@ -28,8 +28,11 @@ class Line(VMobject):
         return f"{class_name}(start={self.start_pt}, end={self.end_pt})"
 
     def generate_points(self) -> None:  # override
+        self.points = self._points_from_start_and_end()
+
+    def _points_from_start_and_end(self):
         dir = self.end_pt - self.start_pt
-        self.points = np.array(
+        return np.array(
             [
                 self.start_pt,
                 self.start_pt + dir / 3,
@@ -38,6 +41,11 @@ class Line(VMobject):
             ],
             dtype=ManimFloat,
         )
+
+    def set_start_and_end(self, start: Point3D, end: Point3D):
+        self.start_pt = start
+        self.end_pt = end
+        self.points = self._points_from_start_and_end()
 
     def get_direction(self):
         start_pt, end_pt = self.points[0], self.points[-1]

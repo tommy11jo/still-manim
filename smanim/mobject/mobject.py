@@ -25,7 +25,7 @@ from smanim.typing import (
     ManimFloat,
     Point2D,
     Point3D,
-    Vector3D,
+    Vector3,
 )
 from smanim.utils.logger import log
 from smanim.utils.space_ops import line_intersect
@@ -83,7 +83,7 @@ class Mobject(ABC):
         return family
 
     # Bounding Box Ops
-    def get_critical_point(self, direction: Vector3D):
+    def get_critical_point(self, direction: Vector3):
         """9 point bbox: 4 corners, 4 edge points, 1 center"""
         if not (-1 <= direction[0] <= 1 and -1 <= direction[1] <= 1):
             raise ValueError(
@@ -121,7 +121,7 @@ class Mobject(ABC):
     def get_center(self):
         return self.get_critical_point(ORIGIN)
 
-    def get_corner(self, direction: Vector3D):
+    def get_corner(self, direction: Vector3):
         if not any(np.array_equal(direction, cdir) for cdir in [UL, UR, DR, DL]):
             raise ValueError("`direction` must be a corner")
         return self.get_critical_point(direction)
@@ -178,8 +178,8 @@ class Mobject(ABC):
     def next_to(
         self,
         mobject_or_point: Mobject | Point3D,
-        direction: Vector3D = RIGHT,
-        aligned_edge: Vector3D = ORIGIN,
+        direction: Vector3 = RIGHT,
+        aligned_edge: Vector3 = ORIGIN,
         buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     ) -> Self:
         if (np.abs(direction) + np.abs(aligned_edge) >= 2).any():
@@ -197,7 +197,7 @@ class Mobject(ABC):
         return self
 
     def move_to(
-        self, point_or_mobject: Point3D | Mobject, aligned_edge: Vector3D = ORIGIN
+        self, point_or_mobject: Point3D | Mobject, aligned_edge: Vector3 = ORIGIN
     ) -> Self:
         if isinstance(point_or_mobject, Mobject):
             # Use of aligned edge deviates from original manim by placing at center, not `aligned_edge` point
@@ -213,7 +213,7 @@ class Mobject(ABC):
     def align_to(
         self,
         mobject: Mobject,
-        edge: Vector3D = UP,
+        edge: Vector3 = UP,
     ) -> Self:
         """Align to the edge of another mobject"""
         if not any([np.array_equal(edge, e) for e in (UP, DOWN, LEFT, RIGHT)]):
@@ -229,7 +229,7 @@ class Mobject(ABC):
     # If I find a submobject that isn't supposed to do a transformation, then I can delete these "defensive errors"
     # Core transformations must be overridden by all subclasses
     @abstractmethod
-    def rotate(self, angle: float, axis: Vector3D, about_point: Point3D | None) -> Self:
+    def rotate(self, angle: float, axis: Vector3, about_point: Point3D | None) -> Self:
         raise NotImplementedError("Has to be implemented in subclass")
 
     @abstractmethod
@@ -241,7 +241,7 @@ class Mobject(ABC):
         raise NotImplementedError("Has to be implemented in subclass")
 
     @abstractmethod
-    def shift(self, vector: Vector3D) -> Self:
+    def shift(self, vector: Vector3) -> Self:
         raise NotImplementedError("Has to be implemented in subclass")
 
 
@@ -269,7 +269,7 @@ class Group(Mobject):
     def rotate(
         self,
         angle: float = PI / 4,
-        axis: Vector3D = OUT,
+        axis: Vector3 = OUT,
         about_point: Point3D | None = None,
     ) -> Self:
         for mob in self.submobjects:
@@ -286,7 +286,7 @@ class Group(Mobject):
             mob.stretch(factor, dim)
         return self
 
-    def shift(self, vector: Vector3D) -> Self:
+    def shift(self, vector: Vector3) -> Self:
         for mob in self.submobjects:
             mob.shift(vector)
         return self

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List, Tuple
 from PIL import ImageFont
 
 
@@ -7,12 +8,18 @@ from PIL import ImageFont
 # FUTURE: This will probably be its own text class, WText() "Web Text"
 # locally, must implement text wrap manually, like I did below
 # https://stackoverflow.com/questions/26276125/how-to-manipulate-svg-foreign-object-html-text-wrapping-and-positioning
+
+
+# TODO: Adapt so font_height works
 def wrap_text(
     text: str,
     font_path: Path,
     font_size: int,
     max_width_in_pixels: int,
-):
+) -> Tuple[List[str], List[Tuple[float, float]]]:
+    """
+    Returns a list where each element is the contents of a new line and a corresponding list containing (width, height) dimensions per line
+    """
     # Getting the bbox takes ~0.0006 seconds locally (166 ops per 0.1 seconds)
     words = text.split(" ")
     text_tokens = []
@@ -36,15 +43,15 @@ def wrap_text(
         remaining_words = words[word_ind:]
         to_process = " ".join(remaining_words)
         width, height = get_dim_lens(to_process)
-        if width < max_width_in_pixels:
+        if len(remaining_words) == 1 or width < max_width_in_pixels:
             text_tokens.append(to_process)
             dims.append((width, height))
             break
         cur_ind = word_ind  # index in `words` of end of `cur_text`, exclusive
-        cur_text = ""
+        cur_text, *remaining_words = remaining_words
         for word in remaining_words:
             if len(cur_text + word) <= approx_num_chars_per_line:
-                cur_text += word
+                cur_text += " " + word
                 cur_ind += 1
             else:
                 break

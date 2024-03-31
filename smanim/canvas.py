@@ -182,11 +182,7 @@ class Canvas:
 
         for i, raw_text in enumerate(text_obj.text_tokens):
             text_tspan_objs.append(
-                svg.TSpan(
-                    text=raw_text,
-                    x=start_pt[0],
-                    dy=text_obj.font_heights[i],
-                )
+                svg.TSpan(text=raw_text, x=start_pt[0], dy=text_obj.font_height)
             )
         x_center, y_center = self._to_pixel_coords(text_obj.get_center())[:2]
         text_svg_obj = svg.Text(

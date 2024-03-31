@@ -250,22 +250,30 @@ def braceTest():
 
 
 def textTest():
-    line = Line(LEFT, RIGHT)
-    canvas.add(line)
     s = Square()
     canvas.add(s)
     # TODO: & symbol does not work
-    # t = Text("hi there the terminal is beautiful and DARK like the night SKY")
     t = Text(
-        "hi there the terminal is beautiful and dark like the night sky",
-        fill_opacity=0.3,
-    ).rotate()
-    t.next_to(s)
+        "hi there the terminal is beautiful and DARK like the night SKY and now let's see if the heights are correct during text wrap and no i don't think it is working and it's not just the lines with CAPS that are the problem. Ok corrected.",
+        max_width=2.0,
+    )
+    t = Text(
+        "hi there the terminal is beautiful and DARK like the night SKY and now let's see if the heights are correct during text wrap and no i don't think it is working and it's not just the lines with CAPS that are the problem. Ok corrected."
+    )
+    # t = Text("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", max_width=2.0)
+    # t = Text("dog aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", max_width=2.0)
+    # t = Text(
+    #     "hi there the terminal is beautiful and dark like the night sky",
+    #     fill_opacity=0.3,
+    # ).rotate()
+    # t.next_to(s)
     canvas.add(t)
     canvas.snapshot(preview=True)
 
 
-# textTest()
+textTest()
+
+
 def textBbox():
     t = Text("hi there").shift(UR * 2)
     s = Square().shift(DL)
@@ -335,4 +343,4 @@ def scaleGroup():
     canvas.snapshot(preview=True)
 
 
-scaleGroup()
+# scaleGroup()
