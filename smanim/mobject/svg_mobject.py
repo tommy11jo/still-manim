@@ -5,6 +5,8 @@ import svgelements as se
 
 from smanim.typing import ManimFloat, Point3D
 
+__all__ = ["VMobjectFromSVGPath"]
+
 
 def _to_3d(x: float, y: float) -> np.ndarray:
     return np.array([x, y, 0.0])

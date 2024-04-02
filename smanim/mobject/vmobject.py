@@ -15,6 +15,8 @@ from smanim.utils.logger import log
 from smanim.utils.color import WHITE, ManimColor
 from smanim.typing import InternalPoint3D_Array, Point3D, Point3D_Array, Vector3
 
+__all__ = ["VMobject", "VGroup"]
+
 
 # Note: text is not a VMobject, it's a non-vectorized SVG el
 class VMobject(TransformableMobject, ABC):

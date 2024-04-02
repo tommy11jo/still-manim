@@ -10,7 +10,6 @@ from PIL import ImageFont
 # https://stackoverflow.com/questions/26276125/how-to-manipulate-svg-foreign-object-html-text-wrapping-and-positioning
 
 
-# TODO: Adapt so font_height works
 def wrap_text(
     text: str,
     font_path: Path,

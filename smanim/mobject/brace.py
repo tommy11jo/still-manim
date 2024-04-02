@@ -8,6 +8,8 @@ from smanim.utils.color import WHITE, ManimColor
 
 import svgelements as se
 
+__all__ = ["Brace", "BraceBetween"]
+
 path_string_template = (
     "m0.01216 0c-0.01152 0-0.01216 6.103e-4 -0.01216 0.01311v0.007762c0.06776 "
     "0.122 0.1799 0.1455 0.2307 0.1455h{0}c0.03046 3.899e-4 0.07964 0.00449 "
@@ -87,6 +89,3 @@ class BraceBetween(Brace):
         line = Line(start, end)
         self.start_pt, self.end_pt = line.start_pt, line.end_pt
         super().__init__(line, direction=direction, **kwargs)
-
-
-# TODO: BraceLabel

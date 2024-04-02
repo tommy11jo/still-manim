@@ -5,6 +5,8 @@ from smanim.mobject.mobject import Mobject
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
 from smanim.utils.space_ops import rotation_matrix
 
+__all__ = ["TransformableMobject"]
+
 
 class TransformableMobject(Mobject):
     # Core transformations

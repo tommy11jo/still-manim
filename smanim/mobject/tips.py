@@ -3,7 +3,9 @@ from smanim.constants import DEFAULT_ARROW_TIP_LENGTH
 from smanim.mobject.polygon import Triangle
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import Point3D, Vector3
-from smanim.utils.color import WHITE
+from smanim.utils.color import WHITE, ManimColor
+
+__all__ = ["ArrowTip", "ArrowTriangleFilledTip", "ArrowTriangleFilledTip"]
 
 
 class ArrowTip(VMobject):
@@ -45,21 +47,17 @@ class ArrowTriangleTip(ArrowTip, Triangle):
 
     def __init__(
         self,
-        fill_opacity: float = 0.0,
-        stroke_width: float = 3.0,
         length: float = DEFAULT_ARROW_TIP_LENGTH,
         width: float = DEFAULT_ARROW_TIP_LENGTH,
         **kwargs,
     ) -> None:
         Triangle.__init__(
             self,
-            fill_opacity=fill_opacity,
-            stroke_width=stroke_width,
             **kwargs,
         )
 
-        self.stretch_to_fit_width(length)
-        self.stretch_to_fit_height(width)
+        self.stretch_to_fit_width(width)
+        self.stretch_to_fit_height(length)
 
     @property
     def base(self):
@@ -70,5 +68,6 @@ class ArrowTriangleTip(ArrowTip, Triangle):
 class ArrowTriangleFilledTip(ArrowTriangleTip):
     """Triangular arrow tip with filled tip."""
 
-    def __init__(self, fill_opacity: float = 1.0, fill_color=WHITE, **kwargs) -> None:
-        super().__init__(fill_opacity=fill_opacity, fill_color=fill_color, **kwargs)
+    def __init__(self, default_fill_color: ManimColor = WHITE, **kwargs) -> None:
+
+        super().__init__(default_fill_color=default_fill_color, **kwargs)

@@ -11,6 +11,12 @@ class ManimColor:
         return f"{class_name}(value={self.value}, alpha={self.alpha})"
 
 
+# handles the case where "default_fill_color" is set first but then "default_stroke_color" is set later in the ancestor chain
+# expected behavior is "default_fill_color" takes effect
+def has_default_colors_set(**kwargs):
+    return "default_stroke_color" in kwargs or "default_fill_color" in kwargs
+
+
 WHITE = ManimColor("#FFFFFF")
 BLACK = ManimColor("#000000")
 BLUE = ManimColor("#58C4DD")

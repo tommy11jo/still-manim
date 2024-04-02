@@ -5,6 +5,7 @@ from smanim.constants import (
     ORIGIN,
     OUT,
     PI,
+    SMALL_BUFF,
     TEXT_X_PADDING,
     TEXT_Y_PADDING,
     UL,
@@ -17,6 +18,8 @@ from smanim.utils.color import WHITE, ManimColor
 from smanim.utils.space_ops import to_manim_len, to_pixel_len
 from smanim.utils.text_ops import wrap_text
 from PIL import ImageFont
+
+__all__ = ["Text"]
 
 current_script_directory = Path(__file__).parent
 
@@ -43,6 +46,7 @@ class Text(TransformableMobject):
         fill_color: ManimColor = WHITE,
         fill_opacity: float = 1.0,
         max_width: float | None = 6.0,  # in internal manim units
+        z_index: int = 1,  # text is by default above the normal 0 z-index
         font_size: float = 20,
         text_decoration: Literal[
             "none", "underline", "overline", "line-through"
@@ -52,12 +56,15 @@ class Text(TransformableMobject):
         x_padding: float = TEXT_X_PADDING,
         y_padding: float = TEXT_Y_PADDING,
         border: bool = False,
-        border_buff: float = 0.1,
+        # border_buff: float = 0.1,
+        border_buff: float = 0.0,
         **kwargs,
     ):
+        if not isinstance(text, str):
+            raise ValueError("Text must be a str")
         if len(text) == 0:
             raise ValueError("Text cannot be empty")
-        super().__init__(**kwargs)
+        super().__init__(z_index=z_index, **kwargs)
         # FUTURE: will need to sanitize if these diagrams can be shared
         self.raw_text = text
         self._heading = start_angle
@@ -70,8 +77,8 @@ class Text(TransformableMobject):
         self.text_decoration = text_decoration
         font_file = font_paths_by_style[(bold, italics)]
 
-        x_padding_in_pixels = to_pixel_len(x_padding, CONFIG.pw, CONFIG.fw)
-        y_padding_in_pixels = to_pixel_len(y_padding, CONFIG.pw, CONFIG.fw)
+        self.x_padding_in_pixels = to_pixel_len(x_padding, CONFIG.pw, CONFIG.fw)
+        self.y_padding_in_pixels = to_pixel_len(y_padding, CONFIG.pw, CONFIG.fw)
         max_width_in_pixels = to_pixel_len(max_width, CONFIG.pw, CONFIG.fw)
 
         self.font_path: Path = current_script_directory / font_dir / font_file
@@ -82,28 +89,39 @@ class Text(TransformableMobject):
             max_width_in_pixels=max_width_in_pixels,
         )
         font = ImageFont.truetype(self.font_path, font_size)
-
-        # there might be a cleaner approach
-        # really I need the top and bottoms of a line spacing, "g" is a good char because it hangs down and "K" is capitalized
-        line_bbox = font.getbbox("Kg")
-        line_height = line_bbox[3] - line_bbox[1]
+        # line_height = ascent + descent
+        # Workaround: ascent seems to be capturing what ascent + descent typically would
+        # I think the bbox is including the descent by default
+        ascent, descent = font.getmetrics()
+        self.font_ascent = ascent
+        self.font_descent = descent
+        line_height = ascent
+        self.leading = line_height * 0.5
 
         self.font_widths = np.array(
-            [pair[0] + x_padding_in_pixels * 2 for pair in dims]
+            [pair[0] + self.x_padding_in_pixels * 2 for pair in dims]
         )
-        self.font_height = line_height + 2 * y_padding_in_pixels
-        width_in_munits = (
+        self.font_height = line_height
+        line_width_in_munits = (
             max_width + 2 * x_padding
             if len(text_tokens) > 1
             else to_manim_len(self.font_widths[0], CONFIG.pw, CONFIG.fw)
         )
-        height_in_munits = to_manim_len(self.font_height, CONFIG.pw, CONFIG.fw)
+        line_height_in_munits = to_manim_len(self.font_height, CONFIG.pw, CONFIG.fw)
+        leading_in_munits = to_manim_len(self.leading, CONFIG.pw, CONFIG.fw)
+        font_descent_in_munits = to_manim_len(self.font_descent, CONFIG.pw, CONFIG.fw)
 
         self.text_tokens = text_tokens
-        ur = position + np.eye(3)[0] * width_in_munits
+        # Note: first line does not having leading space
+        bbox_height = (
+            line_height_in_munits * len(text_tokens)
+            + leading_in_munits * (len(text_tokens) - 1)
+            + y_padding * 2
+        ) + font_descent_in_munits
+        ur = position + np.eye(3)[0] * (line_width_in_munits + x_padding)
         ul = position
-        dl = ul - np.eye(3)[1] * height_in_munits
-        dr = ur - np.eye(3)[1] * height_in_munits
+        dl = ul - np.eye(3)[1] * bbox_height
+        dr = ur - np.eye(3)[1] * bbox_height
         self.set_bounding_points(np.array([ur, ul, dl, dr]))
 
         # Note: this point doesn't change during rotate because SVG applies it after. It still changes for other transformations
@@ -132,6 +150,10 @@ class Text(TransformableMobject):
         bounding_points = super().rotate_points(self.bounding_points, rot, OUT, None)
         super().set_bounding_points(bounding_points)
 
+    def __repr__(self):
+        class_name = self.__class__.__qualname__
+        return f"{class_name}(value={self.raw_text})"
+
     def rotate(
         self,
         angle: float = PI / 4,
@@ -158,7 +180,7 @@ class Text(TransformableMobject):
         )[0]
         self.font_size *= factor
         self.font_widths *= factor
-        self.font_heights *= factor
+        self.font_height *= factor
         for mob in self.submobjects:
             mob.scale(factor, about_point)
         return self
@@ -184,3 +206,10 @@ class Text(TransformableMobject):
         for mob in self.submobjects:
             mob.shift(vector)
         return self
+
+    def add_bg_rectangle(self, buff: float = SMALL_BUFF, rect_config: dict = {}):
+        bg_points = super().scale_points(self.bounding_points, 1 + buff)
+        bg_polygon = Polygon(
+            vertices=bg_points, default_fill_color=CONFIG.bg_color, **rect_config
+        )
+        self.add(bg_polygon)

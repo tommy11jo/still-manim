@@ -1,3 +1,4 @@
+from pathlib import Path
 from smanim.constants import ORIGIN
 from smanim.utils.color import BLACK, ManimColor
 
@@ -10,7 +11,8 @@ class Config:
         aspect_ratio: float = 16 / 9,
         frame_center: float = ORIGIN,
         bg_color: ManimColor = BLACK,
-        save_file_dir: str = "/Users/tommyjoseph/Desktop/projects/still-manim/examples/media/",
+        save_file_dir: Path | None = Path(__file__).parent.parent / "tests" / "media",
+        # FUTURE: testing vs in browser paths
     ):
         self.ph = pixel_height
         self.pw = pixel_height * aspect_ratio

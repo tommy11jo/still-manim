@@ -7,11 +7,13 @@ from typing import List, Sequence
 import numpy as np
 
 from smanim.config import CONFIG, Config
-from smanim.constants import RADIANS
+from smanim.constants import RADIANS, Z_INDEX_MIN
 from smanim.mobject.mobject import Mobject
+from smanim.mobject.polygon import Rectangle
 from smanim.mobject.vmobject import VMobject
 from smanim.mobject.text_mobject import Text
 from smanim.typing import InternalPoint3D_Array, Point3D
+from smanim.utils.color import BLACK
 from smanim.utils.logger import log
 
 import itertools as it
@@ -19,7 +21,7 @@ import svg
 
 from smanim.utils.space_ops import to_pixel_coords
 
-__all__ = ["canvas"]
+__all__ = ["canvas", "Canvas"]
 
 
 class Canvas:
@@ -29,6 +31,7 @@ class Canvas:
         # Should this be a VGroup?
         self.mobjects: List[Mobject] = []
         self.num_snapshots = 0
+        self.loaded_fonts = set()
 
     def add(self, *mobjects):
         for mobject in mobjects:
@@ -51,7 +54,15 @@ class Canvas:
         self,
         use_z_index=True,
     ):
-        cur_mobjects = it.chain(*(m.get_family() for m in self.mobjects))
+        cur_mobjects: List[Mobject] = [
+            Rectangle(
+                width=self.config.fw,
+                height=self.config.fh,
+                fill_color=BLACK,
+                z_index=Z_INDEX_MIN,
+            )
+        ]
+        cur_mobjects += it.chain(*(m.get_family() for m in self.mobjects))
 
         if use_z_index:
             return sorted(cur_mobjects, key=lambda m: m.z_index)
@@ -70,9 +81,7 @@ class Canvas:
 
     def snapshot(self, preview=False):
         mobjects_in_order = self.get_mobjects_to_display()
-        svg_els_lst: List[svg.Element] = [
-            svg.Rect(width="100%", height="100%", fill=self.config.bg_color.value)
-        ]
+        svg_els_lst: List[svg.Element] = []
         for mobject in mobjects_in_order:
             svg_func = self.get_to_svg_func(mobject)
             if svg_func is None:
@@ -88,6 +97,8 @@ class Canvas:
         self.num_snapshots += 1
 
     def vmobject_to_svg_el(self, vmobject: VMobject) -> Sequence[svg.Element]:
+        if len(vmobject.points) == 0:  # handles VGroups
+            return []
         points = to_pixel_coords(
             vmobject.points,
             self.config.pw,
@@ -121,7 +132,7 @@ class Canvas:
                 else orNone(vmobject.stroke_color.value)
             )
             kwargs["stroke_width"] = orNone(vmobject.stroke_width)
-            # Note: stroke_opacity as "none" defaults to opaque
+            # Note: stroke_opacity as an svg arg set to "none" creates an opaque effect
             kwargs["stroke_opacity"] = orNone(vmobject.stroke_opacity)
         kwargs["fill_opacity"] = orNone(vmobject.fill_opacity)
         kwargs["fill"] = orNone(
@@ -158,38 +169,51 @@ class Canvas:
 
         font_family = text_obj.font_family
         font_size = text_obj.font_size
-        # for browser, should be able to set font path to be in pyodide native FS
+
         with open(text_obj.font_path, "rb") as font_file:
             font_data = font_file.read()
         base64_font = base64.b64encode(font_data).decode("utf-8")
 
         # can use foreign object to handle max_width and text wrapping in browser envs, but not for local svg
+        id = int(np.random.rand() * 10_000_000)
+
         font_style_inline_font = dedent(
             f"""
-            @font-face {{ font-family: {font_family}; src: url(data:font/otf;base64,{base64_font}) format('opentype'); }}
-            .styleClass {{
+            .styleClass{id} {{
                 text-decoration: {font_family};
                 fill: {text_obj.fill_color.value};
                 font-size: {font_size}px;
                 fill-opacity: {text_obj.fill_opacity};
                 font-family: {font_family};
             }}
-            
             """
         )
+        if font_family not in self.loaded_fonts:
+            font_style_inline_font += f"@font-face {{ font-family: {font_family}; src: url(data:font/otf;base64,{base64_font}) format('opentype'); }}"
+            self.loaded_fonts.add(font_family)
 
         text_tspan_objs = []
 
         for i, raw_text in enumerate(text_obj.text_tokens):
+            height = text_obj.font_height + text_obj.leading
+            if i == 0:
+                height -= text_obj.leading
+                height += text_obj.y_padding_in_pixels
+
             text_tspan_objs.append(
-                svg.TSpan(text=raw_text, x=start_pt[0], dy=text_obj.font_height)
+                svg.TSpan(
+                    text=raw_text,
+                    x=start_pt[0],
+                    dy=height,
+                    dx=text_obj.x_padding_in_pixels,
+                )
             )
         x_center, y_center = self._to_pixel_coords(text_obj.get_center())[:2]
         text_svg_obj = svg.Text(
             elements=text_tspan_objs,
             x=start_pt[0],
             y=start_pt[1],
-            class_=["styleClass"],
+            class_=[f"styleClass{id}"],
             # svg transform is clockwise, so negate it
             transform=[
                 svg.Rotate(a=-text_obj.heading * RADIANS, x=x_center, y=y_center)

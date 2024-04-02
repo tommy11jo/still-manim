@@ -271,7 +271,7 @@ def textTest():
     canvas.snapshot(preview=True)
 
 
-textTest()
+# textTest()
 
 
 def textBbox():
@@ -311,7 +311,7 @@ def scaleGroup1():
     # s1 = Square().shift(UR * 2)
     s1 = Text("hi there", border=True).shift(UR * 2)
     line = Line(s, s1)
-    g = Group(s, s1, line)
+    g = VGroup(s, s1, line)
     g.scale(0.5)
     canvas.add(g)
     canvas.snapshot(preview=True)
@@ -323,7 +323,7 @@ def scaleGroup1():
 # test scale group and test border rotation
 # TODO: having to specify about_point=None is not intuitive for "scaling in place"
 def scaleGroup():
-    g = Group()
+    g = VGroup()
     t = (
         Text("hi there", border=True)
         .shift(UR * 2)
@@ -344,3 +344,79 @@ def scaleGroup():
 
 
 # scaleGroup()
+
+
+def textCenter():
+    # t = Text("some text a few words", border=True)
+    t = Text(
+        "some text a few good words that print WRAP to the great LINE",
+        max_width=2.0,
+        border=True,
+    )
+    canvas.add(t)
+    d = Dot(t.get_center())
+    canvas.add(d)
+    canvas.snapshot(preview=True)
+
+
+# textCenter()
+
+
+def lineBetween():
+    s = Square().shift(LEFT)
+    c = Circle().shift(UR * 2)
+    line = Line(s, c)
+    canvas.add(s, c, line)
+    d1 = Dot(line.get_start_point())
+    d2 = Dot(line.get_end_point())
+    canvas.add(d1, d2)
+    canvas.snapshot(preview=True)
+
+
+# lineBetween()
+
+
+def lineScalar():
+    l1 = Line()
+    l2 = Line().shift(DOWN).scale(2)
+    canvas.add(l1, l2)
+    canvas.snapshot(preview=True)
+
+
+# lineScalar()
+
+
+def tipScalar():
+    a = Arrow(stroke_width=2.0).scale(2)
+    canvas.add(a)
+    a = Arrow(tip_scalar=0.5).shift(DOWN)
+
+    canvas.add(a)
+    canvas.snapshot(preview=True)
+
+
+# tipScalar()
+def labeledDot():
+    l1 = LabeledDot(label=Text("hi", fill_color=BLUE))
+    canvas.add(l1)
+    canvas.snapshot(preview=True)
+
+
+# labeledDot()
+
+
+def nestedGroup():
+    t = Text("dog")
+    t1 = Text("cat").shift(RIGHT)
+    t2 = Text("mouse").move_to(t1, UP)
+    g = Group(t)
+    # g.add(t1)
+    g1 = Group(t1)
+    g1.add(t2)
+    g.add(g1)
+
+    canvas.add(g)
+    canvas.snapshot(preview=True)
+
+
+nestedGroup()

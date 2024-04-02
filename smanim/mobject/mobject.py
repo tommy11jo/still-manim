@@ -7,6 +7,7 @@ from typing_extensions import Self
 import numpy as np
 
 from smanim.constants import (
+    CENTER,
     DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     DL,
     DOWN,
@@ -29,6 +30,8 @@ from smanim.typing import (
 )
 from smanim.utils.logger import log
 from smanim.utils.space_ops import line_intersect
+
+__all__ = ["Mobject", "Group"]
 
 
 class Mobject(ABC):
@@ -53,7 +56,7 @@ class Mobject(ABC):
         self.bounding_points = bounding_points
 
     # Grouping
-    def add(self, *mobjects: Mobject, insert_before=False):
+    def add(self, *mobjects: Mobject, insert_before=False) -> Self:
         new_mobjects = []
         for mobject in mobjects:
             if mobject is self:
@@ -66,8 +69,9 @@ class Mobject(ABC):
             self.submobjects.extend(new_mobjects)
         else:
             self.submobjects = new_mobjects + self.submobjects
+        return self
 
-    def remove(self, *mobjects):
+    def remove(self, *mobjects) -> Self:
         for mobject in mobjects:
             if mobject is self:
                 log.error("Cannot remove mobject from itself")
@@ -75,6 +79,7 @@ class Mobject(ABC):
                 log.warning(f"Mobject not found: {mobject}")
             else:
                 self.submobjects.remove(mobject)
+        return self
 
     def get_family(self):
         family = [self]
@@ -92,7 +97,7 @@ class Mobject(ABC):
         direction = direction.astype(int)
 
         all_points = np.concatenate(
-            np.array([mob.bounding_points for mob in self.get_family()])
+            [mob.bounding_points for mob in self.get_family()], axis=0
         )
         x_min, y_min, _ = np.min(all_points, axis=0)
         x_max, y_max, _ = np.max(all_points, axis=0)
@@ -197,11 +202,11 @@ class Mobject(ABC):
         return self
 
     def move_to(
-        self, point_or_mobject: Point3D | Mobject, aligned_edge: Vector3 = ORIGIN
+        self, point_or_mobject: Point3D | Mobject, aligned_edge: Vector3 = CENTER
     ) -> Self:
         if isinstance(point_or_mobject, Mobject):
             # Use of aligned edge deviates from original manim by placing at center, not `aligned_edge` point
-            dest_pt = point_or_mobject.get_critical_point(ORIGIN)
+            dest_pt = point_or_mobject.get_critical_point(CENTER)
         else:
             dest_pt = point_or_mobject
         cur_pt = self.get_critical_point(aligned_edge)
@@ -260,11 +265,7 @@ class Group(Mobject):
         return self.submobjects[index]
 
     def add(self, *mobjects: Mobject) -> Self:
-        to_add = []
-        for mobject in mobjects:
-            to_add.append(mobject)
-        super().add(*to_add)
-        return self
+        return super().add(*mobjects)
 
     def rotate(
         self,

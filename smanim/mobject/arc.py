@@ -1,8 +1,12 @@
 import numpy as np
 from smanim.constants import DEFAULT_DOT_RADIUS, ORIGIN, RIGHT, TAU, UP
+from smanim.mobject.text_mobject import Text
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import Point3D
-from smanim.utils.color import RED, WHITE, ManimColor
+from smanim.utils.color import RED, WHITE, ManimColor, has_default_colors_set
+
+
+__all__ = ["Arc", "Circle", "Dot", "LabeledDot"]
 
 
 class Arc(VMobject):
@@ -11,7 +15,10 @@ class Arc(VMobject):
         radius: float = 1.0,
         start_angle: float = 0.0,
         angle: float = TAU / 4,
-        num_components: float = 9,
+        # Weakness: Setting num_components to a high value (instead of like 9) creates many more curves and a more accurate bounding polygon
+        # This is necessary for realistic-looking intersection detection
+        # FUTURE: Potentially do exact intersections in the future?
+        num_components: float = 30,
         arc_center: Point3D = ORIGIN,
         **kwargs,
     ):
@@ -56,6 +63,10 @@ class Arc(VMobject):
         self.scale(self.radius, about_point=ORIGIN)
         self.shift(self.arc_center)
 
+    def __repr__(self):
+        class_name = self.__class__.__qualname__
+        return f"{class_name}(radius={self.radius}, center={self.arc_center}, angle={self.angle})"
+
 
 class ArcBetweenPoints(Arc):
     def __init__(
@@ -93,11 +104,12 @@ class Circle(Arc):
         default_stroke_color: ManimColor = RED,
         **kwargs,
     ) -> None:
+        if not has_default_colors_set():
+            kwargs["default_stroke_color"] = default_stroke_color
         super().__init__(
             radius=radius,
             start_angle=0,
             angle=TAU,
-            default_stroke_color=default_stroke_color,
             **kwargs,
         )
 
@@ -116,3 +128,20 @@ class Dot(Circle):
             default_fill_color=default_fill_color,
             **kwargs,
         )
+
+
+class LabeledDot(Dot):
+    """A `Dot` containing a label at its center"""
+
+    def __init__(
+        self,
+        label: Text,
+        radius: float | None = None,
+        **kwargs,
+    ):
+        if radius is None:
+            radius = 0.1 + max(label.width, label.height) / 2
+        self.label = label
+        super().__init__(radius=radius, **kwargs)
+        label.move_to(self.get_center())
+        self.add(label)

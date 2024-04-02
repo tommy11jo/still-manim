@@ -1,11 +1,13 @@
 from typing import List
 import numpy as np
 from smanim.utils.bezier import interpolate
-from smanim.utils.color import RED, ManimColor
+from smanim.utils.color import RED, ManimColor, has_default_colors_set
 from smanim.constants import DL, DR, UL, UR
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import ManimFloat, Point3D, Point3D_Array
 from smanim.utils.space_ops import regular_vertices
+
+__all__ = ["Polygon", "Square", "RegularPolygon", "Rectangle"]
 
 
 class Polygon(VMobject):
@@ -13,7 +15,9 @@ class Polygon(VMobject):
         self, vertices: Point3D_Array, default_stroke_color: ManimColor = RED, **kwargs
     ):
         self.vertices = vertices
-        super().__init__(default_stroke_color=default_stroke_color, **kwargs)
+        if not has_default_colors_set(**kwargs):
+            kwargs["default_stroke_color"] = default_stroke_color
+        super().__init__(**kwargs)
 
     def generate_points(self) -> None:
         """Override to generate points by interpolating between each pair of vertices"""

@@ -11,3 +11,4 @@ from smanim.mobject.line import *
 from smanim.mobject.arc import *
 from smanim.mobject.brace import *
 from smanim.mobject.text_mobject import *
+from smanim.mobject.graph import *
