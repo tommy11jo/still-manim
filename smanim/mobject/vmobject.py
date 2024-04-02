@@ -198,6 +198,10 @@ class VMobject(TransformableMobject, ABC):
             mob.shift(vector)
         return self
 
+    def scale_in_place(self, factor: float):
+        # helper function to scale a vmobject in place (about the vmobject's center)
+        return self.scale(factor, about_point=None)
+
 
 class VGroup(VMobject):
     def __init__(self, *vmobjects, **kwargs):
@@ -206,7 +210,7 @@ class VGroup(VMobject):
 
     def generate_points(self) -> None:  # override
         # VGroup is a shell for holding VMobjects so adds no points itself
-        self.points = np.array([])
+        self.points = np.empty((0, 3))
 
     def __repr__(self) -> str:
         return f'{self.__class__.__qualname__}({", ".join(str(mob) for mob in self.submobjects)})'

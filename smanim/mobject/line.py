@@ -19,6 +19,7 @@ class Line(VMobject):
         start: Point3D | Mobject = LEFT,
         end: Point3D | Mobject = RIGHT,
         buff=0.0,
+        # lines cannot have a true fill_color so both color vars affect svg stroke color
         fill_color: ManimColor = None,
         stroke_color: ManimColor = None,
         **kwargs,
@@ -32,8 +33,9 @@ class Line(VMobject):
         self.end_pt = end_pt - buff * dir
         self.buff = buff
         # set is_closed to False to include the end anchor point in "bounding polygon"
+
         super().__init__(
-            is_closed=False, default_stroke_color=stroke_color or fill_color, **kwargs
+            is_closed=False, stroke_color=stroke_color or fill_color, **kwargs
         )
 
     def __repr__(self):

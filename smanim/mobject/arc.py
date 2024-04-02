@@ -1,12 +1,10 @@
 import numpy as np
-from smanim.constants import DEFAULT_DOT_RADIUS, ORIGIN, RIGHT, TAU, UP
-from smanim.mobject.text_mobject import Text
+from smanim.constants import ORIGIN, RIGHT, TAU, UP
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import Point3D
-from smanim.utils.color import RED, WHITE, ManimColor, has_default_colors_set
 
 
-__all__ = ["Arc", "Circle", "Dot", "LabeledDot"]
+__all__ = ["Arc", "ArcBetweenPoints"]
 
 
 class Arc(VMobject):
@@ -60,7 +58,7 @@ class Arc(VMobject):
         )
         self.points = new_points
 
-        self.scale(self.radius, about_point=ORIGIN)
+        self.scale(self.radius)
         self.shift(self.arc_center)
 
     def __repr__(self):
@@ -73,75 +71,35 @@ class ArcBetweenPoints(Arc):
         self,
         start: Point3D,
         end: Point3D,
-        # angle: float = TAU / 4, # Not sure when this would be useful?
+        angle: (
+            float | None
+        ) = None,  # in radians, note: use `angle` instead of `radius` when specified to help define the arc
         radius: float = 1.0,
         **kwargs,
     ):
         # The arc will be formed counter-clockwise from start to end along the circle
-        self.start = start
-        self.end = end
-        self.radius = radius
+        self.start = np.array(start)
+        self.end = np.array(end)
+        chord_len = np.linalg.norm(self.end - self.start)
+        chord_unit_dir = (self.end - self.start) / chord_len
+        if not angle:
+            angle = 2 * np.arcsin(chord_len / (2 * radius))
+        midpoint = (self.start + self.end) / 2
+        chord_to_center_len = (chord_len / 2) / np.tan(angle / 2)
+        # perp to chord_unit_dir
+        to_center_unit_dir = np.array([-chord_unit_dir[1], chord_unit_dir[0], 0])
+        arc_center = midpoint + to_center_unit_dir * chord_to_center_len
 
-        start_x, start_y = start[:2]
-        start_angle = np.arctan2(start_y, start_x)
-        start_angle = start_angle if start_angle >= 0 else start_angle + TAU
-        end_x, end_y = end[:2]
-        end_angle = np.arctan2(end_y, end_x)
-        end_angle = end_angle if end_angle >= 0 else end_angle + TAU
+        radius = chord_len / (2 * np.sin(angle / 2))
 
+        center_to_start = self.start - arc_center
+        start_angle = np.arctan2(center_to_start[1], center_to_start[0])
+        if start_angle < 0:
+            start_angle += TAU
         super().__init__(
             radius=radius,
             start_angle=start_angle,
-            angle=end_angle - start_angle,
+            angle=angle,
+            arc_center=arc_center,
             **kwargs,
         )
-
-
-class Circle(Arc):
-    def __init__(
-        self,
-        radius: float = 1.0,
-        default_stroke_color: ManimColor = RED,
-        **kwargs,
-    ) -> None:
-        if not has_default_colors_set():
-            kwargs["default_stroke_color"] = default_stroke_color
-        super().__init__(
-            radius=radius,
-            start_angle=0,
-            angle=TAU,
-            **kwargs,
-        )
-
-
-class Dot(Circle):
-    def __init__(
-        self,
-        point: Point3D = ORIGIN,
-        radius: float = DEFAULT_DOT_RADIUS,
-        default_fill_color: ManimColor = WHITE,
-        **kwargs,
-    ) -> None:
-        super().__init__(
-            arc_center=point,
-            radius=radius,
-            default_fill_color=default_fill_color,
-            **kwargs,
-        )
-
-
-class LabeledDot(Dot):
-    """A `Dot` containing a label at its center"""
-
-    def __init__(
-        self,
-        label: Text,
-        radius: float | None = None,
-        **kwargs,
-    ):
-        if radius is None:
-            radius = 0.1 + max(label.width, label.height) / 2
-        self.label = label
-        super().__init__(radius=radius, **kwargs)
-        label.move_to(self.get_center())
-        self.add(label)

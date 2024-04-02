@@ -4,7 +4,7 @@ from smanim.mobject.line import Line
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.svg_mobject import VMobjectFromSVGPath
 from smanim.typing import Point3D
-from smanim.utils.color import WHITE, ManimColor
+from smanim.utils.color import WHITE, ManimColor, has_default_colors_set
 
 import svgelements as se
 
@@ -38,6 +38,8 @@ class Brace(VMobjectFromSVGPath):
         default_fill_color: ManimColor = WHITE,
         **kwargs,
     ):
+        if not has_default_colors_set():
+            kwargs["default_fill_color"] = default_fill_color
 
         default_min_width = 0.90552
         self.buff = buff
@@ -67,7 +69,7 @@ class Brace(VMobjectFromSVGPath):
             -linear_section_length,
         )
         svg_path = se.Path(d=svg_path_str)
-        super().__init__(svg_path, default_fill_color=default_fill_color, **kwargs)
+        super().__init__(svg_path, **kwargs)
         self.stretch_to_fit_width(brace_width)
         self.rotate(to_rotate, about_point=self.get_center())
         self.next_to(mobject, direction, buff=buff)

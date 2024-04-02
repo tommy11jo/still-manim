@@ -1,5 +1,9 @@
 from smanim import *
 
+config = Config()
+# must be named canvas to "override" global canvas name
+canvas = Canvas(config)
+
 
 def squareTest():
     s = Square()
@@ -387,7 +391,7 @@ def lineScalar():
 
 
 def tipScalar():
-    a = Arrow(stroke_width=2.0).scale(2)
+    a = Arrow(stroke_width=2.0, stroke_color=GREEN).scale(2)
     canvas.add(a)
     a = Arrow(tip_scalar=0.5).shift(DOWN)
 
@@ -396,6 +400,8 @@ def tipScalar():
 
 
 # tipScalar()
+
+
 def labeledDot():
     l1 = LabeledDot(label=Text("hi", fill_color=BLUE))
     canvas.add(l1)
@@ -419,4 +425,67 @@ def nestedGroup():
     canvas.snapshot(preview=True)
 
 
-nestedGroup()
+# nestedGroup()
+
+
+def roundedRect():
+    r = Rectangle(corner_radius=0.5)
+    canvas.add(r)
+    canvas.snapshot(preview=True)
+
+
+# roundedRect()
+
+
+def arcBetween():
+    a = ArcBetweenPoints([-0.9, 0.5, 0], [0, -1, 0])
+    canvas.add(a)
+    canvas.snapshot(preview=True)
+
+
+# arcBetween()
+
+
+def arcNotCentered():
+    s = Square().shift(LEFT + 2 * UP)
+    a = ArcBetweenPoints(s.get_corner(DL), s.get_corner(DR))
+    canvas.add(s, a)
+    canvas.snapshot(preview=True)
+
+
+# arcNotCentered()
+
+
+def surroundShapes():
+    c = Circle()
+    s = SurroundingRectangle(c)
+    canvas.add(c, s)
+
+    t = Text("hey").shift(UR)
+    s2 = SurroundingRectangle(t, corner_radius=0.1)
+    canvas.add(t, s2)
+    canvas.snapshot(preview=True)
+
+
+# surroundShapes()
+
+
+def crossSquare():
+    s = Square()
+    c = Cross(s)
+
+    canvas.add(s, c)
+    canvas.snapshot(preview=True)
+
+
+# crossSquare()
+
+
+def crossText():
+    t = Text("2 > 7")
+    c = Cross(t, stroke_opacity=0.6, scale_factor=0.4)
+    canvas.add(t, c)
+    canvas.snapshot(preview=True)
+
+
+crossText()

@@ -2,6 +2,8 @@ from pathlib import Path
 from smanim.constants import ORIGIN
 from smanim.utils.color import BLACK, ManimColor
 
+__all__ = ["Config", "CONFIG"]
+
 
 class Config:
     def __init__(
