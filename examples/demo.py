@@ -1,4 +1,5 @@
 from pathlib import Path
+import time
 from smanim import *
 
 config = Config(save_file_dir=Path(__file__).parent / "media")
@@ -276,7 +277,6 @@ def braceTest():
 def textTest():
     s = Square()
     canvas.add(s)
-    # TODO: & symbol does not work
     t = Text(
         "hi there the terminal is beautiful and DARK like the night SKY and now let's see if the heights are correct during text wrap and no i don't think it is working and it's not just the lines with CAPS that are the problem. Ok corrected.",
         max_width=2.0,
@@ -296,6 +296,13 @@ def textTest():
 
 
 # textTest()
+def textWithAmpersand():
+    t = Text("&&hi&&")
+    canvas.add(t)
+    canvas.snapshot(preview=True)
+
+
+# textWithAmpersand()
 
 
 def textBbox():
@@ -345,15 +352,9 @@ def scaleGroup1():
 
 
 # test scale group and test border rotation
-# TODO: having to specify about_point=None is not intuitive for "scaling in place"
 def scaleGroup():
     g = VGroup()
-    t = (
-        Text("hi there", border=True)
-        .shift(UR * 2)
-        .rotate(-PI / 2)
-        .scale(2, about_point=None)
-    )
+    t = Text("hi there", border=True).shift(UR * 2).rotate(-PI / 2).scale(2)
     s = Square().shift(DL)
     g.add(s)
     g.add(t)
@@ -655,17 +656,27 @@ def reactiveSurroundingRect():
     canvas.add(t1)
     t1.rotate(PI / 6)
     r = Rectangle(width=3.0).shift(LEFT * 4)
+    # takes 0.05 seconds for `wrap_text` originally
     t2 = Text(
-        "Text width automatically set to rect width and should wrap accordingly",
-    ).scale(2)
+        "Text width automatically set to rect width and should wrap accordingly. Text width automatically set to rect width and should wrap accordingly",
+    ).scale(1)
     t2.add_surrounding_rect(fill_color=RED, fill_opacity=0.3, corner_radius=0.2)
+    # takes 0.08 seconds for `wrap_text` during stretching
     t2.stretch_to_fit_width(r.width)
     t2.next_to(r, DOWN, buff=0.1)
     canvas.add(r, t2)
     canvas.snapshot(preview=True)
 
 
+start_time = time.time()
+# this
 reactiveSurroundingRect()
+end_time = time.time()
+# print("total time", end_time - start_time)
+# locally this takes 0.09 seconds, will it be similar in browser env?
+# https://pyodide.org/en/stable/project/roadmap.html
+# pyodide is typically 3-5x slower so between 0.3 to 0.5 seconds + js overhead to load a basic diagram with text right now
+# p5.js load time is also like 0.5 seconds for basic things
 
 
 def surroundingRectOnCircle():

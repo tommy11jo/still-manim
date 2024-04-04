@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from smanim.config import CONFIG
-from smanim.mobject.circle import Dot, LabeledDot
-from smanim.mobject.text_mobject import Text
+from smanim.mobject.geometry.circle import Dot, LabeledDot
+from smanim.mobject.text.text_mobject import Text
 from smanim.utils.color import BLACK, WHITE
 
 __all__ = ["Graph", "WeightedGraph"]
@@ -15,7 +15,7 @@ from typing import Dict, Hashable, Tuple
 import networkx as nx
 import numpy as np
 
-from smanim.mobject.line import Line
+from smanim.mobject.geometry.line import Line
 from smanim.mobject.mobject import Group, Mobject
 
 

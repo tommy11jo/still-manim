@@ -9,9 +9,9 @@ import numpy as np
 from smanim.config import CONFIG, Config
 from smanim.constants import RADIANS, Z_INDEX_MIN
 from smanim.mobject.mobject import Mobject
-from smanim.mobject.polygon import Rectangle
+from smanim.mobject.geometry.polygon import Rectangle
 from smanim.mobject.vmobject import VMobject
-from smanim.mobject.text_mobject import Text
+from smanim.mobject.text.text_mobject import Text
 from smanim.typing import InternalPoint3D_Array, Point3D
 from smanim.utils.color import BLACK
 from smanim.utils.logger import log

@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import List, Tuple
 from PIL import ImageFont
 
-
 # in browser, can use foreign objects
 # https://stackoverflow.com/questions/4991171/auto-line-wrapping-in-svg-text
 # FUTURE: This will probably be its own text class, WText() "Web Text"
@@ -10,8 +9,9 @@ from PIL import ImageFont
 # https://stackoverflow.com/questions/26276125/how-to-manipulate-svg-foreign-object-html-text-wrapping-and-positioning
 
 
-# TODO: Use fonttools to get raw glyph width and height
+# FUTURE: Consider using fonttools to get raw glyph width and height
 # https://gist.github.com/nitely/62b281dcfd15490e1ed21296d6be3113
+# Actually this takes a lot more time, up to 0.18 seconds vs 0.05 seconds. The time is from loading the font. Unless if I load the font ahead of time, this won't work.
 def wrap_text(
     text: str,
     font_path: Path,
@@ -21,7 +21,7 @@ def wrap_text(
     """
     Returns a list where each element is the contents of a new line and a corresponding list containing (width, height) dimensions per line
     """
-    # Getting the bbox takes ~0.0006 seconds locally (166 ops per 0.1 seconds)
+    # this entire function takes 0.006 seconds on 22 words, 4 lines wrapping
     words = text.split(" ")
     text_tokens = []
     dims = []  # tracks dimensions of each text token
@@ -32,6 +32,7 @@ def wrap_text(
         raise ValueError("Approx num chars must be > 0")
 
     def get_dim_lens(text):
+        # Getting the bbox takes ~0.0006 seconds locally (166 ops per 0.1 seconds)
         left, top, right, bottom = font.getbbox(text)
         width = right - left
         height = bottom - top

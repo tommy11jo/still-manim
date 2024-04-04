@@ -1,6 +1,6 @@
 import numpy as np
 from smanim.constants import DEFAULT_ARROW_TIP_LENGTH
-from smanim.mobject.polygon import Triangle
+from smanim.mobject.geometry.polygon import Triangle
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import Point3D, Vector3
 from smanim.utils.color import WHITE, ManimColor

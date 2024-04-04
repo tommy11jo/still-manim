@@ -3,8 +3,8 @@ from typing_extensions import Self
 import numpy as np
 from smanim.constants import LEFT, ORIGIN, PI, RIGHT, SMALL_BUFF
 from smanim.mobject.mobject import Mobject
-from smanim.mobject.text_mobject import Text
-from smanim.mobject.tips import ArrowTip, ArrowTriangleFilledTip
+from smanim.mobject.text.text_mobject import Text
+from smanim.mobject.geometry.tips import ArrowTip, ArrowTriangleFilledTip
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import ManimFloat, Point3D
 from smanim.utils.color import ManimColor

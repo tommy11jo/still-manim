@@ -1,6 +1,6 @@
 from smanim.constants import DEFAULT_DOT_RADIUS, ORIGIN, TAU
-from smanim.mobject.arc import Arc
-from smanim.mobject.text_mobject import Text
+from smanim.mobject.geometry.arc import Arc
+from smanim.mobject.text.text_mobject import Text
 from smanim.typing import Point3D
 from smanim.utils.color import RED, WHITE, ManimColor, has_default_colors_set
 

@@ -1,8 +1,8 @@
+import html
 from pathlib import Path
 from typing_extensions import Literal, Self
 import numpy as np
 from smanim.constants import (
-    ORIGIN,
     OUT,
     PI,
     TEXT_X_PADDING,
@@ -61,6 +61,7 @@ class Text(TransformableMobject):
             raise ValueError("Text cannot be empty")
         super().__init__(z_index=z_index, **kwargs)
         # FUTURE: will need to sanitize if these diagrams can be shared
+        text = html.escape(text)
         self.raw_text = text
         self._heading = start_angle
 
@@ -123,6 +124,7 @@ class Text(TransformableMobject):
             font_size=font_size,
             max_width_in_pixels=max_width_in_pixels,
         )
+
         self.font_widths = np.array(
             [pair[0] + self.x_padding_in_pixels * 2 for pair in dims]
         )
@@ -186,7 +188,8 @@ class Text(TransformableMobject):
         return self
 
     # scales both text and bbox, assumes font size is exactly proportional
-    def scale(self, factor: float, about_point: Point3D | None = ORIGIN) -> Self:
+    # by default, scales using center point as `about_point`
+    def scale(self, factor: float, about_point: Point3D | None = None) -> Self:
         bounding_points = super().scale_points(
             self.bounding_points, factor, about_point
         )

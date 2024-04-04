@@ -260,7 +260,7 @@ class Mobject(ABC):
     # Frequently used patterns
     def add_surrounding_rect(self, **rect_config):
         # to avoid circular import
-        from smanim.mobject.shape_matchers import SurroundingRectangle
+        from smanim.mobject.geometry.shape_matchers import SurroundingRectangle
 
         rect = SurroundingRectangle(self, **rect_config)
         self.add(rect)

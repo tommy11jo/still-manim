@@ -2,9 +2,9 @@ from typing_extensions import Self
 
 import numpy as np
 from smanim.constants import DOWN, LEFT, ORIGIN, OUT, PI, RIGHT, SMALL_BUFF, UP
-from smanim.mobject.line import Line
+from smanim.mobject.geometry.line import Line
 from smanim.mobject.mobject import Mobject
-from smanim.mobject.polygon import Rectangle
+from smanim.mobject.geometry.polygon import Rectangle
 from smanim.mobject.vmobject import VGroup
 from smanim.typing import Point3D, Vector3
 from smanim.utils.color import RED, YELLOW, ManimColor

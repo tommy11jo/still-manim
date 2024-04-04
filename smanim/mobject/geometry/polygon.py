@@ -1,7 +1,7 @@
 from typing import List
 from typing_extensions import Self
 import numpy as np
-from smanim.mobject.arc import ArcBetweenPoints
+from smanim.mobject.geometry.arc import ArcBetweenPoints
 from smanim.utils.bezier import interpolate
 from smanim.utils.color import RED, ManimColor, has_default_colors_set
 from smanim.constants import DL, DR, ORIGIN, OUT, PI, UL, UR
