@@ -24,7 +24,6 @@ from smanim.constants import (
 )
 from smanim.typing import (
     InternalPoint3D_Array,
-    ManimFloat,
     Point2D,
     Point3D,
     Point3D_Array,
@@ -46,7 +45,7 @@ class Mobject(ABC):
         self, bounding_points: InternalPoint3D_Array | None = None, z_index: int = 0
     ):
         if bounding_points is None:
-            bounding_points = np.array([], dtype=ManimFloat)
+            bounding_points = np.empty((0, 3))
         self._bounding_points = bounding_points
         self.z_index = z_index
         self.submobjects: List[Mobject] = []
@@ -239,6 +238,10 @@ class Mobject(ABC):
             self.shift(np.array([dest[0] - cur[0], 0, 0]))
         return self
 
+    def center(self) -> Self:
+        self.shift(-self.get_center())
+        return self
+
     # If I find a submobject that isn't supposed to do a transformation, then I can delete these "defensive errors"
     # Core transformations must be overridden by all subclasses
     @abstractmethod
@@ -279,6 +282,9 @@ class Group(Mobject):
 
     def __getitem__(self, index: int) -> Mobject:
         return self.submobjects[index]
+
+    def __len__(self):
+        return len(self.submobjects)
 
     def add(self, *mobjects: Mobject) -> Self:
         return super().add(*mobjects)

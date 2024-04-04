@@ -62,7 +62,7 @@ class SurroundingRectangle(Rectangle):
         self,
         angle: float = PI / 4,
         axis: Vector3 = OUT,
-        about_point: Point3D | None = None,
+        about_point: Point3D | None = ORIGIN,
     ) -> Self:
         self._update_points()
 

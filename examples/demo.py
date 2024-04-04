@@ -1,5 +1,4 @@
 from pathlib import Path
-import time
 from smanim import *
 
 config = Config(save_file_dir=Path(__file__).parent / "media")
@@ -668,10 +667,9 @@ def reactiveSurroundingRect():
     canvas.snapshot(preview=True)
 
 
-start_time = time.time()
-# this
-reactiveSurroundingRect()
-end_time = time.time()
+# start_time = time.time()
+# reactiveSurroundingRect()
+# end_time = time.time()
 # print("total time", end_time - start_time)
 # locally this takes 0.09 seconds, will it be similar in browser env?
 # https://pyodide.org/en/stable/project/roadmap.html
@@ -707,3 +705,24 @@ def gracefulCornerRadiusError():
 
 
 # gracefulCornerRadiusError()
+
+
+def arrowNextTo():
+    s = Arrow()
+    a = Arrow().rotate(PI)
+    a.next_to(s)
+
+    canvas.add(s, a)
+    canvas.snapshot(preview=True)
+
+
+# arrowNextTo()
+
+
+def doubleArrow():
+    a = Arrow(at_start=True, at_end=True)
+    canvas.add(a)
+    canvas.snapshot(preview=True)
+
+
+doubleArrow()

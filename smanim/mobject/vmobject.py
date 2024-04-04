@@ -176,7 +176,7 @@ class VMobject(TransformableMobject, ABC):
         self,
         angle: float = PI / 4,
         axis: Vector3 = OUT,
-        about_point: Point3D | None = None,
+        about_point: Point3D | None = ORIGIN,
     ) -> Self:
         self.points = super().rotate_points(self.points, angle, axis, about_point)
         for mob in self.submobjects:

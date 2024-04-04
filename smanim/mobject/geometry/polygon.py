@@ -128,7 +128,7 @@ class Polygon(VMobject):
         self,
         angle: float = PI / 4,
         axis: Vector3 = OUT,
-        about_point: Point3D | None = None,
+        about_point: Point3D | None = ORIGIN,
     ) -> Self:
         self.vertices = super().rotate_points(self.vertices, angle, axis, about_point)
         self.points = super().rotate_points(self.points, angle, axis, about_point)

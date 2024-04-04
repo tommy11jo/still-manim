@@ -172,6 +172,7 @@ class Text(TransformableMobject):
         class_name = self.__class__.__qualname__
         return f"{class_name}(value={self.raw_text})"
 
+    # TODO: Handle rotating with about_point
     def rotate(
         self,
         angle: float = PI / 4,
@@ -189,6 +190,7 @@ class Text(TransformableMobject):
 
     # scales both text and bbox, assumes font size is exactly proportional
     # by default, scales using center point as `about_point`
+    # TODO: consider effects of scaling about origin as default, or maybe text just does things differently than the rest
     def scale(self, factor: float, about_point: Point3D | None = None) -> Self:
         bounding_points = super().scale_points(
             self.bounding_points, factor, about_point

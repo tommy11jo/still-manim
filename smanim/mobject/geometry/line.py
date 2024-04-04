@@ -56,7 +56,7 @@ class Line(VMobject):
         self.points = self._points_from_start_and_end()
 
     def _points_from_start_and_end(self):
-        start, end = self._end_pt, self._start_pt
+        start, end = self._start_pt, self._end_pt
         dir = end - start
         return np.array(
             [
@@ -75,6 +75,10 @@ class Line(VMobject):
 
     def get_direction(self):
         return (self.end - self.start) / np.linalg.norm(self.end - self.start)
+
+    def get_angle(self):
+        dir = self.get_direction()
+        return angle_from_vector(dir)
 
     def get_length(self):
         return np.linalg.norm(self.end - self.start)
@@ -140,7 +144,60 @@ class Line(VMobject):
         return super().scale(factor, about_point)
 
 
-class Arrow(Line):
+class TipableVMobject(Line):
+    def create_tip(
+        self,
+        tip_shape: ArrowTip,
+        tip_length: float,
+        tip_width: float,
+        at_start: bool = False,
+        **kwargs,
+    ) -> ArrowTip:
+        # Side effect: reduces the line length to add the tip, without changing the anchor
+        line_start = self.start
+        line_end = self.end  # cannot use self.end until tip is added
+        line_length = self.get_length()
+        line_dir = (line_end - line_start) / line_length
+        self.scale((line_length - tip_length) / line_length, about_point=line_start)
+        if at_start:
+            # make room at start anchor instead of end anchor
+            self.shift(line_dir * tip_length)
+
+        tip: ArrowTip = tip_shape(
+            length=tip_length,
+            width=tip_width,
+            # use line color as default tip color
+            default_fill_color=self.stroke_color,
+            **kwargs,
+        )
+        # x, y = line_dir[:2]
+        # tip.rotate(np.arctan2(y, x) - PI / 2)
+        rotate_scalar = 1 if at_start else -1
+        tip.rotate(self.get_angle() + rotate_scalar * PI / 2)
+
+        anchor = self.start if at_start else self.end
+        tip.shift(anchor - tip.base)
+
+        return tip
+
+    # unused, but works fine
+    # def add_tip(
+    #     self,
+    #     tip: ArrowTip,
+    #     at_start: bool = False,
+    # ):
+    #     # Assumes tip is constructed but not positioned
+    #     # Unlike `create_tip`, `add_tip` does not change line length
+    #     rotate_scalar = 1 if at_start else -1
+    #     tip.rotate(self.get_angle() + rotate_scalar * PI / 2)
+
+    #     anchor = self.start if at_start else self.end
+    #     tip.shift(anchor - tip.base)
+    #     self.add(tip)
+
+
+# TODO: Refactor this to take in an instance maybe?
+class Arrow(TipableVMobject):
     def __init__(
         self,
         # you can control line thickness with `stroke_width`
@@ -150,48 +207,41 @@ class Arrow(Line):
         tip_width: float = 0.2,
         tip_scalar: float = 1.0,
         tip_shape=ArrowTriangleFilledTip,
+        at_start: bool = False,
+        at_end: bool = True,
         tip_config: dict = {},
         **kwargs,
     ):
+        self.start_tip = None
+        self.end_tip = None
         super().__init__(*args, buff=buff, **kwargs)
-        self.tip: ArrowTip = self.create_tip(
-            tip_length=tip_length * tip_scalar,
-            tip_width=tip_width * tip_scalar,
-            tip_shape=tip_shape,
-            **tip_config,
-        )
-        self.add(self.tip)
-
-    def create_tip(
-        self,
-        tip_shape: ArrowTip,
-        tip_length: float,
-        tip_width: float,
-        at_start: bool = False,
-        **kwargs,
-    ) -> ArrowTip:
-        # reduce the line length to add the tip, without changing the anchor
-        line_start = self.points[0]
-        line_end = self.points[-1]  # cannot use self.end until tip is added
-        line_length = np.linalg.norm(line_end - line_start)
-        line_dir = (line_end - line_start) / line_length
-        self.scale((line_length - tip_length) / line_length, about_point=line_start)
+        if at_end:
+            self.end_tip = self.create_tip(
+                tip_length=tip_length * tip_scalar,
+                tip_width=tip_width * tip_scalar,
+                tip_shape=tip_shape,
+                at_start=False,
+                **tip_config,
+            )
+            self.add(self.end_tip)
         if at_start:
-            # make room at start anchor instead of end anchor
-            self.shift(line_dir * tip_length)
+            self.start_tip = self.end_tip = self.create_tip(
+                tip_length=tip_length * tip_scalar,
+                tip_width=tip_width * tip_scalar,
+                tip_shape=tip_shape,
+                at_start=True,
+                **tip_config,
+            )
+            self.add(self.start_tip)
 
-        kwargs["default_fill_color"] = (
-            self.stroke_color
-        )  # use line color as default arrow color
-        tip: ArrowTip = tip_shape(length=tip_length, width=tip_width, **kwargs)
-        x, y = line_dir[:2]
-        tip.rotate(np.arctan2(y, x) - PI / 2)
-
-        anchor = self.points[0] if at_start else self.points[-1]
-        tip.shift(anchor - tip.base)
-
-        return tip
+    @property
+    def start(self) -> Point3D:  # override
+        if not self.start_tip:
+            return super().start
+        return self.start_tip.tip_point
 
     @property
     def end(self) -> Point3D:  # override
-        return self.tip.tip_point
+        if not self.end_tip:
+            return super().end
+        return self.end_tip.tip_point
