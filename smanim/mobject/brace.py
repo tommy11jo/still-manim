@@ -89,5 +89,5 @@ class BraceBetween(Brace):
         **kwargs,
     ):
         line = Line(start, end)
-        self.start_pt, self.end_pt = line.start_pt, line.end_pt
+        self.start_pt, self.end_pt = line.start, line.end
         super().__init__(line, direction=direction, **kwargs)

@@ -10,6 +10,8 @@ from PIL import ImageFont
 # https://stackoverflow.com/questions/26276125/how-to-manipulate-svg-foreign-object-html-text-wrapping-and-positioning
 
 
+# TODO: Use fonttools to get raw glyph width and height
+# https://gist.github.com/nitely/62b281dcfd15490e1ed21296d6be3113
 def wrap_text(
     text: str,
     font_path: Path,
@@ -71,11 +73,11 @@ def wrap_text(
             word_ind = cur_ind
         else:
             while width > max_width_in_pixels:
-                cur_ind -= 1
-                if cur_ind == 0:
+                if cur_ind == word_ind:
                     # choosing to show the whole word and not wrap it, if it's too big for it's own line
-                    cur_ind = 1
+                    cur_ind = word_ind + 1
                     break
+                cur_ind -= 1
 
                 cur_text = " ".join(words[word_ind:cur_ind])
                 width, height = get_dim_lens(cur_text)

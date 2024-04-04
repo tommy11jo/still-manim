@@ -70,7 +70,7 @@ def graph(graph):
         edges,
         # labels=True,
         layout_config={"seed": 2},
-        vertex_config={"radius": 0.2},
+        vertex_config={"radius": 0.2, "fill_color": WHITE},
         # Can use either fill or stroke color on lines (which are the default edge type)
         # edge_config={"fill_color": BLUE},
         edge_config={"stroke_color": BLUE},
@@ -111,4 +111,4 @@ def weighted_digraph(graph):
     canvas.snapshot(preview=True)
 
 
-# weighted_digraph(WEIGHTED_GRAPH1)
+weighted_digraph(WEIGHTED_GRAPH1)

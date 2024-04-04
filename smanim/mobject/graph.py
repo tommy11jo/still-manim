@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from smanim.config import CONFIG
 from smanim.mobject.circle import Dot, LabeledDot
 from smanim.mobject.text_mobject import Text
-from smanim.utils.color import BLACK
+from smanim.utils.color import BLACK, WHITE
 
 __all__ = ["Graph", "WeightedGraph"]
 
@@ -35,7 +36,7 @@ class Graph(Group):
         layout_scale: float | tuple = 2,
         layout_config: dict | None = None,
         vertex_type: type[Mobject] = Dot,
-        vertex_config: dict = {},
+        vertex_config: dict = {"fill_color": WHITE, "radius": 0.2},
         edge_type: type[Mobject] = Line,
         edge_config: dict = {"buff": 0.0},
         partitions: list[list[Hashable]] | None = None,
@@ -74,7 +75,7 @@ class Graph(Group):
         if labels:
             for vid in vertices:
                 self._vertex_config[vid]["label"] = Text(
-                    str(vid), fill_color=label_fill_color
+                    str(vid), color=label_fill_color
                 )
 
         self.vertices = {v: vertex_type(**self._vertex_config[v]) for v in vertices}
@@ -140,7 +141,10 @@ class WeightedGraph(Graph):
         for edge, weight_text in converted_labels.items():
             v1, v2 = edge
             edge_obj = self.edges[(v1, v2)]
-            weight_text.add_bg_rectangle(buff=0.05)
+            weight_text.add_surrounding_rect(
+                fill_color=CONFIG.bg_color, fill_opacity=1.0, buff=0.005
+            )
+
             weight_text.move_to(edge_obj.midpoint)
             edge_label_objs.add(weight_text)
 

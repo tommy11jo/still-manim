@@ -1,4 +1,4 @@
-from typing import Tuple, TypeAlias, Union
+from typing import List, Tuple, TypeAlias, Union
 import numpy.typing as npt
 import numpy as np
 
@@ -20,6 +20,8 @@ InternalPoint3D_Array: TypeAlias = npt.NDArray[PointDType]
 Point3D_Array: TypeAlias = Union[
     InternalPoint3D_Array, Tuple[Tuple[float, float, float], ...]
 ]
+
+QuadArray_Point3D: TypeAlias = List[Tuple[Point3D, Point3D, Point3D, Point3D]]
 
 # Vector Types
 Vector3: TypeAlias = npt.NDArray[PointDType]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 from abc import ABC, abstractmethod
 from typing import List
 from typing_extensions import Self
@@ -26,6 +27,7 @@ from smanim.typing import (
     ManimFloat,
     Point2D,
     Point3D,
+    Point3D_Array,
     Vector3,
 )
 from smanim.utils.logger import log
@@ -45,15 +47,17 @@ class Mobject(ABC):
     ):
         if bounding_points is None:
             bounding_points = np.array([], dtype=ManimFloat)
-        self.bounding_points = bounding_points
+        self._bounding_points = bounding_points
         self.z_index = z_index
         self.submobjects: List[Mobject] = []
 
-    def set_bounding_points(
-        self,
-        bounding_points: InternalPoint3D_Array,
-    ):
-        self.bounding_points = bounding_points
+    @property
+    def bounding_points(self):
+        return self._bounding_points
+
+    @bounding_points.setter
+    def bounding_points(self, bounding_points: InternalPoint3D_Array):
+        self._bounding_points = bounding_points
 
     # Grouping
     def add(self, *mobjects: Mobject, insert_before=False) -> Self:
@@ -99,6 +103,7 @@ class Mobject(ABC):
         all_points = np.concatenate(
             [mob.bounding_points for mob in self.get_family()], axis=0
         )
+
         x_min, y_min, _ = np.min(all_points, axis=0)
         x_max, y_max, _ = np.max(all_points, axis=0)
         x_mid, y_mid = x_min + (x_max - x_min) / 2, y_min + (y_max - y_min) / 2
@@ -130,6 +135,9 @@ class Mobject(ABC):
         if not any(np.array_equal(direction, cdir) for cdir in [UL, UR, DR, DL]):
             raise ValueError("`direction` must be a corner")
         return self.get_critical_point(direction)
+
+    def get_bbox(self) -> Point3D_Array:
+        return [self.get_corner(dir) for dir in [UR, UL, DL, DR]]
 
     def get_closest_intersecting_point_2d(
         self, ray_origin: Point2D, ray_direction: Point2D
@@ -248,6 +256,14 @@ class Mobject(ABC):
     @abstractmethod
     def shift(self, vector: Vector3) -> Self:
         raise NotImplementedError("Has to be implemented in subclass")
+
+    # Frequently used patterns
+    def add_surrounding_rect(self, **rect_config):
+        # to avoid circular import
+        from smanim.mobject.shape_matchers import SurroundingRectangle
+
+        rect = SurroundingRectangle(self, **rect_config)
+        self.add(rect)
 
 
 class Group(Mobject):

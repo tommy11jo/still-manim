@@ -1,14 +1,22 @@
 from typing import List
+from typing_extensions import Self
 import numpy as np
 from smanim.mobject.arc import ArcBetweenPoints
 from smanim.utils.bezier import interpolate
 from smanim.utils.color import RED, ManimColor, has_default_colors_set
-from smanim.constants import DL, DR, PI, UL, UR
+from smanim.constants import DL, DR, ORIGIN, OUT, PI, UL, UR
 from smanim.mobject.vmobject import VMobject
-from smanim.typing import ManimFloat, Point3D, Point3D_Array
+from smanim.typing import ManimFloat, Point3D, Point3D_Array, QuadArray_Point3D, Vector3
 from smanim.utils.space_ops import regular_vertices
+from smanim.utils.logger import log
 
-__all__ = ["Polygon", "Square", "Triangle", "RegularPolygon", "Rectangle"]
+__all__ = [
+    "Polygon",
+    "Square",
+    "Triangle",
+    "RegularPolygon",
+    "Rectangle",
+]
 
 
 class Polygon(VMobject):
@@ -21,17 +29,18 @@ class Polygon(VMobject):
     ):
         if not has_default_colors_set(**kwargs):
             kwargs["default_stroke_color"] = default_stroke_color
-        self.vertices = vertices
+        self._vertices = np.array(vertices)
         self.corner_radius = corner_radius
         super().__init__(**kwargs)
         if corner_radius > 0:
             self.round_corners(corner_radius)
+            self.rounded = True
 
     def generate_points(self) -> None:
         """Override to generate points by interpolating between each pair of vertices"""
         points: List[Point3D] = []
-        vertices_ahead = np.roll(self.vertices, -1, axis=0)
-        for start, end in zip(self.vertices, vertices_ahead):
+        vertices_behind = np.roll(self.vertices, -1, axis=0)
+        for start, end in zip(self.vertices, vertices_behind):
             bezier_pts = [
                 interpolate(start, end, a)
                 for a in np.linspace(0, 1, VMobject.points_per_curve)
@@ -39,73 +48,114 @@ class Polygon(VMobject):
             points.extend(bezier_pts)
         self.points = np.array(points, dtype=ManimFloat)
 
-    # This will no longer work if corners get rounded
-    def get_vertices(self):
-        return self.get_start_anchors()
+    @property
+    def vertices(self) -> Point3D_Array:
+        return self._vertices
 
-    def __repr__(self):
+    @vertices.setter
+    def vertices(self, value: Point3D_Array) -> None:
+        self._vertices = value
+
+    def reset_points_from_vertices(self, new_vertices: Point3D_Array) -> None:
+        self.vertices = np.array(new_vertices)
+        self.generate_points()
+        if self.corner_radius > 0:
+            self.round_corners(self.corner_radius)
+
+    def __repr__(self) -> str:
         class_name = self.__class__.__qualname__
-        vertices = self.get_vertices()
+        vertices = self.vertices
         clipped_pts = vertices if len(vertices) < 6 else vertices[:3] + vertices[-3:]
         return (
             f'{class_name}(vertices={" ,".join([f"Point({pt})" for pt in clipped_pts])}'
         )
 
-    def round_corners(self, corner_radius: float) -> None:
+    def round_corners(self, radius: float) -> None:
         """Applies surgery to the polygon, reducing the existing lines and inserting the arcs at the corners.
         Assumes each side is a single line made of 4 bezier points and that the lines in self.points correspond to the vertices in self.vertices
+        Constraint: Only handles convex shapes with counter-clockwise point orientation. In the future, if concave is needed, accept radius list and use radius sign to determine concavity.
         """
-        if corner_radius == 0:
+        if radius == 0:
             return
-        new_points = []
         quads = self.get_points_in_quads(self.points)
-        quads_behind = np.roll(quads, -1, axis=0)
-        # first step: excise unwanted parts of existing lines
-        # second step: fill in corners with arcs
-        # for quad1, quad2 in zip(quads, quads_ahead):
-        # l1_dir = quad1[-1] - quad1[0]
         new_quads = []
-        # for quad, next_quad in zip(quads_behind, quads):
+
+        def _arc_from_quads(
+            quad1: QuadArray_Point3D, quad2: QuadArray_Point3D
+        ) -> ArcBetweenPoints:
+            prev_end = quad1[-1]
+            prev_start = quad1[0]
+            cur_start = quad2[0]
+            cur_end = quad2[-1]
+            prev, cur = prev_end - prev_start, cur_end - cur_start
+            angle = np.arccos(
+                np.dot(prev, cur) / (np.linalg.norm(prev) * np.linalg.norm(cur))
+            )
+            arc = ArcBetweenPoints(prev_end, cur_start, angle=angle)
+            return arc
+
         for quad in quads:
             l1_vec = quad[-1] - quad[0]
             l1_norm = np.linalg.norm(l1_vec)
             l1_vec_norm = l1_vec / l1_norm
-            if l1_norm < 2 * corner_radius:
-                corner_radius = np.linalg.norm(l1_vec) / 2
+            if l1_norm < 2 * radius:
+                # radius = np.linalg.norm(l1_vec) / 2 - 0.01
+                log.warning("Corner radius too big, using unrounded corners.")
+                return
 
-            new_l1_start = quad[0] + l1_vec_norm * corner_radius
-            new_l1_end = quad[-1] - l1_vec_norm * corner_radius
+            new_l1_start = quad[0] + l1_vec_norm * radius
+            new_l1_end = quad[-1] - l1_vec_norm * radius
 
             bezier_pts = [
                 interpolate(new_l1_start, new_l1_end, a)
                 for a in np.linspace(0, 1, VMobject.points_per_curve)
             ]
             if new_quads:
-                prev_end = new_quads[-1][-1]
-                cur_start = bezier_pts[0]
-                arc = ArcBetweenPoints(prev_end, cur_start, angle=PI / 2)
+                arc = _arc_from_quads(new_quads[-1], bezier_pts)
 
                 new_quads.extend(arc.get_points_in_quads(arc.points))
                 new_quads.append(np.array(bezier_pts))
             else:
                 new_quads.append(np.array(bezier_pts))
-        prev_end = new_quads[-1][-1]
-        cur_start = new_quads[0][0]
-        arc = ArcBetweenPoints(prev_end, cur_start, angle=PI / 2, stroke_width=1)
+        arc = _arc_from_quads(new_quads[-1], new_quads[0])
+
         new_quads.extend(arc.get_points_in_quads(arc.points))
+        self.points = np.concatenate(np.array(new_quads), axis=0)
+        self.rounded = True
 
-        quads_behind = np.roll(new_quads, 1, axis=0)
-        for quad1, quad2 in zip(new_quads, quads_behind):
-            new_start = quad1[-1]
-            new_end = quad2[0]
-            bezier_pts = [
-                interpolate(new_start, new_end, a)
-                for a in np.linspace(0, 1, VMobject.points_per_curve)
-            ]
-            new_points.extend(quad1)
-            new_points.extend(bezier_pts)
+    # Override the core transformations to keep vertices updated
+    def rotate(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3 = OUT,
+        about_point: Point3D | None = None,
+    ) -> Self:
+        self.vertices = super().rotate_points(self.vertices, angle, axis, about_point)
+        self.points = super().rotate_points(self.points, angle, axis, about_point)
+        for mob in self.submobjects:
+            mob.rotate(angle, axis, about_point)
+        return self
 
-        self.points = np.array(new_points)
+    def scale(self, factor: float, about_point: Point3D | None = ORIGIN) -> Self:
+        self.vertices = super().scale_points(self.vertices, factor, about_point)
+        self.points = super().scale_points(self.points, factor, about_point)
+        for mob in self.submobjects:
+            mob.scale(factor, about_point)
+        return self
+
+    def stretch(self, factor: float, dim: int) -> Self:
+        self.vertices = super().stretch_points(self.vertices, factor, dim)
+        self.points = super().stretch_points(self.points, factor, dim)
+        for mob in self.submobjects:
+            mob.stretch(factor, dim)
+        return self
+
+    def shift(self, vector: Vector3) -> Self:
+        self.vertices = super().shift_points(self.vertices, vector)
+        self.points = super().shift_points(self.points, vector)
+        for mob in self.submobjects:
+            mob.shift(vector)
+        return self
 
 
 class Rectangle(Polygon):

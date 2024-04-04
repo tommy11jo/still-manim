@@ -118,3 +118,12 @@ def line_intersect(
         return ray_origin + t * ray_direction, t
     else:
         return None, None
+
+
+def angle_from_vector(vector3: Vector3):
+    """Returns the angle from the vector, on [0, 2*PI]"""
+    dir_x, dir_y = vector3[:2]
+    angle = np.arctan2(dir_y, dir_x)
+    if angle < 0:
+        angle += TAU
+    return angle

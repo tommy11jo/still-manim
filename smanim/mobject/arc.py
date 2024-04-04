@@ -2,6 +2,7 @@ import numpy as np
 from smanim.constants import ORIGIN, RIGHT, TAU, UP
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import Point3D
+from smanim.utils.space_ops import angle_from_vector
 
 
 __all__ = ["Arc", "ArcBetweenPoints"]
@@ -93,9 +94,7 @@ class ArcBetweenPoints(Arc):
         radius = chord_len / (2 * np.sin(angle / 2))
 
         center_to_start = self.start - arc_center
-        start_angle = np.arctan2(center_to_start[1], center_to_start[0])
-        if start_angle < 0:
-            start_angle += TAU
+        start_angle = angle_from_vector(center_to_start)
         super().__init__(
             radius=radius,
             start_angle=start_angle,

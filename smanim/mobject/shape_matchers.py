@@ -1,33 +1,15 @@
-from smanim.constants import DOWN, LEFT, RIGHT, SMALL_BUFF, UP
+from typing_extensions import Self
+
+import numpy as np
+from smanim.constants import DOWN, LEFT, ORIGIN, OUT, PI, RIGHT, SMALL_BUFF, UP
 from smanim.mobject.line import Line
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.polygon import Rectangle
 from smanim.mobject.vmobject import VGroup
+from smanim.typing import Point3D, Vector3
 from smanim.utils.color import RED, YELLOW, ManimColor
 
-__all__ = ["SurroundingRectangle", "Cross"]
-
-
-class SurroundingRectangle(Rectangle):
-    """A rectangle surrounding `Mobject`"""
-
-    def __init__(
-        self,
-        mobject: Mobject,
-        color: ManimColor = YELLOW,
-        buff: float = SMALL_BUFF,
-        corner_radius: float = 0.0,
-        **kwargs,
-    ) -> None:
-        super().__init__(
-            stroke_color=color,
-            width=mobject.width + 2 * buff,
-            height=mobject.height + 2 * buff,
-            corner_radius=corner_radius,
-            **kwargs,
-        )
-        self.buff = buff
-        self.move_to(mobject)
+__all__ = ["Cross", "SurroundingRectangle"]
 
 
 class Cross(VGroup):
@@ -51,3 +33,54 @@ class Cross(VGroup):
 
         self.scale_in_place(scale_factor)
         self.set_stroke(color=stroke_color, width=stroke_width, opacity=stroke_opacity)
+
+
+class SurroundingRectangle(Rectangle):
+    """A rectangle surrounding `Mobject`"""
+
+    def __init__(
+        self,
+        mobject: Mobject,
+        stroke_color: ManimColor = YELLOW,
+        buff: float = SMALL_BUFF,
+        corner_radius: float = 0.0,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            default_stroke_color=stroke_color,
+            width=mobject.width + 2 * buff,
+            height=mobject.height + 2 * buff,
+            corner_radius=corner_radius,
+            **kwargs,
+        )
+        self.buff = buff
+        self.surrounded = mobject
+        self.move_to(mobject)
+
+    # Transformations just update bounding points
+    def rotate(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3 = OUT,
+        about_point: Point3D | None = None,
+    ) -> Self:
+        self._update_points()
+
+    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:  # override
+        self._update_points()
+
+    def stretch(self, factor: float, dim: int) -> Self:  # override
+        self._update_points()
+
+    def shift(self, vector: Vector3) -> Self:  # override
+        self._update_points()
+
+    def _update_points(self):
+        # calculate the bbox without this surrounding rect interfering
+        if self in self.surrounded.submobjects:
+            self.surrounded.remove(self)
+            bbox = np.array(self.surrounded.get_bbox())
+            self.surrounded.add(self)
+        else:
+            bbox = np.array(self.surrounded.get_bbox())
+        self.reset_points_from_vertices(bbox)

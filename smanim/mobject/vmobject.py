@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from __future__ import annotations
 from typing_extensions import Self
 
 import numpy as np
@@ -13,7 +13,13 @@ from smanim.constants import (
 from smanim.mobject.transformable import TransformableMobject
 from smanim.utils.logger import log
 from smanim.utils.color import WHITE, ManimColor
-from smanim.typing import InternalPoint3D_Array, Point3D, Point3D_Array, Vector3
+from smanim.typing import (
+    InternalPoint3D_Array,
+    Point3D,
+    Point3D_Array,
+    QuadArray_Point3D,
+    Vector3,
+)
 
 __all__ = ["VMobject", "VGroup"]
 
@@ -93,7 +99,7 @@ class VMobject(TransformableMobject, ABC):
             bounding_points = np.append(
                 bounding_points, [self.get_end_anchors()[-1]], axis=0
             )
-        super().set_bounding_points(bounding_points)
+        self.bounding_points = bounding_points
 
     # Point ops
     def get_start_anchors(self) -> InternalPoint3D_Array:
@@ -108,9 +114,7 @@ class VMobject(TransformableMobject, ABC):
             all_points.extend(mob.points)
         return all_points
 
-    def get_points_in_quads(
-        self, points: Point3D_Array
-    ) -> List[Tuple[Point3D, Point3D, Point3D, Point3D]]:
+    def get_points_in_quads(self, points: Point3D_Array) -> QuadArray_Point3D:
         assert len(points) % 4 == 0, "Points should be divisible by 4"
         return [tuple(points[i : i + 4]) for i in range(0, len(points), 4)]
 
@@ -176,11 +180,10 @@ class VMobject(TransformableMobject, ABC):
     ) -> Self:
         self.points = super().rotate_points(self.points, angle, axis, about_point)
         for mob in self.submobjects:
-            # cannot just call super().rotate because this mobject might have different rotating functionality
             mob.rotate(angle, axis, about_point)
         return self
 
-    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:
+    def scale(self, factor: float, about_point: Point3D | None = ORIGIN) -> Self:
         self.points = super().scale_points(self.points, factor, about_point)
         for mob in self.submobjects:
             mob.scale(factor, about_point)

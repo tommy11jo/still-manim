@@ -1,7 +1,7 @@
+from pathlib import Path
 from smanim import *
 
-config = Config()
-# must be named canvas to "override" global canvas name
+config = Config(save_file_dir=Path(__file__).parent / "media")
 canvas = Canvas(config)
 
 
@@ -9,6 +9,9 @@ def squareTest():
     s = Square()
     canvas.add(s)
     canvas.snapshot(preview=True)
+
+
+# squareTest()
 
 
 def triangleTest():
@@ -152,11 +155,25 @@ def colorTest():
 def lineTest():
     s = Square().shift(UL)
     r = Rectangle().shift(DR * 3)
-    line = Line(s, r, buff=0.2, dashed=True)
+    line = Line(s, r, dashed=True)
     canvas.add(s)
     canvas.add(r)
     canvas.add(line)
     canvas.snapshot(preview=True)
+
+
+# lineTest()
+
+
+def simpleArrowTest():
+    left = Square().shift(LEFT * 2)
+    right = Square().shift(RIGHT * 2)
+    arrow = Arrow(left, right)
+    canvas.add(arrow, left, right)
+    canvas.snapshot(preview=True)
+
+
+# simpleArrowTest()
 
 
 def arrowTest():
@@ -186,6 +203,9 @@ def arrowTest():
     # a = ArrowTriangleFilledTip()
     # canvas.add(a)
     canvas.snapshot(preview=True)
+
+
+# arrowTest()
 
 
 def arcTest():
@@ -364,6 +384,17 @@ def textCenter():
 
 
 # textCenter()
+def textWrapLongWord():
+
+    t2 = Text(
+        "Word in the middleThatIsDefinitelyLonger than the max width",
+        max_width=1.0,
+    )
+    canvas.add(t2)
+    canvas.snapshot(preview=True)
+
+
+# textWrapLongWord()
 
 
 def lineBetween():
@@ -371,8 +402,8 @@ def lineBetween():
     c = Circle().shift(UR * 2)
     line = Line(s, c)
     canvas.add(s, c, line)
-    d1 = Dot(line.get_start_point())
-    d2 = Dot(line.get_end_point())
+    d1 = Dot(line.start)
+    d2 = Dot(line.end)
     canvas.add(d1, d2)
     canvas.snapshot(preview=True)
 
@@ -403,7 +434,7 @@ def tipScalar():
 
 
 def labeledDot():
-    l1 = LabeledDot(label=Text("hi", fill_color=BLUE))
+    l1 = LabeledDot(label=Text("hi", color=BLUE))
     canvas.add(l1)
     canvas.snapshot(preview=True)
 
@@ -435,6 +466,23 @@ def roundedRect():
 
 
 # roundedRect()
+
+
+def roundedShapes():
+    r = RegularPolygon(n=6, corner_radius=0.3)
+    t = Triangle(corner_radius=0.1, fill_color=BLUE).shift(LEFT * 2)
+    canvas.add(t)
+    canvas.add(r)
+
+    # currently not handled, see `rounded_corners` function in `Polygon`
+    reverse_t = Polygon(
+        vertices=[[0, 1, 0], [1, 0, 0], [-1, 0, 0]], corner_radius=0.1
+    ).shift(RIGHT * 2)
+    canvas.add(reverse_t)
+    canvas.snapshot(preview=True)
+
+
+# roundedShapes()
 
 
 def arcBetween():
@@ -488,4 +536,163 @@ def crossText():
     canvas.snapshot(preview=True)
 
 
-crossText()
+# crossText()
+# ChatGPT generated, edited so that "get_start" => start, "get_end" => end
+# Concern: The changes I'm making in the API will decrease generation quality
+def vectorAddtion():
+    vector1 = Arrow(
+        start=LEFT * 2,
+        end=UP * 2 + LEFT * 2,
+        stroke_color=BLUE,
+        stroke_width=2.0,
+        tip_length=0.2,
+    )
+    vector1_label = Text("v1", color=BLUE).next_to(vector1.start, LEFT, buff=0.1)
+
+    vector2 = Arrow(
+        start=UP * 2 + LEFT * 2,
+        end=UP * 2 + RIGHT * 2,
+        stroke_color=GREEN,
+        stroke_width=2.0,
+        tip_length=0.2,
+    )
+    vector2_label = Text("v2", color=GREEN).next_to(vector2.end, RIGHT, buff=0.1)
+
+    vectorSum = Arrow(
+        start=LEFT * 2,
+        end=UP * 2 + RIGHT * 2,
+        stroke_color=RED,
+        stroke_width=2.0,
+        tip_length=0.2,
+    )
+    sum_label = Text("v1 + v2", color=RED).next_to(vectorSum.end, DOWN, buff=0.1)
+
+    canvas.add(vector1)
+    canvas.add(vector1_label)
+    canvas.add(vector2)
+    canvas.add(vector2_label)
+    canvas.add(vectorSum)
+    canvas.add(sum_label)
+
+    canvas.snapshot(preview=True)
+
+
+# vectorAddtion()
+
+
+def myVectorAddtion():
+    v1 = Arrow(start=LEFT * 2, end=UP * 2 + LEFT * 2, fill_color=BLUE)
+    # Making the text use "color" vs the arrow use "fill_color" is a bit tough
+    # FUTURE: Maybe every object can a default fill_color or stroke_color that gets set when color is passed in
+    v1_label = Text("v1", color=BLUE)
+    v1.add_label(v1_label)
+
+    v2 = Arrow(start=UP * 2 + LEFT * 2, end=UP * 2 + RIGHT * 2, fill_color=GREEN)
+    v2_label = Text("v2", color=GREEN)
+    v2.add_label(v2_label)
+
+    vsum = Arrow(start=LEFT * 2, end=UP * 2 + RIGHT * 2, fill_color=RED)
+    vsum_label = Text("v1 + v2", color=RED)
+    vsum.add_label(vsum_label, opposite_side=True)
+    canvas.add(v1, v1_label)
+    canvas.add(v2, v2_label)
+    canvas.add(vsum, vsum_label)
+
+    canvas.snapshot(preview=True)
+
+
+# myVectorAddtion()
+
+
+def flippedVectorLabel():
+    v0 = Arrow().shift(UP * 3)
+    label0 = Text("basic")
+    v0.add_label(label0)
+
+    canvas.add(v0)
+    v1 = Arrow(start=RIGHT * 2, end=DOWN * 2 + LEFT * 2, fill_color=RED)
+    label1 = Text("x + y")
+    v1.add_label(label1)
+    canvas.add(v1)
+    v2 = Arrow(start=ORIGIN, end=UP + LEFT, fill_color=RED)
+    label2 = Text("z + w")
+    v2.add_label(label2)
+    canvas.add(v2)
+    canvas.snapshot(preview=True)
+
+
+# flippedVectorLabel()
+
+
+def defaultLabeling():
+    s = Square()
+    t = Text(
+        "Text width automatically is set to square width and should wrap accordingly"
+    )
+
+    s.add_label(t)
+    canvas.add(s)
+
+    r = Rectangle(width=3.0).shift(LEFT * 4)
+    t2 = Text("Text width automatically set to rect width and should wrap accordingly")
+    t2 = Text(
+        "Text width automatically set to rect width and should wrap accordingly",
+        # max_width=3.0,
+    ).scale(0.5)
+    b = SurroundingRectangle(t2)
+    canvas.add(b, r, t2)
+    canvas.snapshot(preview=True)
+
+
+# defaultLabeling()
+
+
+# FUTURE: Idea of reactive elements is powerful
+# Fow now, just surrounding rectangles are reactive
+def reactiveSurroundingRect():
+    t1 = Text("water bottle").shift(UP)
+    t1.add_surrounding_rect()
+    canvas.add(t1)
+    t1.rotate(PI / 6)
+    r = Rectangle(width=3.0).shift(LEFT * 4)
+    t2 = Text(
+        "Text width automatically set to rect width and should wrap accordingly",
+    ).scale(2)
+    t2.add_surrounding_rect(fill_color=RED, fill_opacity=0.3, corner_radius=0.2)
+    t2.stretch_to_fit_width(r.width)
+    t2.next_to(r, DOWN, buff=0.1)
+    canvas.add(r, t2)
+    canvas.snapshot(preview=True)
+
+
+reactiveSurroundingRect()
+
+
+def surroundingRectOnCircle():
+    c = Circle()
+    c.add_surrounding_rect()
+    canvas.add(c)
+    canvas.snapshot(preview=True)
+
+
+# surroundingRectOnCircle()
+
+
+def singleLetterBg():
+    letter = Text("h")
+    letter.add_surrounding_rect()
+    letter.shift(RIGHT * 3)
+    canvas.add(letter)
+    canvas.snapshot(preview=True)
+
+
+# singleLetterBg()
+
+
+def gracefulCornerRadiusError():
+    r = Rectangle(corner_radius=3)
+    canvas.add(r)
+    canvas.snapshot(preview=True)
+
+
+# gracefulCornerRadiusError()

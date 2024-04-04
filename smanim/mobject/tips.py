@@ -61,7 +61,7 @@ class ArrowTriangleTip(ArrowTip, Triangle):
 
     @property
     def base(self):
-        vertices = self.get_vertices()
+        vertices = self.vertices
         return (vertices[1] + vertices[2]) / 2
 
 

@@ -1,6 +1,7 @@
+from __future__ import annotations
 from typing_extensions import Self
 import numpy as np
-from smanim.constants import ORIGIN, OUT, PI
+from smanim.constants import ORIGIN, OUT, PI, UP
 from smanim.mobject.mobject import Mobject
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
 from smanim.utils.space_ops import rotation_matrix
@@ -36,7 +37,7 @@ class TransformableMobject(Mobject):
         points = points.copy()
         if about_point is None:
             about_point = self.get_center()
-        if (about_point == ORIGIN).all():
+        if np.array_equal(about_point, ORIGIN):
             points = points * factor
         else:
             points -= about_point
@@ -72,3 +73,9 @@ class TransformableMobject(Mobject):
             return self
         self.stretch(height / old_height, dim=1)
         return self
+
+    # Frequently used patterns that depend on transformations
+    def add_label(self, label: TransformableMobject, direction: Vector3 = UP, buff=0.0):
+        label.stretch_to_fit_width(self.width)
+        label.next_to(self, direction, buff=buff)
+        self.add(label)
