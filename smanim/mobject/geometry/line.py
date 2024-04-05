@@ -26,7 +26,7 @@ class Line(VMobject):
         stroke_color: ManimColor = None,
         **kwargs,
     ):
-        start_pt, end_pt = self.find_line_anchors(start, end)
+        start_pt, end_pt = Line.find_line_anchors(start, end)
         if 2 * buff > np.linalg.norm(end_pt - start_pt):
             raise ValueError("Buff is larger than 2 * line_length")
 
@@ -83,8 +83,9 @@ class Line(VMobject):
     def get_length(self):
         return np.linalg.norm(self.end - self.start)
 
+    @staticmethod
     def find_line_anchors(
-        self, start: Point3D | Mobject, end: Point3D | Mobject
+        start: Point3D | Mobject, end: Point3D | Mobject
     ) -> Tuple[Point3D, Point3D]:
         # for points, use them as is
         # for mobjects, determine rough direction, then use it to find exact boundaries
@@ -113,6 +114,7 @@ class Line(VMobject):
             end_pt += 0.0001
         return start_pt, end_pt
 
+    # TODO: consider whether this function is worth keeping
     def add_label(
         self, label: Text, buff: float = SMALL_BUFF, opposite_side=False
     ) -> None:
@@ -123,11 +125,11 @@ class Line(VMobject):
         angle = angle_from_vector(unit_dir)
 
         flipped_scalar = 1
-        if angle > PI / 2:
-            label.rotate(angle - PI)
+        if angle >= PI / 2:
+            label.rotate_in_place(angle - PI)
             flipped_scalar = -1
-        elif angle > PI:
-            label.rotate(angle + PI)
+        elif angle >= PI:
+            label.rotate_in_place(angle + PI)
             flipped_scalar = -1
         perp_dir = np.array([-dir_y, dir_x, 0])
         sign = -1 * flipped_scalar if opposite_side else 1 * flipped_scalar
@@ -170,8 +172,6 @@ class TipableVMobject(Line):
             default_fill_color=self.stroke_color,
             **kwargs,
         )
-        # x, y = line_dir[:2]
-        # tip.rotate(np.arctan2(y, x) - PI / 2)
         rotate_scalar = 1 if at_start else -1
         tip.rotate(self.get_angle() + rotate_scalar * PI / 2)
 

@@ -19,3 +19,4 @@ from smanim.mobject.svg.brace import *
 from smanim.mobject.text.text_mobject import *
 from smanim.mobject.graph import *
 from smanim.mobject.graphing.number_line import *
+from smanim.mobject.graphing.coordinate_systems import *

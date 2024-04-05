@@ -3,6 +3,7 @@ from pathlib import Path
 from typing_extensions import Literal, Self
 import numpy as np
 from smanim.constants import (
+    ORIGIN,
     OUT,
     PI,
     TEXT_X_PADDING,
@@ -147,7 +148,7 @@ class Text(TransformableMobject):
         dr = ur - np.eye(3)[1] * bbox_height
         self.bounding_points = np.array([ur, ul, dl, dr])
 
-        # Note: this point doesn't change during rotate because SVG applies it after. It still changes for other transformations
+        # Note: this point doesn't change during in-place rotation because SVG applies it after. It still changes for other transformations
         # So, `svg_upper_left` can get out of sync with `bounding_points`. Be careful.
         self.svg_upper_left = ul.copy()
 
@@ -172,18 +173,37 @@ class Text(TransformableMobject):
         class_name = self.__class__.__qualname__
         return f"{class_name}(value={self.raw_text})"
 
-    # TODO: Handle rotating with about_point
+    def rotate_in_place(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3 = OUT,
+    ) -> Self:
+        return self.rotate(angle, axis, None)
+
     def rotate(
         self,
         angle: float = PI / 4,
         axis: Vector3 = OUT,
-        about_point: Point3D | None = None,
+        about_point: Point3D | None = ORIGIN,
     ) -> Self:
-        # must commute with all other transformations, since it is applied last
-        if about_point is not None:
-            raise ValueError("Rotation of text mobject must not set `about_point`.")
-        # Leaves the `svg_upper_left` unchanged, since a rotation will be applied to it during svg generation
-        self.heading = self.heading + angle  # see `heading` setter
+        if about_point is None:
+            # in-place rotation occurs when `about_point` is None
+            # in-place rotation must commute with all other transformations, since it is applied last
+            # Leaves the `svg_upper_left` unchanged, since a rotation will be applied to it during svg generation
+            self.heading = self.heading + angle  # see `heading` setter
+        else:
+            # other rotation can freely change upper left and bbox while leaving text intact
+            bounding_points = super().rotate_points(
+                self.bounding_points, angle, axis, about_point
+            )
+            self.bounding_points = bounding_points
+            # TODO: need new way to make text rotations about points appear more natural
+            # shoot a ray from about_point to object and use
+            # start_pt, end_pt = Line.find_line_anchors(about_point, self)
+            self.svg_upper_left = super().rotate_points(
+                self.svg_upper_left, angle, axis, about_point
+            )
+
         for mob in self.submobjects:
             mob.rotate(angle, axis, about_point)
         return self
@@ -234,3 +254,16 @@ class Text(TransformableMobject):
         for mob in self.submobjects:
             mob.shift(vector)
         return self
+
+    # sets fill color of text itself
+    def set_color(self, color: ManimColor, family: bool = False) -> Self:  # override
+        self.fill_color = color
+        if family:
+            for mem in self.get_family()[1:]:
+                mem.set_color(color=color, family=True)
+
+    def set_opacity(self, opacity: float, family: bool = False) -> Self:  # override
+        self.fill_opacity = opacity
+        if family:
+            for mem in self.get_family()[1:]:
+                mem.set_opacity(opacity=opacity, family=True)

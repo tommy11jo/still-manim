@@ -7,12 +7,12 @@ from typing import List, Sequence
 import numpy as np
 
 from smanim.config import CONFIG, Config
-from smanim.constants import RADIANS, Z_INDEX_MIN
-from smanim.mobject.mobject import Mobject
+from smanim.constants import ORIGIN, RADIANS, Z_INDEX_MIN
+from smanim.mobject.mobject import Group, Mobject
 from smanim.mobject.geometry.polygon import Rectangle
 from smanim.mobject.vmobject import VMobject
 from smanim.mobject.text.text_mobject import Text
-from smanim.typing import InternalPoint3D_Array, Point3D
+from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
 from smanim.utils.color import BLACK
 from smanim.utils.logger import log
 
@@ -28,8 +28,7 @@ class Canvas:
     def __init__(self, config: Config):
         self.config = config
 
-        # Should this be a VGroup?
-        self.mobjects: List[Mobject] = []
+        self.mobjects = Group()
         self.num_snapshots = 0
         self.loaded_fonts = set()
 
@@ -38,7 +37,7 @@ class Canvas:
             if mobject in self.mobjects:
                 log.warning(f"Mobject already added: {mobject}")
             else:
-                self.mobjects.append(mobject)
+                self.mobjects.add(mobject)
 
     def remove(self, *mobjects):
         for mobject in mobjects:
@@ -48,7 +47,7 @@ class Canvas:
                 self.mobjects.remove(mobject)
 
     def clear(self):
-        self.mobjects = []
+        self.mobjects = Group()
 
     def get_mobjects_to_display(
         self,
@@ -236,6 +235,15 @@ class Canvas:
             file.write(str(svg_obj))
         if preview:
             subprocess.run(["open", fpath])
+
+    # Transformations on canvas apply directly to its group
+    # Slightly misleading since canvas does not scale itself
+    # Gives the impression that canvas is a mobject when it is not
+    def scale(self, factor: float, about_point: Point3D | None = ORIGIN) -> None:
+        self.mobjects.scale(factor, about_point)
+
+    def shift(self, vector: Vector3) -> None:
+        self.mobjects.shift(vector)
 
 
 canvas = Canvas(CONFIG)

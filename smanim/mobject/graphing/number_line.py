@@ -6,9 +6,12 @@ from smanim.mobject.geometry.line import Arrow, Line, TipableVMobject
 from smanim.mobject.graphing.scale import _ScaleBase, LinearBase
 from smanim.mobject.mobject import Group
 from smanim.mobject.text.text_mobject import Text
+from smanim.mobject.vmobject import VMobject
 from smanim.typing import Point3D
+from smanim.utils.color import WHITE, ManimColor
 
 
+# TODO: match style is getting more important. Imagine initializing a number line for the x-axis and wanting the same styles for y-axis and needing to duplicate all the styles.
 # FUTURE: Just barebones for now, improve later
 class NumberLine(TipableVMobject):
     """Creates a number line with tick marks."""
@@ -16,21 +19,37 @@ class NumberLine(TipableVMobject):
     def __init__(
         self,
         # start (inclusive), end (inclusive), step
-        x_range: Sequence[float] | None = [-3, 3, 1],
+        x_range: Sequence[float] | None = [-2, 2, 1],
         length: float | None = None,
         unit_size: float = 1,
-        scaling: _ScaleBase = LinearBase(),
-        # tick params
+        scaling: _ScaleBase | None = None,
         include_ticks: bool = True,
         exclude_origin_tick: bool = False,
         include_numbers: bool = True,
         tick_size: float = 0.1,
-        start_tip_arrow: Arrow | None = None,
-        end_tip_arrow: Arrow | None = None,
+        # unlike ticks which are relatively simple, the start and end tip arrows are composed to grant user control over their styles
+        include_arrow_tips: bool = True,
+        start_arrow_tip: Arrow | None = None,
+        end_arrow_tip: Arrow | None = None,
         stroke_width: float = 2.0,
+        # TODO: call this color or stroke_color?
+        color: ManimColor = WHITE,
         **kwargs,
     ):
-        # Entire __init__ assumes numer line is horizontal
+        # Entire __init__ assumes number line is horizontal
+        if start_arrow_tip is None and include_arrow_tips:
+            start_arrow_tip = Arrow(
+                start=LEFT / 2,
+                end=RIGHT / 2,
+            )
+        if end_arrow_tip is None and include_arrow_tips:
+            end_arrow_tip = Arrow(
+                start=LEFT / 2,
+                end=RIGHT / 2,
+            )
+        if scaling is None:
+            scaling = LinearBase()
+
         self.x_range = np.array(x_range, dtype=float)
         self.length = length
         self.unit_size = unit_size
@@ -42,14 +61,12 @@ class NumberLine(TipableVMobject):
         self.exclude_origin_tick = exclude_origin_tick
         self.include_numbers = include_numbers
         self.tick_size = tick_size
-        # self.start_tip = start_tip
-        # self.end_tip = end_tip
-        self.start_tip_arrow = start_tip_arrow
-        self.end_tip_arrow = end_tip_arrow
+
+        self.start_tip_arrow = start_arrow_tip
+        self.end_tip_arrow = end_arrow_tip
         super().__init__(
             self.x_range[0] * RIGHT,
             self.x_range[1] * RIGHT,
-            stroke_width=stroke_width,
             **kwargs,
         )
         if length:
@@ -63,6 +80,8 @@ class NumberLine(TipableVMobject):
         if self.include_ticks:
             self.ticks = self.generate_ticks()
             self.add(self.ticks)
+
+        self.labels = Group()
         if self.include_numbers:
             ticks_iter = iter(self.ticks)
             label_group = Group()
@@ -72,6 +91,7 @@ class NumberLine(TipableVMobject):
                 label = Text(num_str)
                 label.next_to(line, DOWN, buff=0)
                 label_group.add(label)
+            self.labels = label_group
             self.add(label_group)
 
         if self.start_tip_arrow:
@@ -82,23 +102,29 @@ class NumberLine(TipableVMobject):
             self.end_tip_arrow.move_to(self.end, aligned_edge=LEFT)
             self.add(self.end_tip_arrow)
 
-    # TODO: Add match_style function
+        # Consistent styles are set at the end so any constructions above don't need to have styles
+        self.set_color(color=color, family=True)
+        members = self.get_family_members_of_type(VMobject)
+        for member in members:
+            member.set_stroke(width=stroke_width)
+
     def generate_ticks(self) -> Group:
-        # Assumes numer line is horizontal
+        # Assumes number line is horizontal
         ticks = Group()
         for x in self.get_tick_range():
-            tick = Line(DOWN * self.tick_size, UP * self.tick_size)
-            pos = self.number_to_point(x)
+            tick = Line(
+                DOWN * self.tick_size,
+                UP * self.tick_size,
+            )
+            pos = self.coord_to_point(x)
 
             tick.move_to(pos)
-            # tick.match_style(self)
             ticks.add(tick)
 
         return ticks
 
     def get_tick_range(self):
         x_min, x_max, x_step = self.x_range
-        # no_origin_included = x_min < x_max < 0 or x_max > x_min > 0
         if not self.exclude_origin_tick:
             tick_range = np.arange(x_min, x_max + 1, x_step)
         else:
@@ -107,9 +133,9 @@ class NumberLine(TipableVMobject):
             )
         return self.scaling.function(tick_range)
 
-    def number_to_point(self, value: float) -> Point3D:
-        """Accepts a value along the number line and returns its position in the scene"""
+    def coord_to_point(self, value: float) -> Point3D:
+        """Accepts a coordinate value along the number line and returns its position in the scene"""
         if value < self.x_min or value > self.x_max:
             raise ValueError(f"Number {value} not on number line")
         units_from_start = value - self.x_min
-        return self.start + RIGHT * units_from_start * self.unit_size
+        return self.start + self.get_direction() * units_from_start * self.unit_size

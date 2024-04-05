@@ -2,7 +2,8 @@ from __future__ import annotations
 
 
 from abc import ABC, abstractmethod
-from typing import List
+from copy import deepcopy
+from typing import List, Type
 from typing_extensions import Self
 
 import numpy as np
@@ -29,6 +30,7 @@ from smanim.typing import (
     Point3D_Array,
     Vector3,
 )
+from smanim.utils.color import ManimColor
 from smanim.utils.logger import log
 from smanim.utils.space_ops import line_intersect
 
@@ -89,6 +91,12 @@ class Mobject(ABC):
         for s in self.submobjects:
             family.extend(s.get_family())
         return family
+
+    def get_family_members_of_type(self, member_type: Type):
+        cur_family = [self] if isinstance(self, member_type) else []
+        for s in self.submobjects:
+            cur_family.extend(s.get_family_members_of_type(member_type))
+        return cur_family
 
     # Bounding Box Ops
     def get_critical_point(self, direction: Vector3):
@@ -245,7 +253,7 @@ class Mobject(ABC):
     # If I find a submobject that isn't supposed to do a transformation, then I can delete these "defensive errors"
     # Core transformations must be overridden by all subclasses
     @abstractmethod
-    def rotate(self, angle: float, axis: Vector3, about_point: Point3D | None) -> Self:
+    def rotate(self, angle: float, axis: Vector3, about_point: Point3D) -> Self:
         raise NotImplementedError("Has to be implemented in subclass")
 
     @abstractmethod
@@ -260,6 +268,15 @@ class Mobject(ABC):
     def shift(self, vector: Vector3) -> Self:
         raise NotImplementedError("Has to be implemented in subclass")
 
+    # Style matching helpers
+    def set_color(self, color: ManimColor, family: bool = False) -> Self:
+        # Should be overriden in subclasses typically
+        pass
+
+    def set_opacity(self, opacity: float, family: bool = False) -> Self:
+        # Should be overriden in subclasses typically
+        pass
+
     # Frequently used patterns
     def add_surrounding_rect(self, **rect_config):
         # to avoid circular import
@@ -267,6 +284,9 @@ class Mobject(ABC):
 
         rect = SurroundingRectangle(self, **rect_config)
         self.add(rect)
+
+    def copy(self) -> Mobject:
+        return deepcopy(self)
 
 
 class Group(Mobject):
@@ -286,6 +306,12 @@ class Group(Mobject):
     def __len__(self):
         return len(self.submobjects)
 
+    def __add__(self, mobject: Mobject) -> Self:
+        return Group(*self.submobjects, mobject)
+
+    def __iadd__(self, mobject: Mobject) -> Self:
+        return self.add(mobject)
+
     def add(self, *mobjects: Mobject) -> Self:
         return super().add(*mobjects)
 
@@ -293,7 +319,7 @@ class Group(Mobject):
         self,
         angle: float = PI / 4,
         axis: Vector3 = OUT,
-        about_point: Point3D | None = None,
+        about_point: Point3D | None = ORIGIN,
     ) -> Self:
         for mob in self.submobjects:
             mob.rotate(angle, axis, about_point)
@@ -312,4 +338,14 @@ class Group(Mobject):
     def shift(self, vector: Vector3) -> Self:
         for mob in self.submobjects:
             mob.shift(vector)
+        return self
+
+    def set_color(self, color: ManimColor, family: bool = True) -> Self:
+        for mob in self.submobjects:
+            mob.set_color(color, family=True)
+        return self
+
+    def set_opacity(self, opacity: float, family: bool = True) -> Self:
+        for mob in self.submobjects:
+            mob.set_opacity(opacity, family=True)
         return self

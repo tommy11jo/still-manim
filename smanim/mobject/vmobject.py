@@ -101,7 +101,7 @@ class VMobject(TransformableMobject, ABC):
             )
         self.bounding_points = bounding_points
 
-    # Point ops
+    ## Point ops
     def get_start_anchors(self) -> InternalPoint3D_Array:
         return self._points[:: VMobject.points_per_curve]
 
@@ -124,10 +124,17 @@ class VMobject(TransformableMobject, ABC):
         else:
             self.points = np.append(self.points, new_points, axis=0)
 
-    # Color ops
-    def set_fill(self, color: ManimColor, opacity: float = 1.0, family=False) -> Self:
-        self._fill_color = color
-        self.fill_opacity = opacity
+    ## Color ops
+    def set_fill(
+        self,
+        color: ManimColor | None = None,
+        opacity: float | None = None,
+        family=False,
+    ) -> Self:
+        if color:
+            self._fill_color = color
+        if opacity:
+            self.fill_opacity = opacity
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_fill(color=color, opacity=opacity, family=True)
@@ -158,20 +165,55 @@ class VMobject(TransformableMobject, ABC):
 
     def set_stroke(
         self,
-        color: ManimColor,
-        width: float = DEFAULT_STROKE_WIDTH,
-        opacity: float = 1.0,
+        color: ManimColor | None = None,
+        width: float | None = None,
+        opacity: float | None = None,
         family=False,
     ) -> Self:
-        self._stroke_color = color
-        self.stroke_width = width
-        self.stroke_opacity = opacity
+        if color:
+            self._stroke_color = color
+        if width:
+            self.stroke_width = width
+        if opacity:
+            self.stroke_opacity = opacity
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_stroke(color=color, width=width, opacity=opacity, family=True)
         return Self
 
-    # Core transformations
+    # whether this vmobject will display a stroke
+    def has_stroke(self):
+        if self._stroke_color:
+            return True
+        if self._fill_color:
+            return False
+        return True
+
+    # whether this vmobject will display a fill
+    def has_fill(self):
+        return self._fill_color is not None
+
+    # sets stroke and/or fill color if they are showing
+    def set_color(self, color: ManimColor, family: bool = False) -> Self:  # override
+        if self.has_stroke():
+            self.stroke_color = color
+        if self.has_fill():
+            self.fill_color = color
+        if family:
+            for mem in self.get_family()[1:]:
+                mem.set_color(color=color, family=True)
+
+    # sets stroke and/or fill opacity if they are showing
+    def set_opacity(self, opacity: float, family: bool = False) -> Self:  # override
+        if self._stroke_color:
+            self.stroke_opacity = opacity
+        elif self._fill_color:
+            self.fill_opacity = opacity
+        if family:
+            for mem in self.get_family()[1:]:
+                mem.set_opacity(opacity=opacity, family=True)
+
+    ## Core transformations
     def rotate(
         self,
         angle: float = PI / 4,
@@ -201,9 +243,16 @@ class VMobject(TransformableMobject, ABC):
             mob.shift(vector)
         return self
 
+    def rotate_in_place(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3 = OUT,
+    ) -> Self:
+        return self.rotate(angle, axis, None)
+
     def scale_in_place(self, factor: float):
         # helper function to scale a vmobject in place (about the vmobject's center)
-        return self.scale(factor, about_point=None)
+        return self.scale(factor, None)
 
 
 class VGroup(VMobject):

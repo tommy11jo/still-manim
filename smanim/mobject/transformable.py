@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing_extensions import Self
 import numpy as np
-from smanim.constants import ORIGIN, OUT, PI, UP
+from smanim.constants import ORIGIN, UP
 from smanim.mobject.mobject import Mobject
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
 from smanim.utils.space_ops import rotation_matrix
@@ -14,9 +14,9 @@ class TransformableMobject(Mobject):
     def rotate_points(
         self,
         points: InternalPoint3D_Array,
-        angle: float = PI / 4,
-        axis: Vector3 = OUT,
-        about_point: Point3D | None = None,
+        angle: float,
+        axis: Vector3,
+        about_point: Point3D,
     ) -> InternalPoint3D_Array:
         """Counter-clockwise rotation"""
         points = points.copy()
@@ -32,7 +32,7 @@ class TransformableMobject(Mobject):
         self,
         points: InternalPoint3D_Array,
         factor: float,
-        about_point: Point3D | None = None,
+        about_point: Point3D,
     ) -> InternalPoint3D_Array:
         points = points.copy()
         if about_point is None:

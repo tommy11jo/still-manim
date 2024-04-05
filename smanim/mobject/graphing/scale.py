@@ -109,3 +109,6 @@ class LinearBase(_ScaleBase):
             value to be divided by the scale factor.
         """
         return value / self.scale_factor
+
+
+# TODO: Add LogBase

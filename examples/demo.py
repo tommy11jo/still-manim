@@ -725,4 +725,22 @@ def doubleArrow():
     canvas.snapshot(preview=True)
 
 
-doubleArrow()
+# doubleArrow()
+
+
+# TODO: Need more natural rotation about a point for text
+def textRotation():
+    a = Arrow(LEFT, UR)
+    t = Text("hey there")
+    t.next_to(a, UR, buff=0)
+    g = Group(a, t)
+
+    g2 = g.copy()
+    canvas.add(g2)
+
+    g.rotate(PI)
+    canvas.add(g)
+    canvas.snapshot(preview=True)
+
+
+# textRotation()
