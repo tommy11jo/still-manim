@@ -3,7 +3,7 @@ from typing_extensions import Self
 import numpy as np
 from smanim.mobject.geometry.arc import ArcBetweenPoints
 from smanim.utils.bezier import interpolate
-from smanim.utils.color import RED, ManimColor, has_default_colors_set
+from smanim.utils.color import GREEN, RED, ManimColor, has_default_colors_set
 from smanim.constants import DL, DR, ORIGIN, OUT, PI, UL, UR
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import ManimFloat, Point3D, Point3D_Array, QuadArray_Point3D, Vector3
@@ -11,6 +11,7 @@ from smanim.utils.space_ops import regular_vertices
 from smanim.utils.logger import log
 
 __all__ = [
+    "Polygram",
     "Polygon",
     "Square",
     "Triangle",
@@ -19,33 +20,26 @@ __all__ = [
 ]
 
 
-class Polygon(VMobject):
+# Like polygons, but allows for unclosed connections of lines
+class Polygram(VMobject):
     def __init__(
         self,
         vertices: Point3D_Array,
-        corner_radius: float = 0.0,
-        default_stroke_color: ManimColor = RED,
+        default_stroke_color: ManimColor = GREEN,
+        is_closed=False,
         **kwargs,
     ):
         if not has_default_colors_set(**kwargs):
             kwargs["default_stroke_color"] = default_stroke_color
         self._vertices = np.array(vertices)
-        self.corner_radius = corner_radius
-        super().__init__(**kwargs)
-        if corner_radius > 0:
-            self.round_corners(corner_radius)
-            self.rounded = True
+        super().__init__(is_closed=is_closed, **kwargs)
 
     def generate_points(self) -> None:
         """Override to generate points by interpolating between each pair of vertices"""
         points: List[Point3D] = []
-        vertices_behind = np.roll(self.vertices, -1, axis=0)
-        for start, end in zip(self.vertices, vertices_behind):
-            bezier_pts = [
-                interpolate(start, end, a)
-                for a in np.linspace(0, 1, VMobject.points_per_curve)
-            ]
-            points.extend(bezier_pts)
+        for start, end in zip(self.vertices, self.vertices[1:]):
+            quad = self.gen_bezier_quad_from_line(start, end)
+            points.extend(quad)
         self.points = np.array(points, dtype=ManimFloat)
 
     @property
@@ -59,8 +53,6 @@ class Polygon(VMobject):
     def reset_points_from_vertices(self, new_vertices: Point3D_Array) -> None:
         self.vertices = np.array(new_vertices)
         self.generate_points()
-        if self.corner_radius > 0:
-            self.round_corners(self.corner_radius)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__qualname__
@@ -69,6 +61,67 @@ class Polygon(VMobject):
         return (
             f'{class_name}(vertices={" ,".join([f"Point({pt})" for pt in clipped_pts])}'
         )
+
+    # Override the core transformations to keep vertices updated
+    def rotate(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3 = OUT,
+        about_point: Point3D | None = ORIGIN,
+    ) -> Self:
+        self.vertices = super().rotate_points(self.vertices, angle, axis, about_point)
+        self.points = super().rotate_points(self.points, angle, axis, about_point)
+        for mob in self.submobjects:
+            mob.rotate(angle, axis, about_point)
+        return self
+
+    def scale(self, factor: float, about_point: Point3D | None = ORIGIN) -> Self:
+        self.vertices = super().scale_points(self.vertices, factor, about_point)
+        self.points = super().scale_points(self.points, factor, about_point)
+        for mob in self.submobjects:
+            mob.scale(factor, about_point)
+        return self
+
+    def stretch(self, factor: float, dim: int) -> Self:
+        self.vertices = super().stretch_points(self.vertices, factor, dim)
+        self.points = super().stretch_points(self.points, factor, dim)
+        for mob in self.submobjects:
+            mob.stretch(factor, dim)
+        return self
+
+    def shift(self, vector: Vector3) -> Self:
+        self.vertices = super().shift_points(self.vertices, vector)
+        self.points = super().shift_points(self.points, vector)
+        for mob in self.submobjects:
+            mob.shift(vector)
+        return self
+
+
+class Polygon(Polygram):
+    def __init__(
+        self,
+        vertices: Point3D_Array,
+        corner_radius: float = 0.0,
+        default_stroke_color: ManimColor = RED,
+        **kwargs,
+    ):
+        if not has_default_colors_set(**kwargs):
+            kwargs["default_stroke_color"] = default_stroke_color
+        self._vertices = np.array(vertices)
+        self.corner_radius = corner_radius
+        super().__init__(is_closed=True, vertices=vertices, **kwargs)
+        if corner_radius > 0:
+            self.round_corners(corner_radius)
+            self.rounded = True
+
+    def generate_points(self) -> None:
+        """Override to generate points by interpolating between each pair of vertices"""
+        points: List[Point3D] = []
+        vertices_behind = np.roll(self.vertices, -1, axis=0)
+        for start, end in zip(self.vertices, vertices_behind):
+            quad = self.gen_bezier_quad_from_line(start, end)
+            points.extend(quad)
+        self.points = np.array(points, dtype=ManimFloat)
 
     def round_corners(self, radius: float) -> None:
         """Applies surgery to the polygon, reducing the existing lines and inserting the arcs at the corners.
@@ -122,40 +175,6 @@ class Polygon(VMobject):
         new_quads.extend(arc.get_points_in_quads(arc.points))
         self.points = np.concatenate(np.array(new_quads), axis=0)
         self.rounded = True
-
-    # Override the core transformations to keep vertices updated
-    def rotate(
-        self,
-        angle: float = PI / 4,
-        axis: Vector3 = OUT,
-        about_point: Point3D | None = ORIGIN,
-    ) -> Self:
-        self.vertices = super().rotate_points(self.vertices, angle, axis, about_point)
-        self.points = super().rotate_points(self.points, angle, axis, about_point)
-        for mob in self.submobjects:
-            mob.rotate(angle, axis, about_point)
-        return self
-
-    def scale(self, factor: float, about_point: Point3D | None = ORIGIN) -> Self:
-        self.vertices = super().scale_points(self.vertices, factor, about_point)
-        self.points = super().scale_points(self.points, factor, about_point)
-        for mob in self.submobjects:
-            mob.scale(factor, about_point)
-        return self
-
-    def stretch(self, factor: float, dim: int) -> Self:
-        self.vertices = super().stretch_points(self.vertices, factor, dim)
-        self.points = super().stretch_points(self.points, factor, dim)
-        for mob in self.submobjects:
-            mob.stretch(factor, dim)
-        return self
-
-    def shift(self, vector: Vector3) -> Self:
-        self.vertices = super().shift_points(self.vertices, vector)
-        self.points = super().shift_points(self.points, vector)
-        for mob in self.submobjects:
-            mob.shift(vector)
-        return self
 
 
 class Rectangle(Polygon):

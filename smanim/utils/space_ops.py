@@ -72,6 +72,13 @@ def rotate_vector(
     return rotation_matrix(angle, axis) @ vector
 
 
+def mirror_vector(v, axis):
+    projection = (np.dot(v, axis) / np.dot(axis, axis)) * axis
+    perpendicular_component = v - projection
+    mirrored_vector = v - 2 * perpendicular_component
+    return mirrored_vector
+
+
 def compass_directions(n: int = 4, start_vect: np.ndarray = RIGHT) -> np.ndarray:
     """Finds the cardinal directions using tau."""
     angle = TAU / n

@@ -6,12 +6,12 @@ from smanim.mobject.mobject import Mobject
 from smanim.mobject.text.text_mobject import Text
 from smanim.mobject.geometry.tips import ArrowTip, ArrowTriangleFilledTip
 from smanim.mobject.vmobject import VMobject
-from smanim.typing import ManimFloat, Point3D
+from smanim.typing import ManimFloat, Point3D, Vector3
 from smanim.utils.color import ManimColor
 from smanim.utils.logger import log
 from smanim.utils.space_ops import angle_from_vector
 
-__all__ = ["Line", "Arrow"]
+__all__ = ["Line", "Arrow", "Vector"]
 
 
 # TODO: investigate different svg line caps types, fix how arrow looks weird with stroke_width=2.0
@@ -114,7 +114,8 @@ class Line(VMobject):
             end_pt += 0.0001
         return start_pt, end_pt
 
-    # TODO: consider whether this function is worth keeping
+    # FUTURE: Determine whether this function is worth keeping
+    # Helper function for labeling lines/arrows/vectors in their natural direction when possible and always readable
     def add_label(
         self, label: Text, buff: float = SMALL_BUFF, opposite_side=False
     ) -> None:
@@ -125,15 +126,16 @@ class Line(VMobject):
         angle = angle_from_vector(unit_dir)
 
         flipped_scalar = 1
+        if angle >= PI:
+            angle -= PI
+            flipped_scalar = -1
         if angle >= PI / 2:
-            label.rotate_in_place(angle - PI)
+            angle -= PI
             flipped_scalar = -1
-        elif angle >= PI:
-            label.rotate_in_place(angle + PI)
-            flipped_scalar = -1
+        label.rotate_in_place(angle)
         perp_dir = np.array([-dir_y, dir_x, 0])
         sign = -1 * flipped_scalar if opposite_side else 1 * flipped_scalar
-        midpoint = self.start + unit_dir * (line_len / 2 - label.width / 2)
+        midpoint = self.start + unit_dir * (line_len / 2)
         label.move_to(midpoint + sign * perp_dir * buff)
         self.add(label)
 
@@ -245,3 +247,8 @@ class Arrow(TipableVMobject):
         if not self.end_tip:
             return super().end
         return self.end_tip.tip_point
+
+
+class Vector(Arrow):
+    def __init__(self, direction: Vector3 = RIGHT, **kwargs):
+        super().__init__(ORIGIN, direction, **kwargs)

@@ -1,5 +1,6 @@
 from pathlib import Path
 from smanim import *
+from smanim.utils.space_ops import mirror_vector
 
 config = Config(save_file_dir=Path(__file__).parent / "media")
 canvas = Canvas(config)
@@ -71,6 +72,9 @@ def rotateTest():
     p.rotate(PI / 30)
     canvas.add(p)
     canvas.snapshot(preview=True)
+
+
+# rotateTest()
 
 
 def positionTest():
@@ -580,19 +584,20 @@ def vectorAddtion():
 # vectorAddtion()
 
 
+# Cleaner version of above vector addition
 def myVectorAddtion():
     v1 = Arrow(start=LEFT * 2, end=UP * 2 + LEFT * 2, fill_color=BLUE)
     # Making the text use "color" vs the arrow use "fill_color" is a bit tough
     # FUTURE: Maybe every object can a default fill_color or stroke_color that gets set when color is passed in
-    v1_label = Text("v1", color=BLUE)
+    v1_label = Text("v1 label")
     v1.add_label(v1_label)
 
     v2 = Arrow(start=UP * 2 + LEFT * 2, end=UP * 2 + RIGHT * 2, fill_color=GREEN)
-    v2_label = Text("v2", color=GREEN)
+    v2_label = Text("v2")
     v2.add_label(v2_label)
 
     vsum = Arrow(start=LEFT * 2, end=UP * 2 + RIGHT * 2, fill_color=RED)
-    vsum_label = Text("v1 + v2", color=RED)
+    vsum_label = Text("v1 + v2 and more text to demo")
     vsum.add_label(vsum_label, opposite_side=True)
     canvas.add(v1, v1_label)
     canvas.add(v2, v2_label)
@@ -601,7 +606,31 @@ def myVectorAddtion():
     canvas.snapshot(preview=True)
 
 
-# myVectorAddtion()
+def labelCases():
+    v1 = Arrow(start=LEFT, end=RIGHT)
+    v1.add_label(Text("v1"))
+
+    v2 = Arrow(start=ORIGIN + RIGHT * 0.1, end=UR)
+    v2.add_label(Text("v2 at PI/4"))
+
+    v3 = Arrow(start=ORIGIN + UP * 0.1, end=UL)
+    v3.add_label(Text("v3 at 3PI/4"))
+
+    v4 = Arrow(start=ORIGIN + LEFT * 0.1, end=DL)
+    v4.add_label(Text("v4"))
+
+    v5 = Arrow(start=ORIGIN + DOWN * 0.1, end=DR)
+    v5.add_label(Text("v5"))
+
+    v6 = Arrow(start=ORIGIN + DOWN * 0.2, end=DOWN - 0.01)
+    v6.add_label(Text("v6"))
+
+    canvas.add(v1, v2, v3, v4, v5, v6)
+
+    canvas.snapshot(preview=True)
+
+
+labelCases()
 
 
 def flippedVectorLabel():
@@ -728,7 +757,6 @@ def doubleArrow():
 # doubleArrow()
 
 
-# TODO: Need more natural rotation about a point for text
 def textRotation():
     a = Arrow(LEFT, UR)
     t = Text("hey there")
@@ -744,3 +772,44 @@ def textRotation():
 
 
 # textRotation()
+
+
+def moreTextRotation():
+    o = Dot([0, 0, 0])
+    to = Text("origin")
+    canvas.add(to)
+    l1 = Line(ORIGIN, UR)
+    l2 = Line(ORIGIN, UL)
+    canvas.add(l1, l2)
+    dot1 = Dot(UR, fill_color=GREEN)
+    dot2 = Dot(UR, fill_color=BLUE).rotate(PI / 4)
+    canvas.add(dot1, dot2)
+    t1 = Text("to rotate").shift(UR)
+    t2 = Text("not rotate").shift(UR)
+    t1.rotate(PI / 4)
+    # t1.rotate(PI / 12)
+
+    t2_center = Dot(t2.get_center(), fill_color=YELLOW)
+    t1_center = Dot(t1.get_center(), fill_color=ORANGE)
+    t1_ul = Dot(t1.svg_upper_left, fill_color=TEAL)
+    canvas.add(t1_ul)
+    canvas.add(t1_center, t2_center)
+    canvas.add(o, t1, t2)
+    canvas.snapshot(preview=True)
+
+
+# moreTextRotation()
+
+
+def vectorMirrorAbout():
+    a_vec = np.array([2, 1, 0])
+    a = Vector(a_vec)
+    b_vec = np.array([0.5, 1, 0])
+    b = Vector(b_vec)
+    c_vec = mirror_vector(b_vec, a_vec)
+    c = Vector(c_vec)
+    canvas.add(a, b, c)
+    canvas.snapshot(preview=True)
+
+
+# vectorMirrorAbout()

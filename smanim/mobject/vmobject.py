@@ -11,6 +11,7 @@ from smanim.constants import (
     PI,
 )
 from smanim.mobject.transformable import TransformableMobject
+from smanim.utils.bezier import interpolate
 from smanim.utils.logger import log
 from smanim.utils.color import WHITE, ManimColor
 from smanim.typing import (
@@ -20,6 +21,7 @@ from smanim.typing import (
     QuadArray_Point3D,
     Vector3,
 )
+from smanim.utils.space_ops import mirror_vector
 
 __all__ = ["VMobject", "VGroup"]
 
@@ -95,7 +97,7 @@ class VMobject(TransformableMobject, ABC):
         self._points = new_points
         # update the bounding box whenever points are moved
         bounding_points = self.get_start_anchors()
-        if not self.is_closed:
+        if not self.is_closed and len(self._points) > 0:
             bounding_points = np.append(
                 bounding_points, [self.get_end_anchors()[-1]], axis=0
             )
@@ -212,6 +214,30 @@ class VMobject(TransformableMobject, ABC):
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_opacity(opacity=opacity, family=True)
+
+    def gen_bezier_quad_from_line(self, start: Point3D, end: Point3D) -> Point3D_Array:
+        bezier_pts = [
+            interpolate(start, end, a)
+            for a in np.linspace(0, 1, VMobject.points_per_curve)
+        ]
+        return bezier_pts
+
+    # TODO: Struggles with high-rate of change, needs debugging but using straight lines isn't that bad for now
+    # Might need to use manims approach: lines => make_smooth
+    def gen_bezier_quad_smooth_curve(
+        self, last_h2: Point3D, last_a2: Point3D, new_anchor: Point3D
+    ) -> Point3D_Array:
+        """Returns 4 points representing a smooth curve based on the previous handle and anchor points.
+        - last_h2: the second handle of the previous quad
+        - last_a2: the second anchor of the previous quad"""
+        if np.array_equal(last_a2, new_anchor):
+            raise Exception("new anchor must be different than last anchor")
+        last_tangent = last_a2 - last_h2
+        handle1 = last_a2 + last_tangent
+        to_anchor_vect = new_anchor - last_a2
+        new_tangent = mirror_vector(last_tangent, to_anchor_vect)
+        handle2 = new_anchor - new_tangent
+        return [last_a2, handle1, handle2, new_anchor]
 
     ## Core transformations
     def rotate(

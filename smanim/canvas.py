@@ -236,6 +236,21 @@ class Canvas:
         if preview:
             subprocess.run(["open", fpath])
 
+    # Layering
+    def move_to_back(self, mobject: Mobject, family: bool = True):
+        bottom_z_index = min([mob.z_index for mob in self.mobjects.get_family()])
+        mobject.z_index = bottom_z_index - 1
+        if family:
+            for mobject in self.mobjects.get_family()[1:]:
+                mobject.z_index = bottom_z_index - 1
+
+    def move_to_front(self, mobject: Mobject, family: bool = True):
+        top_z_index = max([mob.z_index for mob in self.mobjects.get_family()])
+        mobject.z_index = top_z_index + 1
+        if family:
+            for mobject in self.mobjects.get_family()[1:]:
+                mobject.z_index = top_z_index + 1
+
     # Transformations on canvas apply directly to its group
     # Slightly misleading since canvas does not scale itself
     # Gives the impression that canvas is a mobject when it is not

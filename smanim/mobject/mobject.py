@@ -61,7 +61,7 @@ class Mobject(ABC):
         self._bounding_points = bounding_points
 
     # Grouping
-    def add(self, *mobjects: Mobject, insert_before=False) -> Self:
+    def add(self, *mobjects: Mobject, insert_at_front: bool = False) -> Self:
         new_mobjects = []
         for mobject in mobjects:
             if mobject is self:
@@ -70,7 +70,7 @@ class Mobject(ABC):
                 log.warning(f"Mobject already added: {mobject}")
             else:
                 new_mobjects.append(mobject)
-        if not insert_before:
+        if not insert_at_front:
             self.submobjects.extend(new_mobjects)
         else:
             self.submobjects = new_mobjects + self.submobjects
@@ -268,6 +268,41 @@ class Mobject(ABC):
     def shift(self, vector: Vector3) -> Self:
         raise NotImplementedError("Has to be implemented in subclass")
 
+    ## Layering
+    def bring_to_back(self, mobject: Mobject) -> Self:
+        """Places a mobject behind all other mobjects within this mobject's family.
+        Note: Use `bring_to_back` in canvas.py to place a mobject behind ALL other mobjects.
+        """
+        members = self.get_family()
+        if mobject not in members:
+            raise ValueError(
+                "Mobject to be brought back must be in this mobject's family"
+            )
+        bottom_z_index = min([mob.z_index for mob in self.get_family()])
+        if mobject.z_index == bottom_z_index:
+            self.remove(mobject)
+            self.add(mobject, insert_at_front=True)
+        else:
+            mobject.z_index = bottom_z_index - 1
+        return self
+
+    def bring_to_front(self, mobject: Mobject) -> Self:
+        """Places a mobject in front of all other mobjects within this mobject's family.
+        Note: Use `bring_to_front` in canvas.py to place a mobject in front of ALL other mobjects.
+        """
+        members = self.get_family()
+        if mobject not in members:
+            raise ValueError(
+                "Mobject to be brought to front must be in this mobject's family"
+            )
+        top_z_index = max([mob.z_index for mob in self.get_family()])
+        if mobject.z_index == top_z_index:
+            self.remove(mobject)
+            self.add(mobject)
+        else:
+            mobject.z_index = top_z_index + 1
+        return self
+
     # Style matching helpers
     def set_color(self, color: ManimColor, family: bool = False) -> Self:
         # Should be overriden in subclasses typically
@@ -312,8 +347,8 @@ class Group(Mobject):
     def __iadd__(self, mobject: Mobject) -> Self:
         return self.add(mobject)
 
-    def add(self, *mobjects: Mobject) -> Self:
-        return super().add(*mobjects)
+    def add(self, *mobjects: Mobject, insert_at_front: bool = False) -> Self:
+        return super().add(*mobjects, insert_at_front=insert_at_front)
 
     def rotate(
         self,

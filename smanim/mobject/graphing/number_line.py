@@ -21,10 +21,10 @@ class NumberLine(TipableVMobject):
         # start (inclusive), end (inclusive), step
         x_range: Sequence[float] | None = [-2, 2, 1],
         length: float | None = None,
-        unit_size: float = 1,
+        step_size: float = 1.0,
         scaling: _ScaleBase | None = None,
         include_ticks: bool = True,
-        exclude_origin_tick: bool = False,
+        include_origin_tick: bool = True,
         include_numbers: bool = True,
         tick_size: float = 0.1,
         # unlike ticks which are relatively simple, the start and end tip arrows are composed to grant user control over their styles
@@ -50,15 +50,18 @@ class NumberLine(TipableVMobject):
         if scaling is None:
             scaling = LinearBase()
 
-        self.x_range = np.array(x_range, dtype=float)
+        if len(x_range) == 2:
+            self.x_range = np.array([x_range[0], x_range[1], 1], dtype=float)
+        else:
+            self.x_range = np.array(x_range, dtype=float)
         self.length = length
-        self.unit_size = unit_size
+        self.step_size = step_size
         self.scaling = scaling
         self.x_min, self.x_max, self.x_step = scaling.function(self.x_range)
         if self.x_max <= self.x_min:
             raise ValueError("`x_max` must be > `x_min`")
         self.include_ticks = include_ticks
-        self.exclude_origin_tick = exclude_origin_tick
+        self.include_origin_tick = include_origin_tick
         self.include_numbers = include_numbers
         self.tick_size = tick_size
 
@@ -72,9 +75,10 @@ class NumberLine(TipableVMobject):
         if length:
             self.length = length
             self.scale(length / self.get_length())
-            self.unit_size = self.get_length() / (self.x_range[1] - self.x_range[0])
+            # self.step_size = self.get_length() / (self.x_range[1] - self.x_range[0])
+            self.step_size = self.get_length() / (self.x_max - self.x_min)
         else:
-            self.scale(self.unit_size)
+            self.scale(self.step_size)
         self.center()
 
         if self.include_ticks:
@@ -125,7 +129,7 @@ class NumberLine(TipableVMobject):
 
     def get_tick_range(self):
         x_min, x_max, x_step = self.x_range
-        if not self.exclude_origin_tick:
+        if self.include_origin_tick:
             tick_range = np.arange(x_min, x_max + 1, x_step)
         else:
             tick_range = np.concatenate(
@@ -138,4 +142,4 @@ class NumberLine(TipableVMobject):
         if value < self.x_min or value > self.x_max:
             raise ValueError(f"Number {value} not on number line")
         units_from_start = value - self.x_min
-        return self.start + self.get_direction() * units_from_start * self.unit_size
+        return self.start + self.get_direction() * units_from_start * self.step_size

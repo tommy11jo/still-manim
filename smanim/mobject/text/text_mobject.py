@@ -151,6 +151,7 @@ class Text(TransformableMobject):
         # Note: this point doesn't change during in-place rotation because SVG applies it after. It still changes for other transformations
         # So, `svg_upper_left` can get out of sync with `bounding_points`. Be careful.
         self.svg_upper_left = ul.copy()
+        self.center()
 
     @property
     def position(self):
@@ -191,22 +192,17 @@ class Text(TransformableMobject):
             # in-place rotation must commute with all other transformations, since it is applied last
             # Leaves the `svg_upper_left` unchanged, since a rotation will be applied to it during svg generation
             self.heading = self.heading + angle  # see `heading` setter
+            for mob in self.submobjects:
+                mob.rotate(angle, axis, about_point)
+            return self
         else:
             # other rotation can freely change upper left and bbox while leaving text intact
-            bounding_points = super().rotate_points(
-                self.bounding_points, angle, axis, about_point
-            )
-            self.bounding_points = bounding_points
-            # TODO: need new way to make text rotations about points appear more natural
-            # shoot a ray from about_point to object and use
-            # start_pt, end_pt = Line.find_line_anchors(about_point, self)
-            self.svg_upper_left = super().rotate_points(
-                self.svg_upper_left, angle, axis, about_point
-            )
-
-        for mob in self.submobjects:
-            mob.rotate(angle, axis, about_point)
-        return self
+            old_center = self.get_center(family=False)
+            new_center = super().rotate_points(
+                np.array([old_center]), angle, axis, about_point
+            )[0]
+            self.move_to(new_center)
+            return self
 
     # scales both text and bbox, assumes font size is exactly proportional
     # by default, scales using center point as `about_point`

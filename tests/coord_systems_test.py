@@ -1,4 +1,3 @@
-from copy import deepcopy
 from pathlib import Path
 from smanim.canvas import Canvas
 from smanim.config import Config
@@ -37,7 +36,7 @@ def number_line_with_vector():
 def number_line_custom_arrow_tip():
     # Notice how fill_color gets overridden
     end_tip = Arrow(LEFT / 2, RIGHT / 2, tip_length=0.1, tip_width=0.05, fill_color=RED)
-    start_tip = deepcopy(end_tip)
+    start_tip = end_tip.copy()
     baby_tips_line = NumberLine(
         [-3, 4, 1],
         start_arrow_tip=start_tip,
@@ -65,8 +64,8 @@ def axes():
 
 
 def custom_axes():
-    x_axis = NumberLine([-3, 4, 1], exclude_origin_tick=True)
-    y_axis = NumberLine([-4, 1, 1], exclude_origin_tick=True)
+    x_axis = NumberLine([-3, 4, 1], include_origin_tick=False)
+    y_axis = NumberLine([-4, 1, 1], include_origin_tick=False)
     a = Axes(x_axis, y_axis)
     a.center()
     canvas.add(a)
@@ -90,8 +89,8 @@ def y_axis_shift():
 
 def graphVector():
     axes = Axes()
-    origin_point = axes.point_to_point(0, 0)
-    point_end = axes.point_to_point(1, 2)
+    origin_point = axes.coords_to_point(0, 0)
+    point_end = axes.coords_to_point(1, 2)
     v = Arrow(origin_point, point_end, fill_color=RED)
     canvas.add(axes, v)
     canvas.snapshot(preview=True)
@@ -103,10 +102,10 @@ def graphVector():
 def labeledVectorOnGraph():
     axes = Axes()
     canvas.add(axes)
-    origin_point = axes.point_to_point(0, 0)
-    point_end = axes.point_to_point(1, 2)
-    y_axis_point = axes.point_to_point(0, 2)
-    x_axis_point = axes.point_to_point(1, 0)
+    origin_point = axes.coords_to_point(0, 0)
+    point_end = axes.coords_to_point(1, 2)
+    y_axis_point = axes.coords_to_point(0, 2)
+    x_axis_point = axes.coords_to_point(1, 0)
 
     comps_group = Group()
     y_comp = Line(x_axis_point, point_end, stroke_color=BLUE)
@@ -127,4 +126,87 @@ def labeledVectorOnGraph():
     canvas.snapshot(preview=True)
 
 
-labeledVectorOnGraph()
+# labeledVectorOnGraph()
+
+
+def gridLines():
+    graph = NumberPlane()
+    canvas.add(graph)
+    canvas.snapshot(preview=True)
+
+
+# gridLines()
+
+
+def simplePlot():
+    # x_axis = NumberLine([-2, 2, 1], exclude_origin_tick=True)
+    # y_axis = NumberLine([-2, 8, 1], exclude_origin_tick=True)
+    # graph = NumberPlane(x_axis=x_axis, y_axis=y_axis)
+    graph = NumberPlane.from_axes_ranges(
+        (-3, 3), (-2, 9, 2), fill_canvas=True, num_sampled_graph_points_per_tick=15
+    )
+    # graph.plot(lambda x: x)
+    # graph.plot(lambda x: np.sin(x))
+    graph.plot(lambda x: x**2)
+    # graph.center()
+    canvas.add(graph)
+    # canvas.scale(2)
+    canvas.snapshot(preview=True)
+
+
+# simplePlot()
+
+
+# discontinuous test
+def discontinuousPlot():
+    # x_axis = NumberLine([-3, 3], exclude_origin_tick=True)
+    # y_axis = NumberLine([-6, 6], exclude_origin_tick=True)
+    # ax1 = NumberPlane(x_axis=x_axis.copy(), y_axis=y_axis.copy()).shift(LEFT)
+    # ax2 = NumberPlane(x_axis=x_axis.copy(), y_axis=y_axis.copy()).shift(RIGHT)
+    ax1 = NumberPlane.from_axes_ranges((-3, 3), (-6, 6))
+    ax2 = NumberPlane.from_axes_ranges((-3, 3), (-6, 6))
+
+    def fn(x):
+        return (x**2 - 2) / (x**2 - 4)
+
+    # will error
+    # incorrect = ax1.plot(fn, stroke_color=RED)
+    correct = ax2.plot(
+        fn,
+        discontinuities=[-2, 2],  # discontinuous points
+        dt=0.1,  # left and right tolerance of discontinuity
+        stroke_color=GREEN,
+    )
+    canvas.add(ax2)
+    canvas.snapshot(preview=True)
+
+
+# discontinuousPlot()
+def numberLineSpanning():
+    n = NumberLine((-2, 18), length=CONFIG.fh)
+
+    n.rotate(PI / 4)
+    # n.rotate(PI / 2)
+    canvas.add(Dot(n.coord_to_point(0)))
+    canvas.add(Dot(n.start, fill_color=GREEN))
+    canvas.add(Dot([0, 0, 0]))
+    canvas.add(n)
+    canvas.snapshot(preview=True)
+
+
+# numberLineSpanning()
+
+
+def derivativePlot():
+    n = NumberPlane.from_axes_ranges((-3, 4), (-8, 18))
+    parabola = n.plot(lambda x: x**2)
+    parabola_deriv = parabola.gen_derivative_fn()
+    n.plot(parabola_deriv)
+    n.scale(0.5)
+    # n.rotate(PI / 4)
+
+    canvas.add(n)
+    canvas.snapshot(preview=True)
+
+
+derivativePlot()
