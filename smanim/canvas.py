@@ -1,6 +1,5 @@
 import base64
 from pathlib import Path
-import subprocess
 from textwrap import dedent
 from typing import List, Sequence
 
@@ -20,6 +19,16 @@ import itertools as it
 import svg
 
 from smanim.utils.space_ops import to_pixel_coords
+
+# make this compatible with pyodide
+import sys
+
+BROWSER_ENV = True
+if "pyodide" not in sys.modules:
+    import subprocess
+
+    BROWSER_ENV = False
+
 
 __all__ = ["canvas", "Canvas"]
 
@@ -69,7 +78,7 @@ class Canvas:
 
     def get_to_svg_func(self, mobject: Mobject):
         to_svg_funcs = {
-            VMobject: self.vmobject_to_svg_el,
+            VMobject: self.vmobject_to_svg_el,  # includes VGroup handling
             Text: self.text_to_svg_el,
             Mobject: None,
         }
@@ -78,7 +87,7 @@ class Canvas:
                 return to_svg_funcs[_type]
         raise TypeError(f"Displaying an object of class {_type} is not supported")
 
-    def snapshot(self, preview=False):
+    def snapshot(self, preview: bool = False, overwrite: bool = False):
         mobjects_in_order = self.get_mobjects_to_display()
         svg_els_lst: List[svg.Element] = []
         for mobject in mobjects_in_order:
@@ -91,9 +100,18 @@ class Canvas:
             viewBox=svg.ViewBoxSpec(0, 0, self.config.pw, self.config.ph),
             elements=svg_els_lst,
         )
-        self.save_svg(svg_view_obj, preview=preview, suffix=self.num_snapshots)
+        if not overwrite:
+            self.num_snapshots += 1
+            suffix = self.num_snapshots - 1
+        else:
+            suffix = 0
+        self.save_svg(svg_view_obj, preview=preview, suffix=suffix)
 
-        self.num_snapshots += 1
+    # Used in pyodide web environment
+    # Since the state of python program is maintained across calls to `runPython`, canvas state must be cleared here
+    def draw(self):
+        self.snapshot(overwrite=True, preview=False)
+        self.clear()
 
     def vmobject_to_svg_el(self, vmobject: VMobject) -> Sequence[svg.Element]:
         if len(vmobject.points) == 0:  # handles VGroups
@@ -228,12 +246,15 @@ class Canvas:
         preview: bool = False,
         suffix: int | str = "",
     ):
+        self.config.mk_save_dir_if_not_exists()
         script_dir = Path(self.config.save_file_dir)
         fpath = script_dir / f"{name}{suffix}.svg"
 
         with open(fpath, "w") as file:
             file.write(str(svg_obj))
         if preview:
+            if BROWSER_ENV:
+                raise Exception("Cannot open a preview while running in a browser env")
             subprocess.run(["open", fpath])
 
     # Layering

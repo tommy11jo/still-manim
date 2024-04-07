@@ -10,9 +10,9 @@ from smanim.constants import (
     OUT,
     PI,
 )
+from smanim.mobject.mobject import Group
 from smanim.mobject.transformable import TransformableMobject
 from smanim.utils.bezier import interpolate
-from smanim.utils.logger import log
 from smanim.utils.color import WHITE, ManimColor
 from smanim.typing import (
     InternalPoint3D_Array,
@@ -281,32 +281,20 @@ class VMobject(TransformableMobject, ABC):
         return self.scale(factor, None)
 
 
-class VGroup(VMobject):
-    def __init__(self, *vmobjects, **kwargs):
-        super().__init__(**kwargs)
-        self.add(*vmobjects)
-
-    def generate_points(self) -> None:  # override
-        # VGroup is a shell for holding VMobjects so adds no points itself
+class VGroup(Group, VMobject):
+    def generate_points(self):
         self.points = np.empty((0, 3))
 
-    def __repr__(self) -> str:
-        return f'{self.__class__.__qualname__}({", ".join(str(mob) for mob in self.submobjects)})'
-
-    def __iter__(self):
-        return iter(self.submobjects)
-
-    def __getitem__(self, index: int) -> VMobject:
-        return self.submobjects[index]
-
-    def add(self, *vmobjects: VMobject) -> Self:
+    def add(self, *vmobjects: VMobject, insert_at_front: bool = False) -> Self:
         to_add = []
         for vmobject in vmobjects:
-            if not isinstance(vmobject, VMobject):
-                log.warning(f"Object must be VMobject to be added: {vmobject}")
+            if not isinstance(vmobject, VMobject) and not isinstance(vmobject, VGroup):
+                raise ValueError(
+                    f"Mobject must be VMobject or VGroup to be added: {vmobject}"
+                )
             else:
                 to_add.append(vmobject)
-        super().add(*to_add)
+        super().add(*to_add, insert_at_front=insert_at_front)
         return self
 
     def set_fill(self, color: ManimColor, opacity: float = 1.0):

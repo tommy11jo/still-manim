@@ -32,7 +32,6 @@ class NumberLine(TipableVMobject):
         start_arrow_tip: Arrow | None = None,
         end_arrow_tip: Arrow | None = None,
         stroke_width: float = 2.0,
-        # TODO: call this color or stroke_color?
         color: ManimColor = WHITE,
         **kwargs,
     ):
@@ -75,7 +74,6 @@ class NumberLine(TipableVMobject):
         if length:
             self.length = length
             self.scale(length / self.get_length())
-            # self.step_size = self.get_length() / (self.x_range[1] - self.x_range[0])
             self.step_size = self.get_length() / (self.x_max - self.x_min)
         else:
             self.scale(self.step_size)

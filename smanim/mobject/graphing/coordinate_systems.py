@@ -110,9 +110,7 @@ class NumberPlane(Axes):
         **kwargs,
     ):
         if fill_canvas:
-            # x_length = round(CONFIG.fw) - 1
             x_length = CONFIG.fw
-            # y_length = round(CONFIG.fh) - 1
             y_length = CONFIG.fh
         # easiest way to create a 2D cartesian graph with custom ranges is by calling this constructor
         x_axis = NumberLine(

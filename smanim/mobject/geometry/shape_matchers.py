@@ -6,10 +6,10 @@ from smanim.mobject.geometry.line import Line
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.geometry.polygon import Rectangle
 from smanim.mobject.vmobject import VGroup
-from smanim.typing import Point3D, Vector3
+from smanim.typing import Point3D, Point3D_Array, Vector3
 from smanim.utils.color import RED, YELLOW, ManimColor
 
-__all__ = ["Cross", "SurroundingRectangle"]
+__all__ = ["Cross", "_SurroundingRectangle"]
 
 
 class Cross(VGroup):
@@ -35,7 +35,8 @@ class Cross(VGroup):
         self.set_stroke(color=stroke_color, width=stroke_width, opacity=stroke_opacity)
 
 
-class SurroundingRectangle(Rectangle):
+# Not meant to be exposed to user since they can just call `mobject.add_surrounding_rect`
+class _SurroundingRectangle(Rectangle):
     """A rectangle surrounding `Mobject`"""
 
     def __init__(
@@ -75,7 +76,21 @@ class SurroundingRectangle(Rectangle):
     def shift(self, vector: Vector3) -> Self:  # override
         self._update_points()
 
+    # The reason for not just updating a new bbox here is because text transformations (like rotate) do not always match up with bbox transformations
+    # The best way to always surround a mobject is to look at the mobject's bounding points
     def _update_points(self):
+        def _add_buff_to_points(bbox: Point3D_Array, buff: float) -> Point3D_Array:
+            # assumes bbox order: UR, UL, DL, DR
+            ur, ul, dl, dr = bbox
+            vshift = UP * buff
+            hshift = RIGHT * buff
+            return [
+                ur + vshift + hshift,
+                ul + vshift - hshift,
+                dl - vshift - hshift,
+                dr - vshift + hshift,
+            ]
+
         # calculate the bbox without this surrounding rect interfering
         if self in self.surrounded.submobjects:
             self.surrounded.remove(self)
@@ -83,4 +98,5 @@ class SurroundingRectangle(Rectangle):
             self.surrounded.add(self)
         else:
             bbox = np.array(self.surrounded.get_bbox())
-        self.reset_points_from_vertices(bbox)
+        bbox_with_buff = _add_buff_to_points(bbox, self.buff)
+        self.reset_points_from_vertices(bbox_with_buff)

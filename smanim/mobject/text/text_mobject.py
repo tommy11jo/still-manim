@@ -2,6 +2,7 @@ import html
 from pathlib import Path
 from typing_extensions import Literal, Self
 import numpy as np
+from smanim.config import CONFIG
 from smanim.constants import (
     ORIGIN,
     OUT,
@@ -12,7 +13,6 @@ from smanim.constants import (
 )
 from smanim.mobject.transformable import TransformableMobject
 from smanim.typing import Point3D, Vector3
-from smanim.config import CONFIG
 from smanim.utils.color import WHITE, ManimColor
 from smanim.utils.space_ops import to_manim_len, to_pixel_len
 from smanim.utils.text_ops import wrap_text
@@ -197,7 +197,7 @@ class Text(TransformableMobject):
             return self
         else:
             # other rotation can freely change upper left and bbox while leaving text intact
-            old_center = self.get_center(family=False)
+            old_center = self.get_center()
             new_center = super().rotate_points(
                 np.array([old_center]), angle, axis, about_point
             )[0]

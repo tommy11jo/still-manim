@@ -31,7 +31,7 @@ class Polygram(VMobject):
     ):
         if not has_default_colors_set(**kwargs):
             kwargs["default_stroke_color"] = default_stroke_color
-        self._vertices = np.array(vertices)
+        self._vertices = np.array(vertices, dtype=ManimFloat)
         super().__init__(is_closed=is_closed, **kwargs)
 
     def generate_points(self) -> None:
@@ -48,10 +48,10 @@ class Polygram(VMobject):
 
     @vertices.setter
     def vertices(self, value: Point3D_Array) -> None:
-        self._vertices = value
+        self._vertices = np.array(value, dtype=ManimFloat)
 
     def reset_points_from_vertices(self, new_vertices: Point3D_Array) -> None:
-        self.vertices = np.array(new_vertices)
+        self.vertices = np.array(new_vertices, dtype=ManimFloat)
         self.generate_points()
 
     def __repr__(self) -> str:
@@ -107,7 +107,7 @@ class Polygon(Polygram):
     ):
         if not has_default_colors_set(**kwargs):
             kwargs["default_stroke_color"] = default_stroke_color
-        self._vertices = np.array(vertices)
+        self._vertices = np.array(vertices, dtype=ManimFloat)
         self.corner_radius = corner_radius
         super().__init__(is_closed=True, vertices=vertices, **kwargs)
         if corner_radius > 0:
@@ -151,9 +151,9 @@ class Polygon(Polygram):
             l1_vec = quad[-1] - quad[0]
             l1_norm = np.linalg.norm(l1_vec)
             l1_vec_norm = l1_vec / l1_norm
-            if l1_norm < 2 * radius:
+            if 2 * radius + 0.001 > l1_norm:
                 # radius = np.linalg.norm(l1_vec) / 2 - 0.01
-                log.warning("Corner radius too big, using unrounded corners.")
+                log.error("Corner radius too big, using unrounded corners.")
                 return
 
             new_l1_start = quad[0] + l1_vec_norm * radius

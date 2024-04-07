@@ -103,7 +103,7 @@ class Mobject(ABC):
         """9 point bbox: 4 corners, 4 edge points, 1 center"""
         if not (-1 <= direction[0] <= 1 and -1 <= direction[1] <= 1):
             raise ValueError(
-                "direction must be [x, x] where x is -1, 0, 1. See constants.py for direction values."
+                f"Direction is {direction} but be [x, x, (optional)] where x is -1, 0, 1. See constants.py for direction values."
             )
         direction = direction.astype(int)
 
@@ -202,6 +202,8 @@ class Mobject(ABC):
         aligned_edge: Vector3 = ORIGIN,
         buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     ) -> Self:
+        if not any([np.array_equal(direction, e) for e in (UP, DOWN, LEFT, RIGHT)]):
+            raise ValueError("`direction` must be one of (UP, DOWN, LEFT, RIGHT)")
         if (np.abs(direction) + np.abs(aligned_edge) >= 2).any():
             raise ValueError(
                 "`direction` and `aligned edge` cannot be along the same axis"
@@ -269,6 +271,7 @@ class Mobject(ABC):
         raise NotImplementedError("Has to be implemented in subclass")
 
     ## Layering
+    # Rule: All else being equal, mobjects are painted in the order they are listed
     def bring_to_back(self, mobject: Mobject) -> Self:
         """Places a mobject behind all other mobjects within this mobject's family.
         Note: Use `bring_to_back` in canvas.py to place a mobject behind ALL other mobjects.
@@ -315,9 +318,9 @@ class Mobject(ABC):
     # Frequently used patterns
     def add_surrounding_rect(self, **rect_config):
         # to avoid circular import
-        from smanim.mobject.geometry.shape_matchers import SurroundingRectangle
+        from smanim.mobject.geometry.shape_matchers import _SurroundingRectangle
 
-        rect = SurroundingRectangle(self, **rect_config)
+        rect = _SurroundingRectangle(self, **rect_config)
         self.add(rect)
 
     def copy(self) -> Mobject:
@@ -384,3 +387,19 @@ class Group(Mobject):
         for mob in self.submobjects:
             mob.set_opacity(opacity, family=True)
         return self
+
+    def arrange(
+        self,
+        direction: Vector3 = RIGHT,
+        aligned_edge: Vector3 = ORIGIN,
+        buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
+        center: bool = True,
+    ) -> Self:
+        for m1, m2 in zip(self.submobjects, self.submobjects[1:]):
+            m2.next_to(m1, direction=direction, aligned_edge=aligned_edge, buff=buff)
+        if center:
+            self.center()
+        return self
+
+
+# TODO: arrange in grid

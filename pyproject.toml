@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "still-manim"
-version = "0.1.0"
+version = "0.1.8"
 description = ""
 authors = ["tom11my <tommy11jo@gmail.com>"]
 readme = "README.md"
@@ -16,7 +16,10 @@ svgelements = "^1.9.6"
 pillow = "^10.2.0"
 networkx = "^3.2.1"
 fonttools = "^4.50.0"
+typing-extensions = "^4.11.0"
 
+[tool.poetry.group.dev.dependencies]
+twine = "^5.0.0"
 
 [build-system]
 requires = ["poetry-core"]
