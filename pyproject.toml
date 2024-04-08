@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "still-manim"
-version = "0.1.8"
+version = "0.1.9"
 description = ""
 authors = ["tom11my <tommy11jo@gmail.com>"]
 readme = "README.md"

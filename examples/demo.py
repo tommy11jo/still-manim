@@ -816,4 +816,44 @@ def row_and_col():
     canvas.snapshot(preview=True)
 
 
-row_and_col()
+# row_and_col()
+
+
+def text_add():
+    hi = Text("hi", color=RED)
+    there = Text("there ", color=BLUE)
+    adder = Text("adder", color=GREEN)
+    # there.next_to(hi)
+    # group = Group(hi, there)
+    # adder.next_to(group)
+    # canvas.add(group, adder)
+    result = hi + there + adder
+    canvas.add(result)
+    canvas.snapshot(preview=True)
+
+
+# text_add()
+
+
+def text_bbox():
+    t = Text("katz")
+    for p in t.bounding_points:
+        canvas.add(Dot(p))
+    canvas.add(t)
+    canvas.snapshot(preview=True)
+
+
+# text_bbox()
+
+
+def point_from_prop():
+    c = Circle()
+    p1 = Dot(c.point_from_proportion(0.5))
+    p2 = Dot(c.point_from_proportion(0.25))
+    canvas.add(c)
+    canvas.add(p1, p2)
+
+    canvas.snapshot(preview=True)
+
+
+point_from_prop()

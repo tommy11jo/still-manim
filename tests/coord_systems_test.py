@@ -6,13 +6,13 @@ CONFIG.save_file_dir = Path(__file__).parent / "media"
 
 
 # Number line without tip arrows at the start and end
-def simpleNumberLine():
+def simple_number_line():
     n = NumberLine([-3, 4, 1], include_arrow_tips=False)
     canvas.add(n)
     canvas.snapshot(preview=True)
 
 
-# simpleNumberLine()
+# simple_number_line()
 
 
 # TODO: fix line cap awkwardness on ends of arrows
@@ -84,7 +84,7 @@ def y_axis_shift():
 # y_axis_shift()
 
 
-def graphVector():
+def graph_vector():
     axes = Axes()
     origin_point = axes.coords_to_point(0, 0)
     point_end = axes.coords_to_point(1, 2)
@@ -93,10 +93,10 @@ def graphVector():
     canvas.snapshot(preview=True)
 
 
-# graphVector()
+# graph_vector()
 
 
-def labeledVectorOnGraph():
+def labeled_vector_on_graph():
     axes = Axes()
     canvas.add(axes)
     origin_point = axes.coords_to_point(0, 0)
@@ -123,19 +123,19 @@ def labeledVectorOnGraph():
     canvas.snapshot(preview=True)
 
 
-# labeledVectorOnGraph()
+# labeled_vector_on_graph()
 
 
-def gridLines():
+def grid_lines():
     graph = NumberPlane()
     canvas.add(graph)
     canvas.snapshot(preview=True)
 
 
-# gridLines()
+# grid_lines()
 
 
-def simplePlot():
+def simple_plot():
     # x_axis = NumberLine([-2, 2, 1], exclude_origin_tick=True)
     # y_axis = NumberLine([-2, 8, 1], exclude_origin_tick=True)
     # graph = NumberPlane(x_axis=x_axis, y_axis=y_axis)
@@ -151,11 +151,11 @@ def simplePlot():
     canvas.snapshot(preview=True)
 
 
-# simplePlot()
+# simple_plot()
 
 
 # discontinuous test
-def discontinuousPlot():
+def discontinuous_plot():
     # x_axis = NumberLine([-3, 3], exclude_origin_tick=True)
     # y_axis = NumberLine([-6, 6], exclude_origin_tick=True)
     # ax1 = NumberPlane(x_axis=x_axis.copy(), y_axis=y_axis.copy()).shift(LEFT)
@@ -178,8 +178,10 @@ def discontinuousPlot():
     canvas.snapshot(preview=True)
 
 
-# discontinuousPlot()
-def numberLineSpanning():
+# discontinuous_plot()
+
+
+def number_line_spanning():
     n = NumberLine((-2, 18), length=CONFIG.fh)
 
     n.rotate(PI / 4)
@@ -191,24 +193,31 @@ def numberLineSpanning():
     canvas.snapshot(preview=True)
 
 
-# numberLineSpanning()
+# number_line_spanning()
 
 
-# TODO: why doesn't this work
-# just_sin = NumberPlane().scale(0.3)
-# just_sin.plot(np.sin)
 # Also fix bug in pyodide regarding reloading of variables
-def derivativePlot():
+def derivative_plot():
     n = NumberPlane.from_axes_ranges((-6, 6), (-2, 2))
-    parabola = n.plot(np.sin, stroke_color=BLUE)
-    parabola_deriv_fn = parabola.gen_derivative_fn()
-    parabola_deriv = n.plot(parabola_deriv_fn, stroke_color=RED)
-    label = Text("y = sin(x)", color=RED, font_size=30).next_to(parabola, UP)
-    label.shift(LEFT * 0.6)
-    label2 = Text("y = cos(x)", color=BLUE, font_size=30).next_to(parabola_deriv, UP)
-    label2.shift(RIGHT * 2)
-    canvas.add(n, label, label2)
+    sin_graph_obj = n.plot(np.sin, stroke_color=RED)
+    derivative_fn = sin_graph_obj.gen_derivative_fn()
+    cos_graph_obj = n.plot(derivative_fn, stroke_color=BLUE)
+    sin_label = Text("y = sin(x)", color=RED, font_size=30).next_to(sin_graph_obj, UP)
+    sin_label.shift(RIGHT * 2)
+    cos_label = Text("y = cos(x)", color=BLUE, font_size=30).next_to(cos_graph_obj, UP)
+    cos_label.shift(LEFT * 0.6)
+    canvas.add(n, sin_label, cos_label)
     canvas.snapshot(preview=True)
 
 
-derivativePlot()
+# derivative_plot()
+
+
+def scale_before_number_line():
+    just_sin = NumberPlane().scale(0.3)
+    just_sin.plot(np.sin)
+    canvas.add(just_sin)
+    canvas.snapshot(preview=True)
+
+
+scale_before_number_line()

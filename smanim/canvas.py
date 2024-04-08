@@ -49,6 +49,8 @@ class Canvas:
 
     def add(self, *mobjects):
         for mobject in mobjects:
+            if not isinstance(mobject, Mobject):
+                raise ValueError("Added item must be of type Mobject")
             if mobject in self.mobjects:
                 log.warning(f"Mobject already added: {mobject}")
             else:

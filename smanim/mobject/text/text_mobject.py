@@ -1,3 +1,4 @@
+from __future__ import annotations
 import html
 from pathlib import Path
 from typing_extensions import Literal, Self
@@ -7,8 +8,6 @@ from smanim.constants import (
     ORIGIN,
     OUT,
     PI,
-    TEXT_X_PADDING,
-    TEXT_Y_PADDING,
     UL,
 )
 from smanim.mobject.transformable import TransformableMobject
@@ -52,8 +51,10 @@ class Text(TransformableMobject):
         ] = "none",
         bold: bool = False,
         italics: bool = False,
-        x_padding: float = TEXT_X_PADDING,
-        y_padding: float = TEXT_Y_PADDING,
+        x_padding: float = 0,
+        y_padding: float = 0,
+        # x_padding: float = TEXT_X_PADDING,
+        # y_padding: float = TEXT_Y_PADDING,
         **kwargs,
     ):
         if not isinstance(text, str):
@@ -99,12 +100,12 @@ class Text(TransformableMobject):
         self.font_family = font_family
         self.font_size = font_size
         self.font_path = font_path
+        font = ImageFont.truetype(font_path, font_size)
         self.x_padding = x_padding
         self.y_padding = y_padding
         self.x_padding_in_pixels = to_pixel_len(x_padding, CONFIG.pw, CONFIG.fw)
         self.y_padding_in_pixels = to_pixel_len(y_padding, CONFIG.pw, CONFIG.fw)
         max_width_in_pixels = to_pixel_len(max_width, CONFIG.pw, CONFIG.fw)
-        font = ImageFont.truetype(font_path, font_size)
         # line_height = ascent + descent
         # Workaround: ascent seems to be capturing what ascent + descent typically would
         # I think the bbox is including the descent by default
@@ -206,7 +207,6 @@ class Text(TransformableMobject):
 
     # scales both text and bbox, assumes font size is exactly proportional
     # by default, scales using center point as `about_point`
-    # TODO: consider effects of scaling about origin as default, or maybe text just does things differently than the rest
     def scale(self, factor: float, about_point: Point3D | None = None) -> Self:
         bounding_points = super().scale_points(
             self.bounding_points, factor, about_point
@@ -263,3 +263,9 @@ class Text(TransformableMobject):
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_opacity(opacity=opacity, family=True)
+
+    def __add__(self, text: Text) -> Text:
+        chain = self.copy()
+        text.next_to(chain, buff=0.0)
+        chain.add(text)
+        return chain

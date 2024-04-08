@@ -11,7 +11,7 @@ from smanim.utils.color import ManimColor
 from smanim.utils.logger import log
 from smanim.utils.space_ops import angle_from_vector
 
-__all__ = ["Line", "Arrow", "Vector"]
+__all__ = ["Line", "Arrow", "Vector", "TipableLine"]
 
 
 # TODO: investigate different svg line caps types, fix how arrow looks weird with stroke_width=2.0
@@ -148,7 +148,7 @@ class Line(VMobject):
         return super().scale(factor, about_point)
 
 
-class TipableVMobject(Line):
+class TipableLine(Line):
     def create_tip(
         self,
         tip_shape: ArrowTip,
@@ -199,7 +199,7 @@ class TipableVMobject(Line):
 
 
 # TODO: Refactor this to take in an instance maybe?
-class Arrow(TipableVMobject):
+class Arrow(TipableLine):
     def __init__(
         self,
         # you can control line thickness with `stroke_width`

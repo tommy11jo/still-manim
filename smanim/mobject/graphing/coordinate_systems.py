@@ -80,14 +80,20 @@ class Axes(Group):
         return graph
 
 
-# TODO: make grid lines optional
 class NumberPlane(Axes):
     """2D cartesian plane with grid lines"""
 
     def __init__(
-        self, *args, coord_step_size: float = 0.5, grid_line_config: dict = {}, **kwargs
+        self,
+        *args,
+        coord_step_size: float = 0.5,
+        grid_lines: bool = True,
+        grid_line_config: dict = {},
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
+        if not grid_lines:
+            return
         default_grid_line_config = {
             "stroke_color": BLUE_D,
             "stroke_width": 1,

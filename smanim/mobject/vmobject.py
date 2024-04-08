@@ -1,4 +1,5 @@
 from __future__ import annotations
+import bisect
 from typing_extensions import Self
 
 import numpy as np
@@ -240,19 +241,29 @@ class VMobject(TransformableMobject, ABC):
         return [last_a2, handle1, handle2, new_anchor]
 
     def point_from_proportion(self, value: float):
-        # TODO: Don't assume evenly spaced points, take the length of all of them
+        # This is an approximation with lines. The actual curve lengths are not calculated.
         if 0 > value > 1:
             raise ValueError("Proportion value must be between 0 and 1")
-        index = value * len(self.points)
-        prev_index = int(index)
-        if np.isclose(index, prev_index):
-            return self.points[prev_index]
-        if prev_index == len(self.points) - 1:
-            prev_index -= 1
-        start = self.points[prev_index]
-        end = self.points[prev_index + 1]
+        lengths = [0]
+        running_length = 0
+        for p1, p2 in zip(self.points, self.points[1:]):
+            running_length += np.linalg.norm(p2 - p1)
+            lengths.append(running_length)
 
-        return interpolate(start, end, index - prev_index)
+        total_length = lengths[-1]
+        to_travel = value * total_length
+        # for equal values, inserts before the first equal occurence
+        index = bisect.bisect_left(lengths, to_travel)
+        lower, upper = lengths[index - 1], lengths[index]
+        # often, the points are evenly space and an exact point is found
+        if np.isclose(to_travel, upper):
+            return self.points[index]
+        else:
+            return interpolate(
+                self.points[index - 1],
+                self.points[index],
+                (upper - to_travel) / (upper - lower),
+            )
 
     ## Core transformations
     def rotate(
@@ -266,6 +277,7 @@ class VMobject(TransformableMobject, ABC):
             mob.rotate(angle, axis, about_point)
         return self
 
+    # TODO: Consider scaling the stroke_width, if it exists.
     def scale(self, factor: float, about_point: Point3D | None = ORIGIN) -> Self:
         self.points = super().scale_points(self.points, factor, about_point)
         for mob in self.submobjects:
@@ -304,9 +316,7 @@ class VGroup(Group, VMobject):
         to_add = []
         for vmobject in vmobjects:
             if not isinstance(vmobject, VMobject) and not isinstance(vmobject, VGroup):
-                raise ValueError(
-                    f"Mobject must be VMobject or VGroup to be added: {vmobject}"
-                )
+                raise ValueError("Added item must be of type VMobject or VGroup")
             else:
                 to_add.append(vmobject)
         super().add(*to_add, insert_at_front=insert_at_front)

@@ -7,7 +7,7 @@ Inspired by 3blue1brown's [manim](https://github.com/3b1b/manim), still-manim is
 pip install still-manim
 ```
 
-The web editor source code can be found [here](https://github.com/tommy11jo/still-manim-editor). Examples of programming diagrams with manim-style diagrams can be found on programcomics.com.
+The web editor source code can be found [here](https://github.com/tommy11jo/still-manim-editor). Examples of programming diagrams with manim-style diagrams can be found on [programcomics.com](https://programcomics.com).
 
 ## Functionality
 
@@ -19,16 +19,18 @@ The web editor source code can be found [here](https://github.com/tommy11jo/stil
 - **Text**: any font size or font color but only one font right now
 - **Misc**: crosses, reactive surrounding rectangles, labels
 
-Still Manim does not support all the different types of Mobjects in manim. Also, still manim is entirely in 2D for now. More functionality will be supported if there's demand.
+still-manim does not support all the different types of Mobjects in manim. Also, still-manim is entirely in 2D for now. More functionality will be supported if there's demand.
 
 All constructed mobjects permit spatial relations (such as `obj1.next_to(obj2))`), transformations (such as `obj1.rotate(PI / 2)`), coloring, grouping and arrangement, and layering.
 
 ## Examples
 
+![Still Manim Logo](./public/still-manim-logo.svg)
+
 ```
 from smanim import *
-# creates the lemon logo svg at the top of this README
-# a still life for still manim
+# this code creates the entire lemon logo above
+# a still life for still-manim
 stroke_width = 1
 lemon = VGroup()
 c = Circle(fill_color=YELLOW_D, stroke_color=WHITE, stroke_width=stroke_width)
@@ -64,24 +66,22 @@ canvas.snapshot(preview=True, crop=True)
 # canvas.draw(crop=True)
 ```
 
-Another goal of this project is to create mathematical and scientific objects flexibly and clearly in as little code as possible. So far, only a few types of objects have been added, including directed graphs, undirected graphs, weighted graphs, number lines, and 2D cartesian graphs.
+Another goal of this project is to create mathematical and scientific objects flexibly and clearly in as little code as possible. So far, only a few types of domain-specific objects have been added: directed graphs, undirected graphs, weighted graphs, number lines, and 2D cartesian graphs.
 
 ![Sin Graph](./public/sin-graph.svg)
 
 ```
 from smanim import *
 n = NumberPlane.from_axes_ranges((-6, 6), (-2, 2))
-parabola = n.plot(np.sin, stroke_color=BLUE)
-parabola_deriv_fn = parabola.gen_derivative_fn()
-parabola_deriv = n.plot(parabola_deriv_fn, stroke_color=RED)
-label = Text("y = sin(x)", color=RED, font_size=30).next_to(parabola, UP)
-label.shift(LEFT * 0.6)
-label2 = Text("y = cos(x)", color=BLUE, font_size=30).next_to(parabola_deriv, UP)
-label2.shift(RIGHT * 2)
-canvas.add(n, label, label2)
+sin_graph_obj = n.plot(np.sin, stroke_color=RED)
+derivative_fn = sin_graph_obj.gen_derivative_fn()
+cos_graph_obj = n.plot(derivative_fn, stroke_color=BLUE)
+sin_label = Text("y = sin(x)", color=RED, font_size=30).next_to(sin_graph_obj, UP)
+sin_label.shift(RIGHT * 2)
+cos_label = Text("y = cos(x)", color=BLUE, font_size=30).next_to(cos_graph_obj, UP)
+cos_label.shift(LEFT * 0.6)
+canvas.add(n, sin_label, cos_label)
 canvas.snapshot(preview=True)
-# use the draw function instead of snapshot in the web editor
-# canvas.draw()
 ```
 
 ## Notes

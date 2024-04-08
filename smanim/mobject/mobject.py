@@ -65,7 +65,7 @@ class Mobject(ABC):
         new_mobjects = []
         for mobject in mobjects:
             if mobject is self:
-                log.error("Cannot add mobject to itself")
+                raise ValueError("Cannot add mobject to itself")
             if mobject in self.submobjects:
                 log.warning(f"Mobject already added: {mobject}")
             else:
