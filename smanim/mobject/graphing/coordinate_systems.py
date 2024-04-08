@@ -80,6 +80,7 @@ class Axes(Group):
         return graph
 
 
+# TODO: make grid lines optional
 class NumberPlane(Axes):
     """2D cartesian plane with grid lines"""
 

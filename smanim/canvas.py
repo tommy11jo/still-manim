@@ -6,9 +6,15 @@ from typing import List, Sequence
 import numpy as np
 
 from smanim.config import CONFIG, Config
-from smanim.constants import ORIGIN, RADIANS, Z_INDEX_MIN
-from smanim.mobject.mobject import Group, Mobject
+from smanim.constants import (
+    ORIGIN,
+    RADIANS,
+    SMALL_BUFF,
+    UL,
+    Z_INDEX_MIN,
+)
 from smanim.mobject.geometry.polygon import Rectangle
+from smanim.mobject.mobject import Group, Mobject
 from smanim.mobject.vmobject import VMobject
 from smanim.mobject.text.text_mobject import Text
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
@@ -18,11 +24,11 @@ from smanim.utils.logger import log
 import itertools as it
 import svg
 
-from smanim.utils.space_ops import to_pixel_coords
+from smanim.utils.space_ops import to_pixel_coords, to_pixel_len
 
-# make this compatible with pyodide
 import sys
 
+# only use subprocess locally, not in browser with pyodide
 BROWSER_ENV = True
 if "pyodide" not in sys.modules:
     import subprocess
@@ -62,14 +68,7 @@ class Canvas:
         self,
         use_z_index=True,
     ):
-        cur_mobjects: List[Mobject] = [
-            Rectangle(
-                width=self.config.fw,
-                height=self.config.fh,
-                fill_color=BLACK,
-                z_index=Z_INDEX_MIN,
-            )
-        ]
+        cur_mobjects: List[Mobject] = []
         cur_mobjects += it.chain(*(m.get_family() for m in self.mobjects))
 
         if use_z_index:
@@ -87,8 +86,24 @@ class Canvas:
                 return to_svg_funcs[_type]
         raise TypeError(f"Displaying an object of class {_type} is not supported")
 
-    def snapshot(self, preview: bool = False, overwrite: bool = False):
-        mobjects_in_order = self.get_mobjects_to_display()
+    def snapshot(
+        self,
+        preview: bool = False,
+        overwrite: bool = False,
+        ignore_bg: bool = False,
+        crop: bool = False,
+        crop_buff: float = SMALL_BUFF,
+    ):
+        bg_rect = Rectangle(
+            width=self.config.fw,
+            height=self.config.fh,
+            fill_color=BLACK,
+            z_index=Z_INDEX_MIN,
+        )
+        if not ignore_bg:
+            mobjects_in_order = [bg_rect] + self.get_mobjects_to_display()
+        else:
+            mobjects_in_order = self.get_mobjects_to_display()
         svg_els_lst: List[svg.Element] = []
         for mobject in mobjects_in_order:
             svg_func = self.get_to_svg_func(mobject)
@@ -96,8 +111,26 @@ class Canvas:
                 continue
             new_svg_els = svg_func(mobject)
             svg_els_lst.extend(new_svg_els)
+        if crop:
+            x_munits, y_munits = self.mobjects.get_corner(UL)[:2]
+            buffed_upper_left = np.array(
+                [x_munits - crop_buff, y_munits + crop_buff, 0]
+            )
+            x, y = to_pixel_coords(
+                [buffed_upper_left],
+                config=self.config,
+            )[0]
+
+            w_munits, h_munits = self.mobjects.width, self.mobjects.height
+            w_munits += 2 * crop_buff
+            h_munits += 2 * crop_buff
+            w = to_pixel_len(w_munits, self.config.pw, self.config.fw)
+            h = to_pixel_len(h_munits, self.config.pw, self.config.fw)
+            print(x, y, w, h)
+        else:
+            x, y, w, h = 0, 0, self.config.pw, self.config.ph
         svg_view_obj = svg.SVG(
-            viewBox=svg.ViewBoxSpec(0, 0, self.config.pw, self.config.ph),
+            viewBox=svg.ViewBoxSpec(x, y, w, h),
             elements=svg_els_lst,
         )
         if not overwrite:
@@ -109,8 +142,8 @@ class Canvas:
 
     # Used in pyodide web environment
     # Since the state of python program is maintained across calls to `runPython`, canvas state must be cleared here
-    def draw(self):
-        self.snapshot(overwrite=True, preview=False)
+    def draw(self, crop: bool = False, crop_buff: float = SMALL_BUFF):
+        self.snapshot(overwrite=True, preview=False, crop=crop, crop_buff=crop_buff)
         self.clear()
 
     def vmobject_to_svg_el(self, vmobject: VMobject) -> Sequence[svg.Element]:
@@ -256,21 +289,6 @@ class Canvas:
             if BROWSER_ENV:
                 raise Exception("Cannot open a preview while running in a browser env")
             subprocess.run(["open", fpath])
-
-    # Layering
-    def move_to_back(self, mobject: Mobject, family: bool = True):
-        bottom_z_index = min([mob.z_index for mob in self.mobjects.get_family()])
-        mobject.z_index = bottom_z_index - 1
-        if family:
-            for mobject in self.mobjects.get_family()[1:]:
-                mobject.z_index = bottom_z_index - 1
-
-    def move_to_front(self, mobject: Mobject, family: bool = True):
-        top_z_index = max([mob.z_index for mob in self.mobjects.get_family()])
-        mobject.z_index = top_z_index + 1
-        if family:
-            for mobject in self.mobjects.get_family()[1:]:
-                mobject.z_index = top_z_index + 1
 
     # Transformations on canvas apply directly to its group
     # Slightly misleading since canvas does not scale itself

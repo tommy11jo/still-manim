@@ -239,6 +239,21 @@ class VMobject(TransformableMobject, ABC):
         handle2 = new_anchor - new_tangent
         return [last_a2, handle1, handle2, new_anchor]
 
+    def point_from_proportion(self, value: float):
+        # TODO: Don't assume evenly spaced points, take the length of all of them
+        if 0 > value > 1:
+            raise ValueError("Proportion value must be between 0 and 1")
+        index = value * len(self.points)
+        prev_index = int(index)
+        if np.isclose(index, prev_index):
+            return self.points[prev_index]
+        if prev_index == len(self.points) - 1:
+            prev_index -= 1
+        start = self.points[prev_index]
+        end = self.points[prev_index + 1]
+
+        return interpolate(start, end, index - prev_index)
+
     ## Core transformations
     def rotate(
         self,

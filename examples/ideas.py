@@ -36,4 +36,50 @@ def draw_planets():
     canvas.snapshot(preview=True)
 
 
-draw_planets()
+# draw_planets()
+
+
+def generate_lemons(stroke_width=4):
+    lemon = VGroup()
+    c = Circle(fill_color=YELLOW_D, stroke_color=WHITE, stroke_width=stroke_width)
+    c.stretch(1.4, dim=0).rotate(PI / 8)
+    arc = Arc(
+        angle=-PI, fill_color=YELLOW_E, stroke_color=WHITE, stroke_width=stroke_width
+    )
+    arc.stretch(2, dim=1)
+    arc.stretch(1.4, dim=0).rotate(PI / 8)
+    lemon.add(c, arc)
+    lemon.bring_to_front(c)
+
+    spikes = VGroup()
+    for prop in range(8):
+        vector = Vector(c.point_from_proportion(prop / 8))
+        spikes.add(vector)
+    lemon.add(spikes)
+
+    other_lemon: VGroup = lemon.copy()
+    other_lemon.scale(0.8).shift(RIGHT * 0.5).rotate(-PI / 4)
+    lemon.shift(LEFT * 0.5)
+    other_lemon.shift(RIGHT * 0.8)
+    other_lemon.set_z_index(-10)
+
+    lemons = VGroup(lemon, other_lemon)
+    return lemons
+
+
+# a still life for still manim
+def lemon_logo():
+    lemons: VGroup = generate_lemons(stroke_width=1)
+    # lemons.scale(0.2)
+
+    title = Text("Still Manim", font_size=H1_FONT_SIZE)
+
+    lemons.scale_to_fit_height(title.height)
+    title.next_to(lemons, buff=0.05)
+    canvas.add(lemons, title)
+
+    canvas.snapshot(preview=True, crop=True)
+    # canvas.draw()
+
+
+lemon_logo()

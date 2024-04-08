@@ -1,11 +1,8 @@
 from pathlib import Path
-from smanim.canvas import Canvas
-from smanim.config import Config
 from smanim import *
 
 
-config = Config(save_file_dir=Path(__file__).parent / "media")
-canvas = Canvas(config=config)
+CONFIG.save_file_dir = Path(__file__).parent / "media"
 
 
 # Number line without tip arrows at the start and end
@@ -197,15 +194,20 @@ def numberLineSpanning():
 # numberLineSpanning()
 
 
+# TODO: why doesn't this work
+# just_sin = NumberPlane().scale(0.3)
+# just_sin.plot(np.sin)
+# Also fix bug in pyodide regarding reloading of variables
 def derivativePlot():
-    n = NumberPlane.from_axes_ranges((-3, 4), (-8, 18))
-    parabola = n.plot(lambda x: x**2)
-    parabola_deriv = parabola.gen_derivative_fn()
-    n.plot(parabola_deriv)
-    n.scale(0.5)
-    # n.rotate(PI / 4)
-
-    canvas.add(n)
+    n = NumberPlane.from_axes_ranges((-6, 6), (-2, 2))
+    parabola = n.plot(np.sin, stroke_color=BLUE)
+    parabola_deriv_fn = parabola.gen_derivative_fn()
+    parabola_deriv = n.plot(parabola_deriv_fn, stroke_color=RED)
+    label = Text("y = sin(x)", color=RED, font_size=30).next_to(parabola, UP)
+    label.shift(LEFT * 0.6)
+    label2 = Text("y = cos(x)", color=BLUE, font_size=30).next_to(parabola_deriv, UP)
+    label2.shift(RIGHT * 2)
+    canvas.add(n, label, label2)
     canvas.snapshot(preview=True)
 
 

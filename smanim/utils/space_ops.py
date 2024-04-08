@@ -1,7 +1,8 @@
 from typing import Tuple
 import numpy as np
+from smanim.config import Config
 from smanim.constants import RIGHT, TAU, X_AXIS, Y_AXIS, Z_AXIS
-from smanim.typing import Point2D, Point3D_Array, Vector3
+from smanim.typing import ManimFloat, Point2D, Point3D_Array, Vector3
 from smanim.utils.logger import log
 
 
@@ -17,18 +18,21 @@ def to_manim_len(scalar: float, pw: float, fw: float):
 
 def to_pixel_coords(
     points: Point3D_Array,
-    pw: float,
-    ph: float,
-    fw: float,
-    fh: float,
-    fc: Vector3,
+    pw: float | None = None,
+    ph: float | None = None,
+    fw: float | None = None,
+    fh: float | None = None,
+    fc: Vector3 | None = None,
+    config: Config | None = None,
 ):
+    if config is not None:
+        pw, ph, fw, fh, fc = config.pw, config.ph, config.fw, config.fh, config.fc
     if len(points) == 0:
         return []
     if not np.all(np.isfinite(points)):
         log.warn("At least point is not finite. Using default (0, 0, 0).")
         points = np.zeros((1, 3))
-    points = points.copy()
+    points = np.array(points.copy(), dtype=ManimFloat)
     # assume points are 2D so last dimesion z is unused in [x, y, z]
     points[:, -1] = 1
     # instead of using a matrix within cairo or canvas

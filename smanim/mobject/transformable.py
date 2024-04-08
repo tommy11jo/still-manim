@@ -74,6 +74,20 @@ class TransformableMobject(Mobject):
         self.stretch(height / old_height, dim=1)
         return self
 
+    def scale_to_fit_width(self, width: float) -> Self:
+        old_width = self.width
+        if old_width == 0:
+            return self
+        self.scale(width / old_width)
+        return self
+
+    def scale_to_fit_height(self, height: float) -> Self:
+        old_height = self.height
+        if old_height == 0:
+            return self
+        self.scale(height / old_height)
+        return self
+
     # Frequently used patterns that depend on transformations
     def add_label(self, label: TransformableMobject, direction: Vector3 = UP, buff=0.0):
         label.stretch_to_fit_width(self.width)

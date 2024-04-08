@@ -306,6 +306,10 @@ class Mobject(ABC):
             mobject.z_index = top_z_index + 1
         return self
 
+    def set_z_index(self, value: int, family: bool = True):
+        for mob in self.get_family():
+            mob.z_index = value
+
     # Style matching helpers
     def set_color(self, color: ManimColor, family: bool = False) -> Self:
         # Should be overriden in subclasses typically

@@ -46,7 +46,7 @@ class Text(TransformableMobject):
         opacity: float = 1.0,
         max_width: float | None = 6.0,  # in internal manim units
         z_index: int = 1,  # text is by default above the normal 0 z-index
-        font_size: float = 20,
+        font_size: float = 30,
         text_decoration: Literal[
             "none", "underline", "overline", "line-through"
         ] = "none",
