@@ -16,7 +16,8 @@ import networkx as nx
 import numpy as np
 
 from smanim.mobject.geometry.line import Line
-from smanim.mobject.mobject import Group, Mobject
+from smanim.mobject.group import Group
+from smanim.mobject.mobject import Mobject
 
 
 class Graph(Group):

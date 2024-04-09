@@ -1,13 +1,13 @@
 # still-manim
 
 ![Still Manim Logo](./public/still-manim-logo.svg)
-Inspired by 3blue1brown's [manim](https://github.com/3b1b/manim), still-manim is a python library for creating SVG diagrams of math, programming, and science concepts. The easiest way to create a diagram is through the the [web editor](TODO). You can also work locally by cloning this repo or installing the package with pip:
+Inspired by 3blue1brown's [manim](https://github.com/3b1b/manim), still-manim is a python library for creating SVG diagrams of math, programming, and science concepts. Unlike manim, still-manim can run in the browser, enables creating SVGs with shapes and text combined, and is designed to create still (not animated) pictures. The easiest way to create a diagram is through the the [web editor](TODO). You can also work locally by cloning this repo or installing the package with pip:
 
 ```
 pip install still-manim
 ```
 
-The web editor source code can be found [here](https://github.com/tommy11jo/still-manim-editor). Examples of programming diagrams with manim-style diagrams can be found on [programcomics.com](https://programcomics.com).
+The web editor source code can be found [here](https://github.com/tommy11jo/still-manim-editor). Some examples of programming diagrams with manim-style diagrams can be found on [programcomics.com](https://programcomics.com).
 
 ## Functionality
 
@@ -29,7 +29,7 @@ All constructed mobjects permit spatial relations (such as `obj1.next_to(obj2))`
 
 ```
 from smanim import *
-# this code creates the entire lemon logo above
+# this code creates the entire logo above
 # a still life for still-manim
 stroke_width = 1
 lemon = VGroup()

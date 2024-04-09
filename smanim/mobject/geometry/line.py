@@ -80,7 +80,8 @@ class Line(VMobject):
         dir = self.get_direction()
         return angle_from_vector(dir)
 
-    def get_length(self):
+    @property
+    def length(self):
         return np.linalg.norm(self.end - self.start)
 
     @staticmethod
@@ -160,7 +161,7 @@ class TipableLine(Line):
         # Side effect: reduces the line length to add the tip, without changing the anchor
         line_start = self.start
         line_end = self.end  # cannot use self.end until tip is added
-        line_length = self.get_length()
+        line_length = self.length
         line_dir = (line_end - line_start) / line_length
         self.scale((line_length - tip_length) / line_length, about_point=line_start)
         if at_start:

@@ -11,7 +11,7 @@ from smanim.constants import (
     OUT,
     PI,
 )
-from smanim.mobject.mobject import Group
+from smanim.mobject.group import Group
 from smanim.mobject.transformable import TransformableMobject
 from smanim.utils.bezier import interpolate
 from smanim.utils.color import WHITE, ManimColor

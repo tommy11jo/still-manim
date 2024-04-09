@@ -220,4 +220,38 @@ def scale_before_number_line():
     canvas.snapshot(preview=True)
 
 
-scale_before_number_line()
+# scale_before_number_line()
+
+
+# also tests with and without arrow tips
+def number_plane_without_origin():
+    n = NumberPlane.from_axes_ranges(
+        (-1, 3),
+        (-3, 4),
+        # axis_config={"color": RED, "include_arrow_tips": False},
+        axis_config={"color": RED},
+    )
+    canvas.add(n)
+    canvas.snapshot(preview=True)
+
+
+number_plane_without_origin()
+
+
+# TODO: fix text stretch bug
+def text_bug():
+    n = NumberLine((2, 3))
+    # this works unexpectedly
+    n.stretch_to_fit_width(canvas.config.fw)
+    canvas.add(n)
+    canvas.snapshot(preview=True)
+
+
+# text_bug()
+def number_line_length():
+    n = NumberLine((2, 3), length=canvas.config.fw)
+    canvas.add(n)
+    canvas.snapshot(preview=True)
+
+
+# number_line_length()

@@ -6,6 +6,7 @@ from smanim.utils.color import *
 from smanim.utils.logger import *
 from smanim.canvas import *
 from smanim.mobject.mobject import *
+from smanim.mobject.group import *
 from smanim.mobject.vmobject import *
 
 from smanim.mobject.geometry.polygon import *

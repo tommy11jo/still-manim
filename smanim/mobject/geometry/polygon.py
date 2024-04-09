@@ -29,7 +29,7 @@ class Polygram(VMobject):
         is_closed=False,
         **kwargs,
     ):
-        if not has_default_colors_set(**kwargs):
+        if not has_default_colors_set(kwargs):
             kwargs["default_stroke_color"] = default_stroke_color
         self._vertices = np.array(vertices, dtype=ManimFloat)
         super().__init__(is_closed=is_closed, **kwargs)
@@ -105,7 +105,7 @@ class Polygon(Polygram):
         default_stroke_color: ManimColor = RED,
         **kwargs,
     ):
-        if not has_default_colors_set(**kwargs):
+        if not has_default_colors_set(kwargs):
             kwargs["default_stroke_color"] = default_stroke_color
         self._vertices = np.array(vertices, dtype=ManimFloat)
         self.corner_radius = corner_radius

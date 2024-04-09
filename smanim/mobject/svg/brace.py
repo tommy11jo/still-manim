@@ -38,7 +38,7 @@ class Brace(VMobjectFromSVGPath):
         default_fill_color: ManimColor = WHITE,
         **kwargs,
     ):
-        if not has_default_colors_set():
+        if not has_default_colors_set(kwargs):
             kwargs["default_fill_color"] = default_fill_color
 
         default_min_width = 0.90552

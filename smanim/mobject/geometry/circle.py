@@ -18,7 +18,7 @@ class Circle(Arc):
         default_stroke_color: ManimColor = RED,
         **kwargs,
     ) -> None:
-        if not has_default_colors_set():
+        if not has_default_colors_set(kwargs):
             kwargs["default_stroke_color"] = default_stroke_color
         super().__init__(
             radius=radius,
@@ -36,7 +36,7 @@ class Dot(Circle):
         default_fill_color: ManimColor = WHITE,
         **kwargs,
     ) -> None:
-        if not has_default_colors_set():
+        if not has_default_colors_set(kwargs):
             kwargs["default_fill_color"] = default_fill_color
         super().__init__(
             arc_center=point,

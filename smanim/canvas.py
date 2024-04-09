@@ -1,7 +1,8 @@
 import base64
+import json
 from pathlib import Path
 from textwrap import dedent
-from typing import List, Sequence
+from typing import List, Sequence, Tuple
 
 import numpy as np
 
@@ -14,7 +15,8 @@ from smanim.constants import (
     Z_INDEX_MIN,
 )
 from smanim.mobject.geometry.polygon import Rectangle
-from smanim.mobject.mobject import Group, Mobject
+from smanim.mobject.group import Group
+from smanim.mobject.mobject import Mobject
 from smanim.mobject.vmobject import VMobject
 from smanim.mobject.text.text_mobject import Text
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
@@ -95,7 +97,7 @@ class Canvas:
         ignore_bg: bool = False,
         crop: bool = False,
         crop_buff: float = SMALL_BUFF,
-    ):
+    ) -> Tuple[float, float, float, float]:
         bg_rect = Rectangle(
             width=self.config.fw,
             height=self.config.fh,
@@ -128,7 +130,6 @@ class Canvas:
             h_munits += 2 * crop_buff
             w = to_pixel_len(w_munits, self.config.pw, self.config.fw)
             h = to_pixel_len(h_munits, self.config.pw, self.config.fw)
-            print(x, y, w, h)
         else:
             x, y, w, h = 0, 0, self.config.pw, self.config.ph
         svg_view_obj = svg.SVG(
@@ -141,12 +142,18 @@ class Canvas:
         else:
             suffix = 0
         self.save_svg(svg_view_obj, preview=preview, suffix=suffix)
+        return x, y, w, h
 
     # Used in pyodide web environment
     # Since the state of python program is maintained across calls to `runPython`, canvas state must be cleared here
-    def draw(self, crop: bool = False, crop_buff: float = SMALL_BUFF):
-        self.snapshot(overwrite=True, preview=False, crop=crop, crop_buff=crop_buff)
+    def draw(
+        self, crop: bool = False, crop_buff: float = SMALL_BUFF
+    ) -> Tuple[float, float, float, float]:
+        bbox = self.snapshot(
+            overwrite=True, preview=False, crop=crop, crop_buff=crop_buff
+        )
         self.clear()
+        return json.dumps(bbox)
 
     def vmobject_to_svg_el(self, vmobject: VMobject) -> Sequence[svg.Element]:
         if len(vmobject.points) == 0:  # handles VGroups

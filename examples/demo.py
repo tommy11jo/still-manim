@@ -856,4 +856,13 @@ def point_from_prop():
     canvas.snapshot(preview=True)
 
 
-point_from_prop()
+# point_from_prop()
+
+
+def dot_default_color():
+    d = Dot()
+    canvas.add(d)
+    canvas.snapshot(preview=True)
+
+
+dot_default_color()

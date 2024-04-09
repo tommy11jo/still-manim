@@ -1,11 +1,11 @@
 from typing import Any, Callable, Sequence
 import numpy as np
 from smanim.config import CONFIG
-from smanim.constants import PI, RIGHT, UP
+from smanim.constants import RIGHT, UP
 from smanim.mobject.geometry.line import Line
 from smanim.mobject.graphing.functions import ParametricFunction
 from smanim.mobject.graphing.number_line import NumberLine
-from smanim.mobject.mobject import Group
+from smanim.mobject.group import Group
 from smanim.utils.color import BLUE_D
 
 
@@ -24,18 +24,21 @@ class Axes(Group):
         if x_axis is None:
             half_width = int(CONFIG.fw / 2)
             x_range = (-half_width, half_width, 1)
-            x_axis = NumberLine(x_range=x_range, include_origin_tick=False, step_size=1)
+            x_axis = NumberLine(x_range=x_range, include_origin_tick=False)
         if y_axis is None:
             half_height = int(CONFIG.fh / 2)
             y_range = (-half_height, half_height, 1)
-            y_axis = NumberLine(x_range=y_range, include_origin_tick=False, step_size=1)
+            y_axis = NumberLine(
+                x_range=y_range, include_origin_tick=False, is_horizontal=False
+            )
 
         self.x_axis = x_axis
         self.y_axis = y_axis
         self.num_sampled_graph_points_per_tick = num_sampled_graph_points_per_tick
 
+        # TODO: Since the y_axis still gets created when its not within the bounds of the canvas, this creates an awkward svg experience
+        # But I also need the y_axis to exist in case it gets shifted into the picture (and I don't want to override the shift to reset the whole graph)
         # Move the y_axis to the proper spot on the x_axis
-        y_axis.rotate(PI / 2)
         dest_point = x_axis.coord_to_point(0)
         start_point = y_axis.coord_to_point(0)
         y_axis_center = y_axis.get_center()
@@ -61,7 +64,6 @@ class Axes(Group):
         **kwargs: Any,
     ) -> ParametricFunction:
         # May produce inaccurate results. Currently relies on interpolation between evenly-spaced samples of the curves
-
         if x_range is None:
             sample_rate = self.x_axis.step_size / self.num_sampled_graph_points_per_tick
             x_range = np.array([self.x_axis.x_min, self.x_axis.x_max, sample_rate])
@@ -124,7 +126,11 @@ class NumberPlane(Axes):
             x_axis_range, include_origin_tick=False, length=x_length, **axis_config
         )
         y_axis = NumberLine(
-            y_axis_range, include_origin_tick=False, length=y_length, **axis_config
+            y_axis_range,
+            include_origin_tick=False,
+            length=y_length,
+            is_horizontal=False,
+            **axis_config,
         )
         return cls(x_axis=x_axis, y_axis=y_axis, **kwargs)
 
