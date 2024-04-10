@@ -5,6 +5,7 @@ import numpy as np
 from smanim.mobject.geometry.polygon import Polygram
 from smanim.mobject.graphing.scale import _ScaleBase, LinearBase
 from smanim.mobject.vmobject import VGroup
+from smanim.utils.color import WHITE, ManimColor
 
 
 class ParametricFunction(VGroup):
@@ -68,6 +69,8 @@ class ParametricFunction(VGroup):
         discontinuities: Iterable[float] | None = None,
         # use_smoothing: bool = True,
         use_vectorized: bool = False,
+        # TODO: Handle color lookup with self.color and avoid the case here where user passes stroke_color and it errors
+        color: ManimColor = WHITE,
         **kwargs,
     ):
         self.function = function
@@ -84,7 +87,7 @@ class ParametricFunction(VGroup):
         self.use_vectorized = use_vectorized
         self.t_min, self.t_max, self.t_step = t_range
 
-        super().__init__(**kwargs)
+        super().__init__(stroke_color=color, **kwargs)
         self.add_subcurves(default_stroke_color=self.stroke_color)
 
     def get_function(self):

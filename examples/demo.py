@@ -865,4 +865,35 @@ def dot_default_color():
     canvas.snapshot(preview=True)
 
 
-dot_default_color()
+# dot_default_color()
+
+
+def arrow_color():
+    a = Arrow()
+    a.set_color(GREEN).set_opacity(0.5)
+    canvas.add(a)
+    canvas.snapshot(preview=True)
+
+
+# arrow_color()
+
+
+def arrange_in_grid():
+    n = 24
+    v = Group(
+        *[
+            Square(
+                side_length=0.5 if i % 2 == 0 else 0.3,
+                fill_color=BLUE,
+                fill_opacity=i / n,
+            )
+            for i in range(n)
+        ]
+    )
+    # v.arrange()
+    v.arrange_in_grid(cols=6, buff_within_col=0.5, row_aligned_edge=DOWN)
+    canvas.add(v)
+    canvas.snapshot(preview=True)
+
+
+arrange_in_grid()

@@ -97,9 +97,9 @@ class NumberPlane(Axes):
         if not grid_lines:
             return
         default_grid_line_config = {
-            "stroke_color": BLUE_D,
+            "color": BLUE_D,
             "stroke_width": 1,
-            "stroke_opacity": 0.5,
+            "opacity": 0.5,
         }
         grid_line_config.update(default_grid_line_config)
         grid_lines = self.create_grid_lines(coord_step_size, **grid_line_config)

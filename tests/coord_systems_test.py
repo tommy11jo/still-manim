@@ -196,12 +196,11 @@ def number_line_spanning():
 # number_line_spanning()
 
 
-# Also fix bug in pyodide regarding reloading of variables
 def derivative_plot():
     n = NumberPlane.from_axes_ranges((-6, 6), (-2, 2))
-    sin_graph_obj = n.plot(np.sin, stroke_color=RED)
+    sin_graph_obj = n.plot(np.sin, color=RED)
     derivative_fn = sin_graph_obj.gen_derivative_fn()
-    cos_graph_obj = n.plot(derivative_fn, stroke_color=BLUE)
+    cos_graph_obj = n.plot(derivative_fn, color=BLUE)
     sin_label = Text("y = sin(x)", color=RED, font_size=30).next_to(sin_graph_obj, UP)
     sin_label.shift(RIGHT * 2)
     cos_label = Text("y = cos(x)", color=BLUE, font_size=30).next_to(cos_graph_obj, UP)
@@ -235,19 +234,22 @@ def number_plane_without_origin():
     canvas.snapshot(preview=True)
 
 
-number_plane_without_origin()
+# number_plane_without_origin()
 
 
-# TODO: fix text stretch bug
-def text_bug():
+# solved
+def text_stretch_bug():
     n = NumberLine((2, 3))
-    # this works unexpectedly
+    for label in n.labels:
+        label.add_surrounding_rect()
     n.stretch_to_fit_width(canvas.config.fw)
     canvas.add(n)
     canvas.snapshot(preview=True)
 
 
-# text_bug()
+text_stretch_bug()
+
+
 def number_line_length():
     n = NumberLine((2, 3), length=canvas.config.fw)
     canvas.add(n)

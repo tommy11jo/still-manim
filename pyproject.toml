@@ -1,12 +1,13 @@
 [tool.poetry]
 name = "still-manim"
-version = "0.2.1"
+version = "0.2.4"
 description = ""
 authors = ["tom11my <tommy11jo@gmail.com>"]
 readme = "README.md"
 packages = [
     { include = "smanim" },
 ]
+
 
 [tool.poetry.dependencies]
 python = "^3.10"

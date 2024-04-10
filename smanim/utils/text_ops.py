@@ -29,7 +29,8 @@ def wrap_text(
     x_size = font.getlength("x")
     approx_num_chars_per_line = int(max_width_in_pixels / x_size)
     if approx_num_chars_per_line == 0:
-        raise ValueError("Approx num chars must be > 0")
+        approx_num_chars_per_line += 1
+        # raise ValueError("Approx num chars must be > 0")
 
     def get_dim_lens(text):
         # Getting the bbox takes ~0.0006 seconds locally (166 ops per 0.1 seconds)

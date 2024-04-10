@@ -197,7 +197,7 @@ class VMobject(TransformableMobject, ABC):
         return self._fill_color is not None
 
     # sets stroke and/or fill color if they are showing
-    def set_color(self, color: ManimColor, family: bool = False) -> Self:  # override
+    def set_color(self, color: ManimColor, family: bool = True) -> Self:  # override
         if self.has_stroke():
             self.stroke_color = color
         if self.has_fill():
@@ -205,9 +205,10 @@ class VMobject(TransformableMobject, ABC):
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_color(color=color, family=True)
+        return self
 
     # sets stroke and/or fill opacity if they are showing
-    def set_opacity(self, opacity: float, family: bool = False) -> Self:  # override
+    def set_opacity(self, opacity: float, family: bool = True) -> Self:  # override
         if self._stroke_color:
             self.stroke_opacity = opacity
         elif self._fill_color:
@@ -215,6 +216,7 @@ class VMobject(TransformableMobject, ABC):
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_opacity(opacity=opacity, family=True)
+        return self
 
     def gen_bezier_quad_from_line(self, start: Point3D, end: Point3D) -> Point3D_Array:
         bezier_pts = [
@@ -277,7 +279,7 @@ class VMobject(TransformableMobject, ABC):
             mob.rotate(angle, axis, about_point)
         return self
 
-    # TODO: Consider scaling the stroke_width, if it exists.
+    # FUTURE: Consider scaling the stroke_width, if it exists.
     def scale(self, factor: float, about_point: Point3D | None = ORIGIN) -> Self:
         self.points = super().scale_points(self.points, factor, about_point)
         for mob in self.submobjects:

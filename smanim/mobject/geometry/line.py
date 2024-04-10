@@ -7,7 +7,7 @@ from smanim.mobject.text.text_mobject import Text
 from smanim.mobject.geometry.tips import ArrowTip, ArrowTriangleFilledTip
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import ManimFloat, Point3D, Vector3
-from smanim.utils.color import ManimColor
+from smanim.utils.color import WHITE, ManimColor
 from smanim.utils.logger import log
 from smanim.utils.space_ops import angle_from_vector
 
@@ -21,9 +21,9 @@ class Line(VMobject):
         start: Point3D | Mobject = LEFT,
         end: Point3D | Mobject = RIGHT,
         buff=0.0,
-        # lines cannot have a true fill_color so both color vars affect svg stroke color
-        fill_color: ManimColor = None,
-        stroke_color: ManimColor = None,
+        # mobjects that cannot have both a stroke and a fill have a user-facing `color` attr
+        color: ManimColor = WHITE,
+        opacity: float = 1.0,
         **kwargs,
     ):
         start_pt, end_pt = Line.find_line_anchors(start, end)
@@ -34,10 +34,10 @@ class Line(VMobject):
         self._start_pt = start_pt + (buff * dir)
         self._end_pt = end_pt - buff * dir
         self.buff = buff
-        # set is_closed to False to include the end anchor point in "bounding polygon"
 
+        # set is_closed to False to include the end anchor point in "bounding polygon"
         super().__init__(
-            is_closed=False, stroke_color=stroke_color or fill_color, **kwargs
+            is_closed=False, stroke_color=color, stroke_opacity=opacity, **kwargs
         )
 
     @property
@@ -183,28 +183,14 @@ class TipableLine(Line):
 
         return tip
 
-    # unused, but works fine
-    # def add_tip(
-    #     self,
-    #     tip: ArrowTip,
-    #     at_start: bool = False,
-    # ):
-    #     # Assumes tip is constructed but not positioned
-    #     # Unlike `create_tip`, `add_tip` does not change line length
-    #     rotate_scalar = 1 if at_start else -1
-    #     tip.rotate(self.get_angle() + rotate_scalar * PI / 2)
-
-    #     anchor = self.start if at_start else self.end
-    #     tip.shift(anchor - tip.base)
-    #     self.add(tip)
-
 
 # TODO: Refactor this to take in an instance maybe?
 class Arrow(TipableLine):
     def __init__(
         self,
-        # you can control line thickness with `stroke_width`
         *args,
+        color: ManimColor = WHITE,
+        opacity: float = 1.0,
         buff: float = 0,
         tip_length: float = 0.2,
         tip_width: float = 0.2,
@@ -217,7 +203,7 @@ class Arrow(TipableLine):
     ):
         self.start_tip = None
         self.end_tip = None
-        super().__init__(*args, buff=buff, **kwargs)
+        super().__init__(*args, color=color, opacity=opacity, buff=buff, **kwargs)
         if at_end:
             self.end_tip = self.create_tip(
                 tip_length=tip_length * tip_scalar,
@@ -236,6 +222,8 @@ class Arrow(TipableLine):
                 **tip_config,
             )
             self.add(self.start_tip)
+        self.set_color(color)
+        self.set_opacity(opacity)
 
     @property
     def start(self) -> Point3D:  # override

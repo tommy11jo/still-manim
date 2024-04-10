@@ -98,6 +98,10 @@ class Canvas:
         crop: bool = False,
         crop_buff: float = SMALL_BUFF,
     ) -> Tuple[float, float, float, float]:
+        if BROWSER_ENV:
+            raise Exception(
+                "Please use `canvas.draw()` instead of `canvas.snapshot` in the browser env."
+            )
         bg_rect = Rectangle(
             width=self.config.fw,
             height=self.config.fh,

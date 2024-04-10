@@ -1,4 +1,4 @@
-from typing import List, Tuple, TypeAlias, Union
+from typing import Hashable, List, Tuple, TypeAlias, Union
 import numpy.typing as npt
 import numpy as np
 
@@ -25,3 +25,7 @@ QuadArray_Point3D: TypeAlias = List[Tuple[Point3D, Point3D, Point3D, Point3D]]
 
 # Vector Types
 Vector3: TypeAlias = npt.NDArray[PointDType]
+
+# Graph Types
+AdjacencyListGraph: TypeAlias = dict[Hashable, List[Tuple[Hashable, Hashable]]]
+WeightedAdjacencyListGraph = dict[Hashable, List[Tuple[Hashable, Hashable, Hashable]]]

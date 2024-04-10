@@ -84,7 +84,9 @@ class Text(TransformableMobject):
             x_padding=x_padding,
             y_padding=y_padding,
         )
+        self.center()
 
+    # text should not take up more space than it needs, so extra space is ignored
     def setup_text_layout(
         self,
         text: str,
@@ -152,7 +154,6 @@ class Text(TransformableMobject):
         # Note: this point doesn't change during in-place rotation because SVG applies it after. It still changes for other transformations
         # So, `svg_upper_left` can get out of sync with `bounding_points`. Be careful.
         self.svg_upper_left = ul.copy()
-        self.center()
 
     @property
     def position(self):

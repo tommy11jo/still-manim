@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 from smanim.config import CONFIG
-from smanim.mobject.geometry.circle import Dot, LabeledDot
+from smanim.mobject.geometry.circle import Dot
 from smanim.mobject.text.text_mobject import Text
+from smanim.typing import AdjacencyListGraph, WeightedAdjacencyListGraph
 from smanim.utils.color import BLACK, WHITE
 
 __all__ = ["Graph", "WeightedGraph"]
 
 from copy import copy
-from typing import Dict, Hashable, Tuple
+from typing import Dict, Hashable, Iterable, Tuple
 
 import networkx as nx
 import numpy as np
@@ -31,15 +32,19 @@ class Graph(Group):
         self,
         vertices: list[Hashable],
         edges: list[tuple[Hashable, Hashable]],
-        labels: bool | dict = False,
-        label_fill_color: str = BLACK,
         layout: str | dict = "spring",
-        layout_scale: float | tuple = 2,
+        layout_scale: (
+            float | tuple
+        ) = 2,  # scale the layout determined by networkx by this factor, "spread out the vertices"
         layout_config: dict | None = None,
         vertex_type: type[Mobject] = Dot,
-        vertex_config: dict = {"fill_color": WHITE, "radius": 0.2},
+        vertex_config: dict = {},
         edge_type: type[Mobject] = Line,
-        edge_config: dict = {"buff": 0.0},
+        edge_config: dict = {
+            "buff": 0.0,
+            "tip_length": 0.1,
+            "tip_width": 0.1,
+        },
         partitions: list[list[Hashable]] | None = None,
         root_vertex: Hashable | None = None,
     ) -> None:
@@ -50,9 +55,8 @@ class Graph(Group):
         nx_graph = Graph._empty_networkx_graph()
         nx_graph.add_nodes_from(vertices)
         nx_graph.add_edges_from(edges)
-        self._graph = nx_graph
 
-        self._layout = _determine_graph_layout(
+        _layout = _determine_graph_layout(
             nx_graph,
             layout=layout,
             layout_scale=layout_scale,
@@ -61,28 +65,19 @@ class Graph(Group):
             root_vertex=root_vertex,
         )
 
-        if labels and vertex_type is Dot:
-            vertex_type = LabeledDot
-        default_vertex_config = {}
-        if len(vertex_config) > 0:
-            default_vertex_config = {
-                k: v for k, v in vertex_config.items() if k not in vertices
-            }
-        self._vertex_config = {
+        vertex_config_with_defaults = {"fill_color": WHITE, "radius": 0.2}
+        vertex_config_with_defaults.update(vertex_config)
+        default_vertex_config = {
+            k: v for k, v in vertex_config_with_defaults.items() if k not in vertices
+        }
+        _vertex_config = {
             v: vertex_config.get(v, copy(default_vertex_config)) for v in vertices
         }
-        self.default_vertex_config = default_vertex_config
 
-        if labels:
-            for vid in vertices:
-                self._vertex_config[vid]["label"] = Text(
-                    str(vid), color=label_fill_color
-                )
-
-        self.vertices = {v: vertex_type(**self._vertex_config[v]) for v in vertices}
+        self.vertices = {v: vertex_type(**_vertex_config[v]) for v in vertices}
 
         for vid, vertex in self.vertices.items():
-            vertex.move_to(self._layout[vid])
+            vertex.move_to(_layout[vid])
         self.add(*self.vertices.values())
 
         default_edge_config = {}
@@ -90,18 +85,20 @@ class Graph(Group):
             default_edge_config = {
                 k: v for k, v in edge_config.items() if k not in edges
             }
-        self._edge_config = {
+        _edge_config = {
             edge: edge_config.get(edge, copy(default_edge_config)) for edge in edges
         }
         self.edges = {
             (u, v): edge_type(
                 start=self.vertices[u],
                 end=self.vertices[v],
-                **self._edge_config[(u, v)],
+                **_edge_config[(u, v)],
             )
             for u, v in edges
         }
         self.add(*self.edges.values())
+
+        self.vertex_labels: Group = Group()
 
     @staticmethod
     def _empty_networkx_graph() -> nx.Graph:
@@ -113,6 +110,29 @@ class Graph(Group):
             f"{classname}(vertices={self.vertices.keys()}, edges={self.edges.keys()})"
         )
 
+    @staticmethod
+    def from_adjacency_list(graph: AdjacencyListGraph):
+        # graph is a map from vertex => [vertex1, vertex2, ...]
+        vertices = list(graph.keys())
+        edges = []
+        for vertex, neighbors in graph.items():
+            for neighbor in neighbors:
+                edges.append((vertex, neighbor))
+        return vertices, edges
+
+    def add_vertex_labels(
+        self, labels: Iterable[str] | None = None, label_config: dict = {"color": BLACK}
+    ):
+        vertex_labels = Group()
+        if labels is None:
+            labels = [str(i) for i in range(len(self.vertices))]
+        for vertex, label in zip(self.vertices.values(), labels):
+            text = Text(label, **label_config)
+            text.move_to(vertex)
+            vertex_labels.add(text)
+        self.add(vertex_labels)
+        self.vertex_labels = vertex_labels
+
 
 class WeightedGraph(Graph):
     def __init__(
@@ -121,7 +141,7 @@ class WeightedGraph(Graph):
         edge_labels: (
             Dict[Tuple[Hashable, Hashable], Text | str | int] | None
         ) = None,  # labels maps from edge tuple (u, v) => Text
-        label_config: dict = {},  # used for str | int label values in `edge_labels`
+        edge_label_config: dict = {},  # kwargs for `Text` edge label
         **kwargs,
     ):
         super().__init__(
@@ -135,9 +155,10 @@ class WeightedGraph(Graph):
         converted_labels: Dict[Tuple[Hashable, Hashable], Text] = {}
         for edge, label in edge_labels.items():
             if not isinstance(label, Text):
-                converted_labels[edge] = Text(str(label), **label_config)
+                converted_labels[edge] = Text(str(label), **edge_label_config)
             else:
                 converted_labels[edge] = label
+        edge_label_map = {}
         edge_label_objs = Group()
         for edge, weight_text in converted_labels.items():
             v1, v2 = edge
@@ -148,8 +169,22 @@ class WeightedGraph(Graph):
 
             weight_text.move_to(edge_obj.midpoint)
             edge_label_objs.add(weight_text)
-
+            edge_label_map[edge] = weight_text
         self.add(edge_label_objs)
+        self.edge_labels = edge_label_map
+
+    @staticmethod
+    def from_adjacency_list(graph: WeightedAdjacencyListGraph):
+        # graph is a map from vertex => [(vertex1, weight1), (vertex2, weight2), ...]
+        vertices = list(graph.keys())
+        edges = []
+        labels = {}
+        for vertex, neighbors in graph.items():
+            for neighbor, weight in neighbors:
+                edge = (vertex, neighbor)
+                edges.append(edge)
+                labels[edge] = weight
+        return vertices, edges, labels
 
 
 def _determine_graph_layout(
