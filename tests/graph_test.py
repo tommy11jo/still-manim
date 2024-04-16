@@ -83,4 +83,4 @@ def weighted_digraph(graph):
     canvas.snapshot(preview=True)
 
 
-# weighted_digraph(WEIGHTED_GRAPH1)
+weighted_digraph(WEIGHTED_GRAPH1)

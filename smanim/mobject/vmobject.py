@@ -37,6 +37,8 @@ class VMobject(TransformableMobject, ABC):
 
     def __init__(
         self,
+        color: ManimColor | None = None,
+        opacity: float = 1.0,  # ignored unless color is used
         stroke_color: ManimColor | None = None,
         stroke_opacity: float = 1.0,
         stroke_width: float | None = DEFAULT_STROKE_WIDTH,
@@ -55,25 +57,32 @@ class VMobject(TransformableMobject, ABC):
         self.is_closed = is_closed
         self.generate_points()
 
-        if (
-            default_fill_color is not None
-            and fill_color is None
-            and stroke_color is None
-            and default_stroke_color is None
-        ):
-            fill_color = default_fill_color
-            fill_opacity = 1.0
-            self.default_stroke_color = None
-        elif stroke_color is None and fill_color is None:
-            self.default_stroke_color = default_stroke_color or WHITE
+        # Precedence: fill_color > color > default_fill_color, and same for stroke
+        if fill_color is None and stroke_color is None:
+            # this VMobject base class chooses to set `stroke_color` by default when `color` is set
+            # other classes may choose to set `fill_color`
+            if color is not None:
+                stroke_color = color
+                stroke_opacity = opacity
+            elif default_stroke_color is None and default_fill_color is not None:
+                fill_color = default_fill_color
+                fill_opacity = 1.0
+            else:
+                stroke_color = default_stroke_color or WHITE
+                stroke_opacity = stroke_opacity
         else:
-            self.default_stroke_color = default_stroke_color
+            if color:
+                raise ValueError(
+                    "Color cannot be set when `fill_color` or `stroke_color` is set."
+                )
 
         self._stroke_color = stroke_color
         self.stroke_opacity = stroke_opacity
         self.stroke_width = stroke_width
+
         self._fill_color = fill_color
         self.fill_opacity = fill_opacity
+
         # Bug: Not quite evenly spaced, when it should be
         # https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-dasharray
         self.stroke_dasharray = "8 8" if dashed else "none"
@@ -145,12 +154,7 @@ class VMobject(TransformableMobject, ABC):
 
     @property
     def stroke_color(self):
-        if self._stroke_color:
-            return self._stroke_color
-        if self._fill_color:
-            return None
-        # default appearance of VMobject is stroke with default color
-        return self.default_stroke_color
+        return self._stroke_color
 
     @stroke_color.setter
     def stroke_color(self, value):
@@ -158,9 +162,7 @@ class VMobject(TransformableMobject, ABC):
 
     @property
     def fill_color(self):
-        if self._fill_color:
-            return self._fill_color
-        return None
+        return self._fill_color
 
     @fill_color.setter
     def fill_color(self, value):

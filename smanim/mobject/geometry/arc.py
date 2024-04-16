@@ -5,7 +5,7 @@ from smanim.typing import Point3D
 from smanim.utils.space_ops import angle_from_vector
 
 
-__all__ = ["Arc", "ArcBetweenPoints"]
+__all__ = ["Arc"]
 
 
 class Arc(VMobject):
@@ -66,10 +66,9 @@ class Arc(VMobject):
         class_name = self.__class__.__qualname__
         return f"{class_name}(radius={self.radius}, center={self.arc_center}, angle={self.angle})"
 
-
-class ArcBetweenPoints(Arc):
-    def __init__(
-        self,
+    @classmethod
+    def from_points(
+        cls,
         start: Point3D,
         end: Point3D,
         angle: (
@@ -79,13 +78,13 @@ class ArcBetweenPoints(Arc):
         **kwargs,
     ):
         # The arc will be formed counter-clockwise from start to end along the circle
-        self.start = np.array(start)
-        self.end = np.array(end)
-        chord_len = np.linalg.norm(self.end - self.start)
-        chord_unit_dir = (self.end - self.start) / chord_len
+        start = np.array(start)
+        end = np.array(end)
+        chord_len = np.linalg.norm(end - start)
+        chord_unit_dir = (end - start) / chord_len
         if not angle:
             angle = 2 * np.arcsin(chord_len / (2 * radius))
-        midpoint = (self.start + self.end) / 2
+        midpoint = (start + end) / 2
         chord_to_center_len = (chord_len / 2) / np.tan(angle / 2)
         # perp to chord_unit_dir
         to_center_unit_dir = np.array([-chord_unit_dir[1], chord_unit_dir[0], 0])
@@ -93,9 +92,9 @@ class ArcBetweenPoints(Arc):
 
         radius = chord_len / (2 * np.sin(angle / 2))
 
-        center_to_start = self.start - arc_center
+        center_to_start = start - arc_center
         start_angle = angle_from_vector(center_to_start)
-        super().__init__(
+        return cls(
             radius=radius,
             start_angle=start_angle,
             angle=angle,

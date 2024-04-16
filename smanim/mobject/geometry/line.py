@@ -90,10 +90,16 @@ class Line(VMobject):
     ) -> Tuple[Point3D, Point3D]:
         # for points, use them as is
         # for mobjects, determine rough direction, then use it to find exact boundaries
-        start = np.array(start) if isinstance(start, Tuple) else start
-        end = np.array(end) if isinstance(start, Tuple) else end
-        rough_start = start.get_center() if isinstance(start, Mobject) else start
-        rough_end = end.get_center() if isinstance(end, Mobject) else end
+        if isinstance(start, Mobject):
+            rough_start = start.center
+        else:
+            start = np.array(start, dtype=ManimFloat)
+            rough_start = start
+        if isinstance(end, Mobject):
+            rough_end = end.center
+        else:
+            end = np.array(start, dtype=ManimFloat)
+            rough_end = start
         dir = rough_end - rough_start
 
         start_pt = (

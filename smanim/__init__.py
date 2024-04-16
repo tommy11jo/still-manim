@@ -21,3 +21,5 @@ from smanim.mobject.text.text_mobject import *
 from smanim.mobject.graph import *
 from smanim.mobject.graphing.number_line import *
 from smanim.mobject.graphing.coordinate_systems import *
+
+from smanim.mobject.programming.box_list import *

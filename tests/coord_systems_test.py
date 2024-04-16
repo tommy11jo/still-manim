@@ -64,7 +64,7 @@ def custom_axes():
     x_axis = NumberLine([-3, 4, 1], include_origin_tick=False)
     y_axis = NumberLine([-4, 1, 1], include_origin_tick=False)
     a = Axes(x_axis, y_axis)
-    a.center()
+    a.move_to_origin()
     canvas.add(a)
     canvas.snapshot(preview=True)
 
@@ -241,13 +241,14 @@ def number_plane_without_origin():
 def text_stretch_bug():
     n = NumberLine((2, 3))
     for label in n.labels:
-        label.add_surrounding_rect()
+        rect = label.get_surrounding_rect()
+        n.add(rect)
     n.stretch_to_fit_width(canvas.config.fw)
     canvas.add(n)
     canvas.snapshot(preview=True)
 
 
-text_stretch_bug()
+# text_stretch_bug()
 
 
 def number_line_length():

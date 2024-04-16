@@ -63,9 +63,15 @@ TEXT_Y_PADDING = 0.02
 H1_FONT_SIZE = 40
 H2_FONT_SIZE = 30
 H3_FONT_SIZE = 24
+DEFAULT_FONT_SIZE = 20
 
 # Layering
 Z_INDEX_MIN = -2147483648
+
+# Resolutions
+LOW_RES = 72  # 72 pixels per unit
+MEDIUM_RES = 90  # 90 pixels per unit
+HIGH_RES = 120  # 120 pixels per unit
 
 # Misc
 DEFAULT_STROKE_WIDTH = 4.0

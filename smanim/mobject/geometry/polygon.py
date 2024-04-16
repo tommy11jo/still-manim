@@ -1,9 +1,9 @@
 from typing import List
 from typing_extensions import Self
 import numpy as np
-from smanim.mobject.geometry.arc import ArcBetweenPoints
+from smanim.mobject.geometry.arc import Arc
 from smanim.utils.bezier import interpolate
-from smanim.utils.color import GREEN, RED, ManimColor, has_default_colors_set
+from smanim.utils.color import GREEN, WHITE, ManimColor, has_default_colors_set
 from smanim.constants import DL, DR, ORIGIN, OUT, PI, UL, UR
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import ManimFloat, Point3D, Point3D_Array, QuadArray_Point3D, Vector3
@@ -102,7 +102,7 @@ class Polygon(Polygram):
         self,
         vertices: Point3D_Array,
         corner_radius: float = 0.0,
-        default_stroke_color: ManimColor = RED,
+        default_stroke_color: ManimColor = WHITE,
         **kwargs,
     ):
         if not has_default_colors_set(kwargs):
@@ -133,9 +133,7 @@ class Polygon(Polygram):
         quads = self.get_points_in_quads(self.points)
         new_quads = []
 
-        def _arc_from_quads(
-            quad1: QuadArray_Point3D, quad2: QuadArray_Point3D
-        ) -> ArcBetweenPoints:
+        def _arc_from_quads(quad1: QuadArray_Point3D, quad2: QuadArray_Point3D) -> Arc:
             prev_end = quad1[-1]
             prev_start = quad1[0]
             cur_start = quad2[0]
@@ -144,7 +142,7 @@ class Polygon(Polygram):
             angle = np.arccos(
                 np.dot(prev, cur) / (np.linalg.norm(prev) * np.linalg.norm(cur))
             )
-            arc = ArcBetweenPoints(prev_end, cur_start, angle=angle)
+            arc = Arc.from_points(prev_end, cur_start, angle=angle)
             return arc
 
         for quad in quads:
@@ -191,12 +189,16 @@ class Rectangle(Polygon):
 
 
 class Square(Polygon):
-    def __init__(self, side_length: int = 1, **kwargs):
+    def __init__(self, side_length: int = 2, **kwargs):
+        half_side = side_length / 2
         super().__init__(
-            [UR * side_length, UL * side_length, DL * side_length, DR * side_length],
+            [UR * half_side, UL * half_side, DL * half_side, DR * half_side],
             **kwargs,
         )
-        self.side_length = side_length
+
+    @property
+    def side_length(self):
+        return np.linalg.norm(self.vertices[-1] - self.vertices[0])
 
     def __repr__(self):
         class_name = self.__class__.__qualname__

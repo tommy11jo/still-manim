@@ -99,11 +99,11 @@ class Mobject(ABC):
     # Bounding Box Ops
     def get_critical_point(self, direction: Vector3):
         """9 point bbox: 4 corners, 4 edge points, 1 center"""
+        direction = direction.astype(int)
         if not (-1 <= direction[0] <= 1 and -1 <= direction[1] <= 1):
             raise ValueError(
-                f"Direction is {direction} but be [x, x, (optional)] where x is -1, 0, 1. See constants.py for direction values."
+                f"Direction is {direction} but must be [x, x, (optional)] where x is -1, 0, 1. See constants.py for direction values."
             )
-        direction = direction.astype(int)
 
         all_points = np.concatenate(
             [mob.bounding_points for mob in self.get_family()], axis=0
@@ -121,19 +121,25 @@ class Mobject(ABC):
 
         return np.array([new_x, new_y, 0])
 
-    def get_top(self):
+    # Rule: All positional attrs that can be a property should be
+    @property
+    def top(self):
         return self.get_critical_point(UP)
 
-    def get_bottom(self):
+    @property
+    def bottom(self):
         return self.get_critical_point(DOWN)
 
-    def get_left(self):
+    @property
+    def left(self):
         return self.get_critical_point(LEFT)
 
-    def get_right(self):
+    @property
+    def right(self):
         return self.get_critical_point(RIGHT)
 
-    def get_center(self):
+    @property
+    def center(self):
         return self.get_critical_point(ORIGIN)
 
     def get_corner(self, direction: Vector3):
@@ -141,8 +147,17 @@ class Mobject(ABC):
             raise ValueError("`direction` must be a corner")
         return self.get_critical_point(direction)
 
-    def get_bbox(self) -> Point3D_Array:
+    @property
+    def bbox(self) -> Point3D_Array:
         return [self.get_corner(dir) for dir in [UR, UL, DL, DR]]
+
+    @property
+    def width(self):
+        return (self.right - self.left)[0]
+
+    @property
+    def height(self):
+        return (self.top - self.bottom)[1]
 
     def get_closest_intersecting_point_2d(
         self, ray_origin: Point2D, ray_direction: Point2D
@@ -162,33 +177,25 @@ class Mobject(ABC):
         intersection, param = min(intersections_and_params, key=lambda x: x[1])
         if intersection is None:
             log.warning("No intersection point found. Illegal ray input.")
-            return self.get_center()
+            return self.center
         return np.array([intersection[0], intersection[1], 0])
-
-    @property
-    def width(self):
-        return (self.get_right() - self.get_left())[0]
-
-    @property
-    def height(self):
-        return (self.get_top() - self.get_bottom())[1]
 
     # Absolute Positioning
     def set_position(self, coord: Point2D | Point3D) -> Self:
         """Set the center of this mobject to `coord`."""
         if len(coord) == 2:
             coord = np.append(coord, 0)
-        return self.shift(coord - self.get_center())
+        return self.shift(coord - self.center)
 
     def set_x(self, x: float) -> Self:
         """Set x value of the center of this mobject"""
-        x_pt = self.get_center().copy()
+        x_pt = self.center.copy()
         x_pt[0] = x
         return self.set_position(x_pt)
 
     def set_y(self, y: float) -> Self:
         """Set y value of the center of this mobject"""
-        y_pt = self.get_center().copy()
+        y_pt = self.center.copy()
         y_pt[1] = y
         return self.set_position(y_pt)
 
@@ -196,61 +203,61 @@ class Mobject(ABC):
     def next_to(
         self,
         mobject_or_point: Mobject | Point3D,
-        direction: Vector3 = RIGHT,
-        aligned_edge: Vector3 = ORIGIN,
+        direction: Vector3 = RIGHT,  # think of this as bbox point
         buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     ) -> Self:
-        if not any([np.array_equal(direction, e) for e in (UP, DOWN, LEFT, RIGHT)]):
-            raise ValueError("`direction` must be one of (UP, DOWN, LEFT, RIGHT)")
-        if (np.abs(direction) + np.abs(aligned_edge) >= 2).any():
-            raise ValueError(
-                "`direction` and `aligned edge` cannot be along the same axis"
-            )
+        """Moves this mobject to the to an edge of another mobject"""
+        if not any(
+            [
+                np.array_equal(direction, e)
+                for e in (UP, DOWN, LEFT, RIGHT, UR, UL, DL, DR)
+            ]
+        ):
+            raise ValueError("`direction` must be a bbox point, such as UP or LEFT")
         if isinstance(mobject_or_point, Mobject):
-            dest_pt = mobject_or_point.get_critical_point(direction + aligned_edge)
+            dest_pt = mobject_or_point.get_critical_point(direction)
         else:
             dest_pt = mobject_or_point
 
-        cur_pt = self.get_critical_point(-direction + aligned_edge)
+        cur_pt = self.get_critical_point(-direction)
         to_shift = (dest_pt - cur_pt) + direction * buff
         self.shift(to_shift)
         return self
 
-    def move_to(
-        self, point_or_mobject: Point3D | Mobject, aligned_edge: Vector3 = CENTER
-    ) -> Self:
+    def move_to(self, point_or_mobject: Point3D | Mobject) -> Self:
+        """Moves the center of this mobject to the center of another mobject"""
         if isinstance(point_or_mobject, Mobject):
-            # Use of aligned edge deviates from original manim by placing at center, not `aligned_edge` point
             dest_pt = point_or_mobject.get_critical_point(CENTER)
         else:
             dest_pt = point_or_mobject
-        cur_pt = self.get_critical_point(aligned_edge)
+        cur_pt = self.get_critical_point(CENTER)
         self.shift(dest_pt - cur_pt)
 
         return self
 
-    # changed from original Manim to only take in mobjects and to use only edges, not corners or center
     def align_to(
         self,
-        mobject: Mobject,
+        point_or_mobject: Point3D | Mobject,
         edge: Vector3 = UP,
     ) -> Self:
         """Align to the edge of another mobject"""
         if not any([np.array_equal(edge, e) for e in (UP, DOWN, LEFT, RIGHT)]):
             raise ValueError("Edge must be one of (UP, DOWN, LEFT, RIGHT)")
-        dest = mobject.get_critical_point(edge)
+        if isinstance(point_or_mobject, Mobject):
+            dest_pt = point_or_mobject.get_critical_point(edge)
+        else:
+            dest_pt = point_or_mobject
         cur = self.get_critical_point(edge)
         if np.array_equal(edge, UP) or np.array_equal(edge, DOWN):
-            self.shift(np.array([0, dest[1] - cur[1], 0]))
+            self.shift(np.array([0, dest_pt[1] - cur[1], 0]))
         if np.array_equal(edge, LEFT) or np.array_equal(edge, RIGHT):
-            self.shift(np.array([dest[0] - cur[0], 0, 0]))
+            self.shift(np.array([dest_pt[0] - cur[0], 0, 0]))
         return self
 
-    def center(self) -> Self:
-        self.shift(-self.get_center())
+    def move_to_origin(self) -> Self:
+        self.shift(-self.center)
         return self
 
-    # If I find a submobject that isn't supposed to do a transformation, then I can delete these "defensive errors"
     # Core transformations must be overridden by all subclasses
     @abstractmethod
     def rotate(self, angle: float, axis: Vector3, about_point: Point3D) -> Self:
@@ -318,12 +325,12 @@ class Mobject(ABC):
         pass
 
     # Frequently used patterns
-    def add_surrounding_rect(self, **rect_config):
+    def get_surrounding_rect(self, **rect_config) -> Mobject:
         # to avoid circular import
         from smanim.mobject.geometry.shape_matchers import _SurroundingRectangle
 
         rect = _SurroundingRectangle(self, **rect_config)
-        self.add(rect)
+        return rect
 
     def copy(self) -> Mobject:
         return deepcopy(self)

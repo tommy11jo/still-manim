@@ -34,6 +34,7 @@ def wrap_text(
 
     def get_dim_lens(text):
         # Getting the bbox takes ~0.0006 seconds locally (166 ops per 0.1 seconds)
+        # Note: "aG" has different height than "aa"
         left, top, right, bottom = font.getbbox(text)
         width = right - left
         height = bottom - top
@@ -75,14 +76,13 @@ def wrap_text(
             word_ind = cur_ind
         else:
             while width > max_width_in_pixels:
+                cur_ind -= 1
+                cur_text = " ".join(words[word_ind:cur_ind])
+                width, height = get_dim_lens(cur_text)
                 if cur_ind == word_ind:
                     # choosing to show the whole word and not wrap it, if it's too big for it's own line
                     cur_ind = word_ind + 1
                     break
-                cur_ind -= 1
-
-                cur_text = " ".join(words[word_ind:cur_ind])
-                width, height = get_dim_lens(cur_text)
 
             text_tokens.append(cur_text)
             width, height = get_dim_lens(cur_text)

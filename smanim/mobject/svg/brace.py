@@ -1,14 +1,17 @@
+from __future__ import annotations
 import numpy as np
 from smanim.constants import DOWN, LEFT, PI, RIGHT, SMALL_BUFF, UP
-from smanim.mobject.geometry.line import Line
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.svg.svg_mobject import VMobjectFromSVGPath
+from smanim.mobject.text.text_mobject import Text
 from smanim.typing import Point3D
 from smanim.utils.color import WHITE, ManimColor, has_default_colors_set
 
 import svgelements as se
 
-__all__ = ["Brace", "BraceBetween"]
+from smanim.utils.space_ops import angle_from_vector
+
+__all__ = ["Brace", "LabeledBrace"]
 
 path_string_template = (
     "m0.01216 0c-0.01152 0-0.01216 6.103e-4 -0.01216 0.01311v0.007762c0.06776 "
@@ -30,38 +33,29 @@ path_string_template = (
 class Brace(VMobjectFromSVGPath):
     def __init__(
         self,
-        mobject: Mobject,
-        direction: Point3D = DOWN,  # corresponds to edge on mobject
-        buff=SMALL_BUFF,
+        start: Point3D,
+        end: Point3D,
         sharpness=2,
         # stroke_width=0,
+        color: ManimColor | None = None,
         default_fill_color: ManimColor = WHITE,
         **kwargs,
     ):
         if not has_default_colors_set(kwargs):
-            kwargs["default_fill_color"] = default_fill_color
+            kwargs["default_fill_color"] = color or default_fill_color
+
+        self.start = start
+        self.end = end
+        self.direction = (end - start) / np.linalg.norm(end - start)
+        center_pt = (self.end + self.start) / 2
 
         default_min_width = 0.90552
-        self.buff = buff
-        self.mobject = mobject
-        if np.array_equal(direction, UP):
-            brace_width = mobject.width
-            to_rotate = 0
-        elif np.array_equal(direction, DOWN):
-            brace_width = mobject.width
-            to_rotate = PI
-        elif np.array_equal(direction, LEFT):
-            brace_width = mobject.height
-            to_rotate = PI / 2
-        elif np.array_equal(direction, RIGHT):
-            brace_width = mobject.height
-            to_rotate = -PI / 2
-        else:
-            raise ValueError("Brace must be in UP, DOWN, LEFT, or RIGHT directions")
+        width = np.linalg.norm(end - start)
 
+        to_rotate = angle_from_vector(self.direction)
         linear_section_length = max(
             0,
-            (brace_width * sharpness - default_min_width) / 2,
+            (width * sharpness - default_min_width) / 2,
         )
 
         svg_path_str = path_string_template.format(
@@ -70,24 +64,74 @@ class Brace(VMobjectFromSVGPath):
         )
         svg_path = se.Path(d=svg_path_str)
         super().__init__(svg_path, **kwargs)
-        self.stretch_to_fit_width(brace_width)
-        self.rotate(to_rotate, about_point=self.get_center())
-        self.next_to(mobject, direction, buff=buff)
+        self.stretch_to_fit_width(width)
+        self.rotate(to_rotate, about_point=self.center)
+        self.move_to(center_pt)
 
     def __repr__(self):
         class_name = self.__class__.__qualname__
-        return f"{class_name}(mobject={self.mobject})"
+        return f"{class_name}(start={self.start}, end={self.end})"
 
-
-# Manim originally called this "BraceBetweenPoints"
-class BraceBetween(Brace):
-    def __init__(
-        self,
+    @classmethod
+    def from_positions(
+        cls,
         start: Point3D | Mobject,
         end: Point3D | Mobject,
-        direction: Point3D = DOWN,
+        **kwargs,
+    ) -> Brace | LabeledBrace:
+        """A brace between the start item and end item. Handles mobjects, which main constructor does not."""
+        return cls(start=start, end=end, **kwargs)
+
+    # Rule: It is expected to use keyword names when constructing any object in still-manim
+    # TODO: Use Point3D and Vector3D consistently
+    @classmethod
+    def from_mobject_edge(
+        cls, mobject: Mobject, edge: Point3D = DOWN, buff: float = SMALL_BUFF, **kwargs
+    ):
+        if np.array_equal(edge, UP) or np.array_equal(edge, DOWN):
+            start = mobject.get_corner(edge + LEFT)
+            end = mobject.get_corner(edge + RIGHT)
+        elif np.array_equal(edge, LEFT) or np.array_equal(edge, RIGHT):
+            start = mobject.get_corner(edge + DOWN)
+            end = mobject.get_corner(edge + UP)
+        else:
+            raise ValueError("Brace must be in UP, DOWN, LEFT, or RIGHT directions")
+        brace = cls(start + edge * buff, end + edge * buff, **kwargs)
+        return brace
+
+    @property
+    def midpoint(self):
+        return self.point_from_proportion(0.25)
+
+
+# Future: Might make sense to add a mob.next_to_rotated(mob2, dir) where mob2 (and its bbox) is assumed to be rotated by dir (more precision, avoids ugly whitespace)
+class LabeledBrace(Brace):
+    def __init__(
+        self,
+        *args,
+        label: Text | None = None,
+        label_buff: float = 0,
         **kwargs,
     ):
-        line = Line(start, end)
-        self.start_pt, self.end_pt = line.start, line.end
-        super().__init__(line, direction=direction, **kwargs)
+        super().__init__(*args, **kwargs)
+        if label is None:
+            label = Text("label")
+        self.add_label(label=label, buff=label_buff)
+
+    def add_label(self, label: Text, buff: float = 0) -> None:
+        diff = self.end - self.start
+        line_len = np.linalg.norm(diff)
+        unit_dir = diff / line_len
+        dir_x, dir_y = unit_dir[:2]
+        angle = angle_from_vector(unit_dir)
+
+        if angle > PI:
+            angle -= PI
+        if angle > PI / 2:
+            angle -= PI
+        label_height = label.height
+        label.rotate_in_place(angle)
+        perp_dir = np.array([-dir_y, dir_x, 0])
+        midpoint = self.midpoint
+        label.move_to(midpoint + perp_dir * (buff + (label_height / 2)))
+        self.add(label)

@@ -36,7 +36,7 @@ class TransformableMobject(Mobject):
     ) -> InternalPoint3D_Array:
         points = points.copy()
         if about_point is None:
-            about_point = self.get_center()
+            about_point = self.center
         if np.array_equal(about_point, ORIGIN):
             points = points * factor
         else:

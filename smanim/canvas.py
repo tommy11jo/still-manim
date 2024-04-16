@@ -1,3 +1,4 @@
+from __future__ import annotations
 import base64
 import json
 from pathlib import Path
@@ -20,7 +21,7 @@ from smanim.mobject.mobject import Mobject
 from smanim.mobject.vmobject import VMobject
 from smanim.mobject.text.text_mobject import Text
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
-from smanim.utils.color import BLACK
+from smanim.utils.color import ManimColor
 from smanim.utils.logger import log
 
 import itertools as it
@@ -97,18 +98,19 @@ class Canvas:
         ignore_bg: bool = False,
         crop: bool = False,
         crop_buff: float = SMALL_BUFF,
+        called_from_draw: bool = False,
     ) -> Tuple[float, float, float, float]:
-        if BROWSER_ENV:
+        if not called_from_draw and BROWSER_ENV:
             raise Exception(
                 "Please use `canvas.draw()` instead of `canvas.snapshot` in the browser env."
             )
-        bg_rect = Rectangle(
-            width=self.config.fw,
-            height=self.config.fh,
-            fill_color=BLACK,
-            z_index=Z_INDEX_MIN,
-        )
-        if not ignore_bg:
+        if self.config.bg_color is not None and not ignore_bg:
+            bg_rect = Rectangle(
+                width=self.config.fw,
+                height=self.config.fh,
+                fill_color=self.config.bg_color,
+                z_index=Z_INDEX_MIN,
+            )
             mobjects_in_order = [bg_rect] + self.get_mobjects_to_display()
         else:
             mobjects_in_order = self.get_mobjects_to_display()
@@ -154,7 +156,11 @@ class Canvas:
         self, crop: bool = False, crop_buff: float = SMALL_BUFF
     ) -> Tuple[float, float, float, float]:
         bbox = self.snapshot(
-            overwrite=True, preview=False, crop=crop, crop_buff=crop_buff
+            overwrite=True,
+            preview=False,
+            crop=crop,
+            crop_buff=crop_buff,
+            called_from_draw=True,
         )
         self.clear()
         return json.dumps(bbox)
@@ -258,9 +264,15 @@ class Canvas:
         text_tspan_objs = []
 
         for i, raw_text in enumerate(text_obj.text_tokens):
-            height = text_obj.font_height + text_obj.leading
+            height = (
+                text_obj.font_ascent_pixels
+                + text_obj.font_descent_pixels
+                + text_obj.leading_pixels
+            )
             if i == 0:
-                height -= text_obj.leading
+                height -= text_obj.leading_pixels
+                # don't count the previous line font descent since this draws on the baseline
+                height -= text_obj.font_descent_pixels
                 height += text_obj.y_padding_in_pixels
 
             text_tspan_objs.append(
@@ -271,7 +283,7 @@ class Canvas:
                     dx=text_obj.x_padding_in_pixels,
                 )
             )
-        x_center, y_center = self._to_pixel_coords(text_obj.get_center())[:2]
+        x_center, y_center = self._to_pixel_coords(text_obj.center)[:2]
         text_svg_obj = svg.Text(
             elements=text_tspan_objs,
             x=start_pt[0],
@@ -311,6 +323,31 @@ class Canvas:
 
     def shift(self, vector: Vector3) -> None:
         self.mobjects.shift(vector)
+
+    # Common helper functions that really change the underlying config
+    def set_background(self, color: ManimColor) -> Canvas:
+        self.config.bg_color = color
+        return self
+
+    # Values here are in manim units
+    def set_dimensions(self, width: int, height: int) -> None:
+        self.config.fw = width
+        self.config.pw = int(width * self.config.density)
+
+        self.config.fh = height
+        self.config.ph = int(height * self.config.density)
+
+    def scale_to_fit(self, buff: float = SMALL_BUFF):
+        """Scales all mobjects so that they fit on this canvas
+        Typically run just before draw() or snapshot()"""
+        w, h = self.mobjects.width, self.mobjects.height
+        goal_w, goal_h = self.config.fw - 2 * buff, self.config.fh - 2 * buff
+        w_scalar = min(1, goal_w / w)
+        h_scalar = min(1, goal_h / h)
+        scalar = min(w_scalar, h_scalar)
+        if scalar != 1:
+            self.mobjects.scale(scalar)
+        return self
 
 
 canvas = Canvas(CONFIG)

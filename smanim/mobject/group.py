@@ -86,9 +86,11 @@ class Group(TransformableMobject):
         center: bool = True,
     ) -> Self:
         for m1, m2 in zip(self.submobjects, self.submobjects[1:]):
-            m2.next_to(m1, direction=direction, aligned_edge=aligned_edge, buff=buff)
+            m2.next_to(m1, direction=direction, buff=buff).align_to(
+                m1, edge=aligned_edge
+            )
         if center:
-            self.center()
+            self.move_to_origin()
         return self
 
     def arrange_in_grid(
@@ -101,7 +103,7 @@ class Group(TransformableMobject):
         col_direction: Vector3 = DOWN,
         buff_within_row: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
         buff_within_col: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
-    ):
+    ) -> Self:
         # Assumes items are of uniform width
         all_children = self.get_family()[1:]
         num_items = len(all_children)
@@ -133,3 +135,4 @@ class Group(TransformableMobject):
         row_groups.arrange(
             direction=col_direction, aligned_edge=col_aligned_edge, buff=buff_within_col
         )
+        return self

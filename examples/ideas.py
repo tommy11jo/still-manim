@@ -26,7 +26,8 @@ def draw_planets():
     )
     mercury = Circle(fill_color=GOLD_A, radius=mercury_width).shift(LEFT * 2)
     mercury.add_label(Text("Mercury"))
-    mercury.add_surrounding_rect(stroke_color=GREY)
+    rect = mercury.get_surrounding_rect(stroke_color=GREY)
+    mercury.add(rect)
     venus = Circle(fill_color=LIGHT_BROWN, radius=venus_width)
     earth = Circle(fill_color=BLUE, radius=earth_width)
     mars = Circle(fill_color=RED, radius=mars_width)
@@ -36,7 +37,7 @@ def draw_planets():
     canvas.snapshot(preview=True)
 
 
-# draw_planets()
+draw_planets()
 
 
 def generate_lemons(stroke_width=4):
@@ -82,4 +83,4 @@ def lemon_logo():
     # canvas.draw()
 
 
-lemon_logo()
+# lemon_logo()

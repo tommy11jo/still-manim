@@ -120,6 +120,7 @@ class Graph(Group):
                 edges.append((vertex, neighbor))
         return vertices, edges
 
+    # TODO: make this a generate and allow the init to call it and pass in label_config
     def add_vertex_labels(
         self, labels: Iterable[str] | None = None, label_config: dict = {"color": BLACK}
     ):
@@ -163,11 +164,12 @@ class WeightedGraph(Graph):
         for edge, weight_text in converted_labels.items():
             v1, v2 = edge
             edge_obj = self.edges[(v1, v2)]
-            weight_text.add_surrounding_rect(
-                fill_color=CONFIG.bg_color, fill_opacity=1.0, buff=0.005
-            )
 
             weight_text.move_to(edge_obj.midpoint)
+            rect = weight_text.get_surrounding_rect(
+                fill_color=CONFIG.bg_color, fill_opacity=1.0, buff=0.005
+            )
+            weight_text.add(rect)
             edge_label_objs.add(weight_text)
             edge_label_map[edge] = weight_text
         self.add(edge_label_objs)

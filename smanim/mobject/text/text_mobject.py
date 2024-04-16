@@ -53,6 +53,7 @@ class Text(TransformableMobject):
         italics: bool = False,
         x_padding: float = 0,
         y_padding: float = 0,
+        leading: float = 0.2,  # percent (as decimal) of line height for spacing between lines
         # x_padding: float = TEXT_X_PADDING,
         # y_padding: float = TEXT_Y_PADDING,
         **kwargs,
@@ -83,8 +84,9 @@ class Text(TransformableMobject):
             max_width=max_width,
             x_padding=x_padding,
             y_padding=y_padding,
+            leading=leading,
         )
-        self.center()
+        self.move_to_origin()
 
     # text should not take up more space than it needs, so extra space is ignored
     def setup_text_layout(
@@ -97,8 +99,9 @@ class Text(TransformableMobject):
         max_width: float,
         x_padding: float,
         y_padding: float,
+        leading: float,
     ):
-        # Note this function also resets the bounding box
+        # this function also resets the bounding box
         self.font_family = font_family
         self.font_size = font_size
         self.font_path = font_path
@@ -108,19 +111,24 @@ class Text(TransformableMobject):
         self.x_padding_in_pixels = to_pixel_len(x_padding, CONFIG.pw, CONFIG.fw)
         self.y_padding_in_pixels = to_pixel_len(y_padding, CONFIG.pw, CONFIG.fw)
         max_width_in_pixels = to_pixel_len(max_width, CONFIG.pw, CONFIG.fw)
-        # line_height = ascent + descent
-        # Workaround: ascent seems to be capturing what ascent + descent typically would
-        # I think the bbox is including the descent by default
-        ascent, descent = font.getmetrics()
-        self.font_ascent = ascent
-        self.font_descent = descent
-        line_height = ascent
-        self.font_height = line_height
-        self.leading = line_height * 0.5
+        self.leading = leading
 
-        line_height_in_munits = to_manim_len(self.font_height, CONFIG.pw, CONFIG.fw)
-        leading_in_munits = to_manim_len(self.leading, CONFIG.pw, CONFIG.fw)
-        font_descent_in_munits = to_manim_len(self.font_descent, CONFIG.pw, CONFIG.fw)
+        # ascent, descent = font.getmetrics()
+        # self.font_ascent = ascent
+        # Note: Cannot use this since PIL captures maximum ascent possible, which is much more than standard letters
+        # Current code allows the bbox to be too small for those non-standard cases
+
+        _, t0, _, b0 = font.getbbox("aGg")
+        _, t, _, b = font.getbbox("aG")
+        self.font_ascent_pixels = b - t
+        self.font_descent_pixels = (b0 - t0) - (b - t)
+        leading_pixels = (self.font_ascent_pixels + self.font_descent_pixels) * leading
+        self.leading_pixels = leading_pixels
+
+        line_height_in_munits = to_manim_len(
+            self.font_ascent_pixels + self.font_descent_pixels, CONFIG.pw, CONFIG.fw
+        )
+        leading_in_munits = to_manim_len(leading_pixels, CONFIG.pw, CONFIG.fw)
 
         text_tokens, dims = wrap_text(
             text=text,
@@ -128,6 +136,7 @@ class Text(TransformableMobject):
             font_size=font_size,
             max_width_in_pixels=max_width_in_pixels,
         )
+        self.text_tokens = text_tokens
 
         self.font_widths = np.array(
             [pair[0] + self.x_padding_in_pixels * 2 for pair in dims]
@@ -138,13 +147,12 @@ class Text(TransformableMobject):
             else to_manim_len(self.font_widths[0], CONFIG.pw, CONFIG.fw)
         )
 
-        self.text_tokens = text_tokens
-        # Note: first line does not having leading space
         bbox_height = (
             line_height_in_munits * len(text_tokens)
             + leading_in_munits * (len(text_tokens) - 1)
             + y_padding * 2
-        ) + font_descent_in_munits
+        )
+
         ur = position + np.eye(3)[0] * line_width_in_munits
         ul = position
         dl = ul - np.eye(3)[1] * bbox_height
@@ -199,7 +207,7 @@ class Text(TransformableMobject):
             return self
         else:
             # other rotation can freely change upper left and bbox while leaving text intact
-            old_center = self.get_center()
+            old_center = self.center
             new_center = super().rotate_points(
                 np.array([old_center]), angle, axis, about_point
             )[0]
@@ -218,7 +226,12 @@ class Text(TransformableMobject):
         )[0]
         self.font_size *= factor
         self.font_widths *= factor
-        self.font_height *= factor
+
+        self.font_ascent_pixels *= factor
+        self.font_descent_pixels *= factor
+        self.leading_pixels *= factor
+        self.leading *= factor
+
         for mob in self.submobjects:
             mob.scale(factor, about_point)
         return self
@@ -235,6 +248,7 @@ class Text(TransformableMobject):
             * factor,  # keep text appearance the same while stretching the bbox
             x_padding=self.x_padding,
             y_padding=self.y_padding,
+            leading=self.leading,
         )
 
         for mob in self.submobjects:

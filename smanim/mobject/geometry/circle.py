@@ -33,11 +33,12 @@ class Dot(Circle):
         self,
         point: Point3D = ORIGIN,
         radius: float = DEFAULT_DOT_RADIUS,
+        color: ManimColor | None = None,
         default_fill_color: ManimColor = WHITE,
         **kwargs,
     ) -> None:
         if not has_default_colors_set(kwargs):
-            kwargs["default_fill_color"] = default_fill_color
+            kwargs["default_fill_color"] = color or default_fill_color
         super().__init__(
             arc_center=point,
             radius=radius,
@@ -58,5 +59,5 @@ class LabeledDot(Dot):
             radius = 0.1 + max(label.width, label.height) / 2
         self.label = label
         super().__init__(radius=radius, **kwargs)
-        label.move_to(self.get_center())
+        label.move_to(self.center)
         self.add(label)

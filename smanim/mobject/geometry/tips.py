@@ -68,6 +68,11 @@ class ArrowTriangleTip(ArrowTip, Triangle):
 class ArrowTriangleFilledTip(ArrowTriangleTip):
     """Triangular arrow tip with filled tip."""
 
-    def __init__(self, default_fill_color: ManimColor = WHITE, **kwargs) -> None:
+    def __init__(
+        self,
+        default_fill_color: ManimColor = WHITE,
+        color: ManimColor | None = None,
+        **kwargs,
+    ) -> None:
 
-        super().__init__(default_fill_color=default_fill_color, **kwargs)
+        super().__init__(default_fill_color=color or default_fill_color, **kwargs)

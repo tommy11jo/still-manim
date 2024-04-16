@@ -83,10 +83,12 @@ class NumberLine(Group):
 
         if self.start_tip_arrow:
             self.start_tip_arrow.rotate(PI)
-            self.start_tip_arrow.move_to(self.line.start, aligned_edge=RIGHT)
+            self.start_tip_arrow.move_to(self.line.start).align_to(
+                self.line.start, RIGHT
+            )
             self.add(self.start_tip_arrow)
         if self.end_tip_arrow:
-            self.end_tip_arrow.move_to(self.line.end, aligned_edge=LEFT)
+            self.end_tip_arrow.move_to(self.line.end).align_to(self.line.end, LEFT)
             self.add(self.end_tip_arrow)
         if self.include_ticks:
             self.ticks = self.generate_ticks()
@@ -107,7 +109,7 @@ class NumberLine(Group):
 
         if not is_horizontal:
             self.rotate(PI / 2)
-        self.center()
+        self.move_to_origin()
 
         # Consistent styles are set at the end so any constructions above don't need to have styles
         self.set_color(color=color, family=True)

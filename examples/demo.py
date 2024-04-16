@@ -40,11 +40,11 @@ def polygons_next_to():
     canvas.add(s)
 
     r = Rectangle(1, 2)
-    s.next_to(r, DOWN, aligned_edge=RIGHT)
+    s.next_to(r, DOWN).align_to(r, RIGHT)
     canvas.add(r)
 
     t = Triangle()
-    t.next_to(s, RIGHT, aligned_edge=DOWN)
+    t.next_to(s, RIGHT).align_to(t, DOWN)
     canvas.add(t)
 
     canvas.snapshot(preview=True)
@@ -230,7 +230,7 @@ def simple_arcs():
     circle.next_to(quarter_circle)
     canvas.add(circle)
 
-    half_circle = ArcBetweenPoints(UR, DR, radius=1)
+    half_circle = Arc.from_points(UR, DR, radius=1)
     half_circle.next_to(quarter_circle, LEFT)
     canvas.add(half_circle)
     canvas.snapshot(preview=True)
@@ -243,7 +243,7 @@ def arc_to_arc_arrow():
     arc = Arc()
     canvas.add(arc)
 
-    arc2 = ArcBetweenPoints(UR, DR, radius=1)
+    arc2 = Arc.from_points(UR, DR, radius=1)
     arc2.shift(UL * 2)
     # example of janky bounding polygon debugging
     canvas.add(arc2)
@@ -290,7 +290,7 @@ def brace_between_test():
     canvas.add(s1)
     s2 = Square().shift(RIGHT * 2)
     canvas.add(s2)
-    b = BraceBetween(s1, s2)
+    b = Brace.from_positions(s1, s2, color=RED)
     canvas.add(b)
     canvas.snapshot(preview=True)
 
@@ -373,7 +373,7 @@ def text_center():
         max_width=2.0,
     )
     canvas.add(t)
-    d = Dot(t.get_center())
+    d = Dot(t.center)
     canvas.add(d)
     canvas.snapshot(preview=True)
 
@@ -459,7 +459,7 @@ def rounded_shapes():
 
 
 def arc_between():
-    a = ArcBetweenPoints([-0.9, 0.5, 0], [0, -1, 0])
+    a = Arc.from_points([-0.9, 0.5, 0], [0, -1, 0])
     canvas.add(a)
     canvas.snapshot(preview=True)
 
@@ -469,7 +469,7 @@ def arc_between():
 
 def arc_along_square():
     s = Square().shift(LEFT + 2 * UP)
-    a = ArcBetweenPoints(s.get_corner(DL), s.get_corner(DR))
+    a = Arc.from_points(s.get_corner(DL), s.get_corner(DR))
     canvas.add(s, a)
     canvas.snapshot(preview=True)
 
@@ -479,11 +479,13 @@ def arc_along_square():
 
 def surround_shapes():
     c = Circle()
-    c.add_surrounding_rect()
+    rect = c.get_surrounding_rect()
+    c.add(rect)
     canvas.add(c)
 
     t = Text("hey").shift(UR * 1.2)
-    t.add_surrounding_rect(corner_radius=0.1)
+    rect = t.get_surrounding_rect(corner_radius=0.1)
+    t.add(rect)
     canvas.add(t)
     canvas.snapshot(preview=True)
 
@@ -629,12 +631,14 @@ def label_arrow_cases():
 
 def surrounding_rect_mob_with_submobs():
     s = Square()
-    t = Text(
-        "Text width automatically is set to square width and should wrap accordingly"
-    )
+    t = Text("Text width automatically")
 
     s.add_label(t)
-    s.add_surrounding_rect()
+    rect = s.get_surrounding_rect()
+    s.add(rect)
+
+    rect = t.get_surrounding_rect(stroke_color=RED, z_index=20)
+    t.add(rect)
     canvas.add(s)
     canvas.snapshot(preview=True)
 
@@ -642,19 +646,20 @@ def surrounding_rect_mob_with_submobs():
 # surrounding_rect_mob_with_submobs()
 
 
-# FUTURE: Idea of reactive elements is powerful
-# Fow now, just surrounding rectangles are reactive
 def reactive_surrounding_rect():
     t1 = Text("water bottle").shift(UP)
-    t1.add_surrounding_rect()
+    rect = t1.get_surrounding_rect()
+    t1.add(rect)
     canvas.add(t1)
     t1.rotate(PI / 6)
     r = Rectangle(width=3.0).shift(LEFT * 4)
     # takes 0.05 seconds for `wrap_text` originally
     t2 = Text(
         "Text width automatically set to rect width and should wrap accordingly. Text width automatically set to rect width and should wrap accordingly",
-    ).scale(1)
-    t2.add_surrounding_rect(fill_color=RED, fill_opacity=0.3, corner_radius=0.2)
+    )
+    rect = t2.get_surrounding_rect(fill_color=RED, fill_opacity=0.3, corner_radius=0.2)
+    t2.add(rect)
+
     # takes 0.08 seconds for `wrap_text` during stretching
     t2.stretch_to_fit_width(r.width)
     t2.next_to(r, DOWN, buff=0.1)
@@ -676,7 +681,9 @@ def reactive_surrounding_rect():
 
 def rect_surrounding_circle():
     c = Circle()
-    c.add_surrounding_rect()
+    rect = c.get_surrounding_rect()
+    c.add(rect)
+    c.shift(RIGHT)
     canvas.add(c)
     canvas.snapshot(preview=True)
 
@@ -686,7 +693,8 @@ def rect_surrounding_circle():
 
 def single_letter_with_bg():
     letter = Text("h")
-    letter.add_surrounding_rect(fill_color=RED, fill_opacity=0.3)
+    rect = letter.get_surrounding_rect(fill_color=RED, fill_opacity=0.3)
+    letter.add(rect)
     # Surrounding rect keeps up even after shift
     letter.shift(RIGHT * 3)
     canvas.add(letter)
@@ -750,8 +758,8 @@ def text_rotation_internals():
     t1.rotate(PI / 4)
     # t1.rotate(PI / 12)
 
-    t2_center = Dot(t2.get_center(), fill_color=YELLOW)
-    t1_center = Dot(t1.get_center(), fill_color=ORANGE)
+    t2_center = Dot(t2.center, fill_color=YELLOW)
+    t1_center = Dot(t1.center, fill_color=ORANGE)
     t1_ul = Dot(t1.svg_upper_left, fill_color=TEAL)
     canvas.add(t1_ul)
     canvas.add(t1_center, t2_center)
@@ -835,12 +843,16 @@ def text_add():
 # text_add()
 
 
+# Future: See setup_text_layout in textmobject.py and maybe investigate PIL font ascent
 def text_bbox():
-    t = Text("katz")
+    t = Text("Garg is going to the mall today", max_width=2.0)
+    # t = Text("ag")
+    # t = Text("aa")
+    t.shift(UP)
     for p in t.bounding_points:
         canvas.add(Dot(p))
     canvas.add(t)
-    canvas.snapshot(preview=True)
+    canvas.snapshot(preview=True, crop=True)
 
 
 # text_bbox()
@@ -896,4 +908,112 @@ def arrange_in_grid():
     canvas.snapshot(preview=True)
 
 
-arrange_in_grid()
+# arrange_in_grid()
+
+
+def simplest_grid():
+    n = 10
+    s = Group(
+        *[
+            Square(side_length=i / n, fill_color=RED, fill_opacity=i / n)
+            for i in range(1, n)
+        ]
+    )
+    s.arrange_in_grid(rows=2, row_aligned_edge=DOWN)
+    canvas.add(s)
+    canvas.snapshot(preview=True)
+
+
+# simplest_grid()
+
+
+def init_text_location():
+    c = Circle()
+    t = Text("hello world, that's a wrap this text i mean")
+    canvas.add(c, t)
+    canvas.snapshot(preview=True)
+
+
+# init_text_location()
+
+
+def next_to_testing():
+    c = Circle()
+    r = Rectangle(height=1.5)
+    c.next_to(r, direction=UR)
+    canvas.add(c, r)
+    canvas.snapshot(preview=True)
+
+
+# next_to_testing()
+
+
+# removing aligned_edge in both these scenarios since
+# c.move_to(r, aligned_edge=UP)
+# is not much better than
+# c.move_to(r).align_to(r, UP)
+def move_to_testing():
+    c = Circle()
+    r = Rectangle(height=1.5).shift(RIGHT)
+    c.move_to(r).align_to(r, UP)
+    canvas.add(c, r)
+    canvas.snapshot(preview=True)
+
+
+# move_to_testing()
+
+
+def labeled_brace():
+    # c = Circle()
+    # l1 = LabeledBrace(c, label=Text("hi there"), direction=RIGHT)
+    # canvas.add(c, l1)
+
+    r = Rectangle().shift(DOWN)
+    l2 = LabeledBrace.from_positions(
+        start=r.get_corner(DL),
+        end=r.get_corner(UR),
+        label=Text("First", font_size=10),
+        label_buff=0,
+    )
+    r2 = Rectangle().rotate(PI / 6).shift(UP * 1.5)
+    text = Text("second", font_size=10)
+    l3 = LabeledBrace.from_positions(
+        r2.vertices[0], r2.vertices[2], label=text, label_buff=0
+    )
+    canvas.add(r2, l3)
+
+    canvas.add(r, l2)
+    canvas.snapshot(preview=True)
+
+
+# labeled_brace()
+
+
+def brace_span():
+    c = Circle()
+    b = Brace.from_mobject_edge(c, UP)
+    canvas.add(c, b)
+
+    s = Square().shift(UR * 3)
+    b1 = LabeledBrace.from_mobject_edge(s, LEFT, label=Text("left"))
+    canvas.add(s, b1)
+    canvas.snapshot(preview=True)
+
+
+# brace_span()
+
+
+def box_list():
+    b = BoxList(
+        *[Square(fill_color=RED, fill_opacity=i / 8).scale(0.2) for i in range(1, 9)]
+    )
+    b1 = BoxList(*[Text(str(i)) for i in range(5)]).shift(DOWN)
+    canvas.add(b1)
+    b2 = BoxList(Text("different"), Text("size")).shift(UP)
+    canvas.add(b2)
+
+    canvas.add(b)
+    canvas.snapshot(preview=True)
+
+
+# box_list()

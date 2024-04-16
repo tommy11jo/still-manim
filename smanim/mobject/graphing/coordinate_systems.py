@@ -41,13 +41,13 @@ class Axes(Group):
         # Move the y_axis to the proper spot on the x_axis
         dest_point = x_axis.coord_to_point(0)
         start_point = y_axis.coord_to_point(0)
-        y_axis_center = y_axis.get_center()
+        y_axis_center = y_axis.center
         to_center = y_axis_center - start_point
         y_axis.shift(to_center + (dest_point - y_axis_center))
 
         self.add(x_axis)
         self.add(y_axis)
-        self.center()
+        self.move_to_origin()
 
     def coords_to_point(self, x_coord: float, y_coord: float):
         """Accepts a coordinate point on this graph and returns its position in the scene"""
