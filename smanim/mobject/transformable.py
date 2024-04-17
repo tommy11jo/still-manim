@@ -89,7 +89,9 @@ class TransformableMobject(Mobject):
         return self
 
     # Frequently used patterns that depend on transformations
-    def add_label(self, label: TransformableMobject, direction: Vector3 = UP, buff=0.0):
+    def add_label(
+        self, label: TransformableMobject, direction: Vector3 = UP, buff=0.0
+    ) -> None:
         label.stretch_to_fit_width(self.width)
         label.next_to(self, direction, buff=buff)
         self.add(label)

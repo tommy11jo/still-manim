@@ -30,6 +30,8 @@ WEIGHTED_GRAPH1 = {
 }
 START1, END1 = 0, 6
 
+TREE1 = {0: [1, 2], 1: [3, 4], 2: [6, 7], 3: [5], 4: [], 5: [], 6: [], 7: []}
+
 
 def graph(graph):
     vertices, edges = Graph.from_adjacency_list(graph)
@@ -59,8 +61,8 @@ def digraph(graph):
             "tip_length": 0.15,
             "tip_width": 0.1,
         },
+        include_vertex_labels=True,
     )
-    vgraph.add_vertex_labels()
     canvas.add(vgraph)
     canvas.snapshot(preview=True)
 
@@ -78,9 +80,21 @@ def weighted_digraph(graph):
         edge_type=Arrow,
         layout_config={"seed": 2},
     )
-    graph.add_vertex_labels()
+    graph.generate_vertex_labels()
     canvas.add(graph)
     canvas.snapshot(preview=True)
 
 
-weighted_digraph(WEIGHTED_GRAPH1)
+# weighted_digraph(WEIGHTED_GRAPH1)
+
+
+def tree(graph):
+    vertices, edges = Graph.from_adjacency_list(graph)
+    graph = Graph(
+        vertices, edges, layout="tree", root_vertex=0, include_vertex_labels=True
+    )
+    canvas.add(graph)
+    canvas.snapshot(preview=True)
+
+
+tree(TREE1)

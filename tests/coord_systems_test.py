@@ -241,8 +241,7 @@ def number_plane_without_origin():
 def text_stretch_bug():
     n = NumberLine((2, 3))
     for label in n.labels:
-        rect = label.get_surrounding_rect()
-        n.add(rect)
+        label.add_surrounding_rect()
     n.stretch_to_fit_width(canvas.config.fw)
     canvas.add(n)
     canvas.snapshot(preview=True)

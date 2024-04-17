@@ -38,11 +38,10 @@ class Brace(VMobjectFromSVGPath):
         sharpness=2,
         # stroke_width=0,
         color: ManimColor | None = None,
-        default_fill_color: ManimColor = WHITE,
         **kwargs,
     ):
         if not has_default_colors_set(kwargs):
-            kwargs["default_fill_color"] = color or default_fill_color
+            kwargs["default_fill_color"] = color or WHITE
 
         self.start = start
         self.end = end

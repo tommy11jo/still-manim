@@ -27,7 +27,7 @@ from smanim.utils.space_ops import mirror_vector
 __all__ = ["VMobject", "VGroup"]
 
 
-# Note: text is not a VMobject, it's a non-vectorized SVG el
+# Non-Example: text is not a VMobject, it's a non-vectorized SVG el
 class VMobject(TransformableMobject, ABC):
     """Base class for all objects represented by a path of bezier curves, with strokes or fills.
     `points` is a list of the points that form bezier curves.
@@ -38,10 +38,10 @@ class VMobject(TransformableMobject, ABC):
     def __init__(
         self,
         color: ManimColor | None = None,
-        opacity: float = 1.0,  # ignored unless color is used
+        opacity: float | None = None,
         stroke_color: ManimColor | None = None,
-        stroke_opacity: float = 1.0,
-        stroke_width: float | None = DEFAULT_STROKE_WIDTH,
+        stroke_opacity: float | None = None,
+        stroke_width: float | None = None,
         fill_color: ManimColor | None = None,
         fill_opacity: float | None = None,
         # When scaled, should dashes scale or remain the same size? Remain for now
@@ -57,24 +57,29 @@ class VMobject(TransformableMobject, ABC):
         self.is_closed = is_closed
         self.generate_points()
 
+        # this VMobject base class chooses to set `fill_color` by default when `color` is set
         # Precedence: fill_color > color > default_fill_color, and same for stroke
         if fill_color is None and stroke_color is None:
-            # this VMobject base class chooses to set `stroke_color` by default when `color` is set
-            # other classes may choose to set `fill_color`
             if color is not None:
-                stroke_color = color
-                stroke_opacity = opacity
-            elif default_stroke_color is None and default_fill_color is not None:
-                fill_color = default_fill_color
-                fill_opacity = 1.0
+                fill_color = color
+                fill_opacity = fill_opacity or opacity or 1.0
+            elif default_fill_color is None and default_stroke_color is not None:
+                stroke_color = default_stroke_color
+                stroke_opacity = stroke_opacity or opacity or 1.0
+                stroke_width = stroke_width or 4.0
             else:
-                stroke_color = default_stroke_color or WHITE
-                stroke_opacity = stroke_opacity
+                fill_color = default_fill_color or WHITE
+                fill_opacity = fill_opacity or 1.0
         else:
             if color:
                 raise ValueError(
                     "Color cannot be set when `fill_color` or `stroke_color` is set."
                 )
+            if stroke_color is not None:
+                stroke_opacity = stroke_opacity or 1.0
+                stroke_width = DEFAULT_STROKE_WIDTH
+            elif fill_color is not None:
+                fill_opacity = fill_opacity or 1.0
 
         self._stroke_color = stroke_color
         self.stroke_opacity = stroke_opacity

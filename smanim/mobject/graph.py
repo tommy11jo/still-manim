@@ -6,7 +6,7 @@ from smanim.config import CONFIG
 from smanim.mobject.geometry.circle import Dot
 from smanim.mobject.text.text_mobject import Text
 from smanim.typing import AdjacencyListGraph, WeightedAdjacencyListGraph
-from smanim.utils.color import BLACK, WHITE
+from smanim.utils.color import GRAY
 
 __all__ = ["Graph", "WeightedGraph"]
 
@@ -16,7 +16,7 @@ from typing import Dict, Hashable, Iterable, Tuple
 import networkx as nx
 import numpy as np
 
-from smanim.mobject.geometry.line import Line
+from smanim.mobject.geometry.line import Arrow, Line
 from smanim.mobject.group import Group
 from smanim.mobject.mobject import Mobject
 
@@ -38,13 +38,11 @@ class Graph(Group):
         ) = 2,  # scale the layout determined by networkx by this factor, "spread out the vertices"
         layout_config: dict | None = None,
         vertex_type: type[Mobject] = Dot,
-        vertex_config: dict = {},
+        vertex_config: dict = {},  # params to pass into constructor of `vertex_type` class
         edge_type: type[Mobject] = Line,
-        edge_config: dict = {
-            "buff": 0.0,
-            "tip_length": 0.1,
-            "tip_width": 0.1,
-        },
+        edge_config: dict = {},  # params to pass into constructor of `edge_type` class
+        include_vertex_labels: bool = False,
+        vertex_label_config: dict = {},
         partitions: list[list[Hashable]] | None = None,
         root_vertex: Hashable | None = None,
     ) -> None:
@@ -52,6 +50,7 @@ class Graph(Group):
             raise ValueError("edge_type must be `Line` or inherit from `Line`")
 
         super().__init__()
+
         nx_graph = Graph._empty_networkx_graph()
         nx_graph.add_nodes_from(vertices)
         nx_graph.add_edges_from(edges)
@@ -65,40 +64,53 @@ class Graph(Group):
             root_vertex=root_vertex,
         )
 
-        vertex_config_with_defaults = {"fill_color": WHITE, "radius": 0.2}
-        vertex_config_with_defaults.update(vertex_config)
-        default_vertex_config = {
-            k: v for k, v in vertex_config_with_defaults.items() if k not in vertices
-        }
-        _vertex_config = {
-            v: vertex_config.get(v, copy(default_vertex_config)) for v in vertices
-        }
-
-        self.vertices = {v: vertex_type(**_vertex_config[v]) for v in vertices}
+        if vertex_type is Dot:
+            if len(vertex_config) == 0:
+                _vertex_config = {"fill_color": GRAY, "radius": 0.2}
+            else:
+                _vertex_config = {}
+        else:
+            _vertex_config = {}
+        _vertex_config.update(vertex_config)
+        self.vertices = {v: vertex_type(**_vertex_config) for v in vertices}
 
         for vid, vertex in self.vertices.items():
             vertex.move_to(_layout[vid])
         self.add(*self.vertices.values())
 
-        default_edge_config = {}
-        if len(edge_config) > 0:
-            default_edge_config = {
-                k: v for k, v in edge_config.items() if k not in edges
+        if edge_type is Line:
+            _edge_config = {
+                "buff": 0.0,
+                "stroke_width": 2.0,
             }
-        _edge_config = {
-            edge: edge_config.get(edge, copy(default_edge_config)) for edge in edges
-        }
+        elif edge_type is Arrow:
+            _edge_config = {
+                "buff": 0.0,
+                "tip_length": 0.1,
+                "tip_width": 0.1,
+                "stroke_width": 2.0,
+            }
+        else:
+            _edge_config = {}
+
+        _edge_config.update(edge_config)
+
         self.edges = {
             (u, v): edge_type(
                 start=self.vertices[u],
                 end=self.vertices[v],
-                **_edge_config[(u, v)],
+                **_edge_config,
             )
             for u, v in edges
         }
         self.add(*self.edges.values())
 
-        self.vertex_labels: Group = Group()
+        self.vertex_labels: Group | None
+        if include_vertex_labels:
+            self.vertex_labels = self.generate_vertex_labels(**vertex_label_config)
+            self.add(self.vertex_labels)
+        else:
+            self.vertex_labels = None
 
     @staticmethod
     def _empty_networkx_graph() -> nx.Graph:
@@ -121,9 +133,9 @@ class Graph(Group):
         return vertices, edges
 
     # TODO: make this a generate and allow the init to call it and pass in label_config
-    def add_vertex_labels(
-        self, labels: Iterable[str] | None = None, label_config: dict = {"color": BLACK}
-    ):
+    def generate_vertex_labels(
+        self, labels: Iterable[str] | None = None, label_config: dict = {}
+    ) -> Group:
         vertex_labels = Group()
         if labels is None:
             labels = [str(i) for i in range(len(self.vertices))]
@@ -131,8 +143,7 @@ class Graph(Group):
             text = Text(label, **label_config)
             text.move_to(vertex)
             vertex_labels.add(text)
-        self.add(vertex_labels)
-        self.vertex_labels = vertex_labels
+        return vertex_labels
 
 
 class WeightedGraph(Graph):
@@ -166,10 +177,9 @@ class WeightedGraph(Graph):
             edge_obj = self.edges[(v1, v2)]
 
             weight_text.move_to(edge_obj.midpoint)
-            rect = weight_text.get_surrounding_rect(
+            weight_text.add_surrounding_rect(
                 fill_color=CONFIG.bg_color, fill_opacity=1.0, buff=0.005
             )
-            weight_text.add(rect)
             edge_label_objs.add(weight_text)
             edge_label_map[edge] = weight_text
         self.add(edge_label_objs)

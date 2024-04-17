@@ -239,6 +239,7 @@ class Mobject(ABC):
         self,
         point_or_mobject: Point3D | Mobject,
         edge: Vector3 = UP,
+        buff: float = 0,
     ) -> Self:
         """Align to the edge of another mobject"""
         if not any([np.array_equal(edge, e) for e in (UP, DOWN, LEFT, RIGHT)]):
@@ -249,9 +250,9 @@ class Mobject(ABC):
             dest_pt = point_or_mobject
         cur = self.get_critical_point(edge)
         if np.array_equal(edge, UP) or np.array_equal(edge, DOWN):
-            self.shift(np.array([0, dest_pt[1] - cur[1], 0]))
+            self.shift(np.array([0, dest_pt[1] - cur[1], 0]) - edge * buff)
         if np.array_equal(edge, LEFT) or np.array_equal(edge, RIGHT):
-            self.shift(np.array([dest_pt[0] - cur[0], 0, 0]))
+            self.shift(np.array([dest_pt[0] - cur[0], 0, 0]) - edge * buff)
         return self
 
     def move_to_origin(self) -> Self:
@@ -325,12 +326,12 @@ class Mobject(ABC):
         pass
 
     # Frequently used patterns
-    def get_surrounding_rect(self, **rect_config) -> Mobject:
+    def add_surrounding_rect(self, **rect_config) -> None:
         # to avoid circular import
         from smanim.mobject.geometry.shape_matchers import _SurroundingRectangle
 
         rect = _SurroundingRectangle(self, **rect_config)
-        return rect
+        self.add(rect)
 
     def copy(self) -> Mobject:
         return deepcopy(self)

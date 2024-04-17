@@ -2,6 +2,7 @@ import numpy as np
 from smanim.constants import ORIGIN, RIGHT, TAU, UP
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import Point3D
+from smanim.utils.color import BLUE, has_default_colors_set
 from smanim.utils.space_ops import angle_from_vector
 
 
@@ -21,6 +22,8 @@ class Arc(VMobject):
         arc_center: Point3D = ORIGIN,
         **kwargs,
     ):
+        if not has_default_colors_set(kwargs):
+            kwargs["default_stroke_color"] = BLUE
         if angle > TAU:
             raise ValueError("Arc angle must be <= 2*PI")
         self.radius = radius

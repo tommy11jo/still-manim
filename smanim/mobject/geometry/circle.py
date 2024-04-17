@@ -2,7 +2,7 @@ from smanim.constants import DEFAULT_DOT_RADIUS, ORIGIN, TAU
 from smanim.mobject.geometry.arc import Arc
 from smanim.mobject.text.text_mobject import Text
 from smanim.typing import Point3D
-from smanim.utils.color import RED, WHITE, ManimColor, has_default_colors_set
+from smanim.utils.color import BLUE, WHITE, ManimColor, has_default_colors_set
 
 __all__ = [
     "Circle",
@@ -15,11 +15,10 @@ class Circle(Arc):
     def __init__(
         self,
         radius: float = 1.0,
-        default_stroke_color: ManimColor = RED,
         **kwargs,
     ) -> None:
         if not has_default_colors_set(kwargs):
-            kwargs["default_stroke_color"] = default_stroke_color
+            kwargs["default_fill_color"] = BLUE
         super().__init__(
             radius=radius,
             start_angle=0,
@@ -34,11 +33,10 @@ class Dot(Circle):
         point: Point3D = ORIGIN,
         radius: float = DEFAULT_DOT_RADIUS,
         color: ManimColor | None = None,
-        default_fill_color: ManimColor = WHITE,
         **kwargs,
     ) -> None:
         if not has_default_colors_set(kwargs):
-            kwargs["default_fill_color"] = color or default_fill_color
+            kwargs["default_fill_color"] = color or WHITE
         super().__init__(
             arc_center=point,
             radius=radius,

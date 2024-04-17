@@ -194,7 +194,7 @@ class Canvas:
         def orNone(value: any):
             return value if value is not None else "none"
 
-        if vmobject.stroke_opacity > 0.0 and vmobject.stroke_width > 0.0:
+        if vmobject.stroke_opacity and vmobject.stroke_width:
             kwargs["stroke"] = orNone(
                 None
                 if not vmobject.stroke_color

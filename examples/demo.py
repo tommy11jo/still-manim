@@ -479,13 +479,11 @@ def arc_along_square():
 
 def surround_shapes():
     c = Circle()
-    rect = c.get_surrounding_rect()
-    c.add(rect)
+    c.add_surrounding_rect()
     canvas.add(c)
 
     t = Text("hey").shift(UR * 1.2)
-    rect = t.get_surrounding_rect(corner_radius=0.1)
-    t.add(rect)
+    t.add_surrounding_rect(corner_radius=0.1)
     canvas.add(t)
     canvas.snapshot(preview=True)
 
@@ -634,11 +632,9 @@ def surrounding_rect_mob_with_submobs():
     t = Text("Text width automatically")
 
     s.add_label(t)
-    rect = s.get_surrounding_rect()
-    s.add(rect)
+    s.add_surrounding_rect()
 
-    rect = t.get_surrounding_rect(stroke_color=RED, z_index=20)
-    t.add(rect)
+    t.add_surrounding_rect(stroke_color=RED, z_index=20)
     canvas.add(s)
     canvas.snapshot(preview=True)
 
@@ -648,8 +644,7 @@ def surrounding_rect_mob_with_submobs():
 
 def reactive_surrounding_rect():
     t1 = Text("water bottle").shift(UP)
-    rect = t1.get_surrounding_rect()
-    t1.add(rect)
+    t1.add_surrounding_rect()
     canvas.add(t1)
     t1.rotate(PI / 6)
     r = Rectangle(width=3.0).shift(LEFT * 4)
@@ -657,8 +652,7 @@ def reactive_surrounding_rect():
     t2 = Text(
         "Text width automatically set to rect width and should wrap accordingly. Text width automatically set to rect width and should wrap accordingly",
     )
-    rect = t2.get_surrounding_rect(fill_color=RED, fill_opacity=0.3, corner_radius=0.2)
-    t2.add(rect)
+    t2.add_surrounding_rect(fill_color=RED, fill_opacity=0.3, corner_radius=0.2)
 
     # takes 0.08 seconds for `wrap_text` during stretching
     t2.stretch_to_fit_width(r.width)
@@ -681,8 +675,7 @@ def reactive_surrounding_rect():
 
 def rect_surrounding_circle():
     c = Circle()
-    rect = c.get_surrounding_rect()
-    c.add(rect)
+    c.add_surrounding_rect()
     c.shift(RIGHT)
     canvas.add(c)
     canvas.snapshot(preview=True)
@@ -693,8 +686,7 @@ def rect_surrounding_circle():
 
 def single_letter_with_bg():
     letter = Text("h")
-    rect = letter.get_surrounding_rect(fill_color=RED, fill_opacity=0.3)
-    letter.add(rect)
+    letter.add_surrounding_rect(fill_color=RED, fill_opacity=0.3)
     # Surrounding rect keeps up even after shift
     letter.shift(RIGHT * 3)
     canvas.add(letter)
@@ -1017,3 +1009,50 @@ def box_list():
 
 
 # box_list()
+
+
+def align_to_buff():
+    c = Circle()
+    r = Rectangle(width=1.5)
+    # c.align_to(r, UP, buff=0.2)
+    c.align_to(r, RIGHT, buff=0.2)
+    canvas.add(c, r)
+    canvas.snapshot(preview=True)
+
+
+# align_to_buff()
+
+
+def default_colors():
+    # default fill color is blue, but can override it
+    c = Circle(fill_color=RED)
+    c.add_label(Text("hi"))
+    canvas.add(c)
+
+    # default fill color is white
+    d = Dot().shift(RIGHT)
+    canvas.add(d)
+
+    # default fill color is white
+    s = Square().next_to(c, LEFT, buff=1.0)
+    canvas.add(s)
+
+    # default overall color is white
+    a = Arrow(start=s, end=c)
+    canvas.add(a)
+
+    # default stroke is white
+    l = Line().shift(UP * 2)
+    canvas.add(l)
+
+    # default stroke is blue
+    a = Arc().shift(RIGHT)
+    canvas.add(a)
+
+    c2 = Circle(stroke_color=ORANGE).shift(UP * 3)
+    canvas.add(c2)
+
+    canvas.snapshot(preview=True)
+
+
+default_colors()

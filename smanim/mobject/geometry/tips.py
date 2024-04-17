@@ -3,7 +3,7 @@ from smanim.constants import DEFAULT_ARROW_TIP_LENGTH
 from smanim.mobject.geometry.polygon import Triangle
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import Point3D, Vector3
-from smanim.utils.color import WHITE, ManimColor
+from smanim.utils.color import WHITE, ManimColor, has_default_colors_set
 
 __all__ = ["ArrowTip", "ArrowTriangleFilledTip", "ArrowTriangleFilledTip"]
 
@@ -70,9 +70,9 @@ class ArrowTriangleFilledTip(ArrowTriangleTip):
 
     def __init__(
         self,
-        default_fill_color: ManimColor = WHITE,
         color: ManimColor | None = None,
         **kwargs,
     ) -> None:
-
-        super().__init__(default_fill_color=color or default_fill_color, **kwargs)
+        if not has_default_colors_set(kwargs):
+            kwargs["default_fill_color"] = color or WHITE
+        super().__init__(**kwargs)

@@ -98,8 +98,8 @@ class Line(VMobject):
         if isinstance(end, Mobject):
             rough_end = end.center
         else:
-            end = np.array(start, dtype=ManimFloat)
-            rough_end = start
+            end = np.array(end, dtype=ManimFloat)
+            rough_end = end
         dir = rough_end - rough_start
 
         start_pt = (
@@ -194,7 +194,8 @@ class TipableLine(Line):
 class Arrow(TipableLine):
     def __init__(
         self,
-        *args,
+        start: Point3D | Mobject = LEFT,
+        end: Point3D | Mobject = RIGHT,
         color: ManimColor = WHITE,
         opacity: float = 1.0,
         buff: float = 0,
@@ -209,7 +210,9 @@ class Arrow(TipableLine):
     ):
         self.start_tip = None
         self.end_tip = None
-        super().__init__(*args, color=color, opacity=opacity, buff=buff, **kwargs)
+        super().__init__(
+            start=start, end=end, color=color, opacity=opacity, buff=buff, **kwargs
+        )
         if at_end:
             self.end_tip = self.create_tip(
                 tip_length=tip_length * tip_scalar,

@@ -3,7 +3,7 @@ from typing_extensions import Self
 import numpy as np
 from smanim.mobject.geometry.arc import Arc
 from smanim.utils.bezier import interpolate
-from smanim.utils.color import GREEN, WHITE, ManimColor, has_default_colors_set
+from smanim.utils.color import BLUE, GREEN, has_default_colors_set
 from smanim.constants import DL, DR, ORIGIN, OUT, PI, UL, UR
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import ManimFloat, Point3D, Point3D_Array, QuadArray_Point3D, Vector3
@@ -25,12 +25,11 @@ class Polygram(VMobject):
     def __init__(
         self,
         vertices: Point3D_Array,
-        default_stroke_color: ManimColor = GREEN,
         is_closed=False,
         **kwargs,
     ):
         if not has_default_colors_set(kwargs):
-            kwargs["default_stroke_color"] = default_stroke_color
+            kwargs["default_stroke_color"] = GREEN
         self._vertices = np.array(vertices, dtype=ManimFloat)
         super().__init__(is_closed=is_closed, **kwargs)
 
@@ -102,11 +101,10 @@ class Polygon(Polygram):
         self,
         vertices: Point3D_Array,
         corner_radius: float = 0.0,
-        default_stroke_color: ManimColor = WHITE,
         **kwargs,
     ):
         if not has_default_colors_set(kwargs):
-            kwargs["default_stroke_color"] = default_stroke_color
+            kwargs["default_fill_color"] = BLUE
         self._vertices = np.array(vertices, dtype=ManimFloat)
         self.corner_radius = corner_radius
         super().__init__(is_closed=True, vertices=vertices, **kwargs)
