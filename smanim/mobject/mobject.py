@@ -9,7 +9,6 @@ from typing_extensions import Self
 import numpy as np
 
 from smanim.constants import (
-    CENTER,
     DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     DL,
     DOWN,
@@ -227,10 +226,10 @@ class Mobject(ABC):
     def move_to(self, point_or_mobject: Point3D | Mobject) -> Self:
         """Moves the center of this mobject to the center of another mobject"""
         if isinstance(point_or_mobject, Mobject):
-            dest_pt = point_or_mobject.get_critical_point(CENTER)
+            dest_pt = point_or_mobject.get_critical_point(ORIGIN)
         else:
             dest_pt = point_or_mobject
-        cur_pt = self.get_critical_point(CENTER)
+        cur_pt = self.get_critical_point(ORIGIN)
         self.shift(dest_pt - cur_pt)
 
         return self
@@ -242,8 +241,8 @@ class Mobject(ABC):
         buff: float = 0,
     ) -> Self:
         """Align to the edge of another mobject"""
-        if not any([np.array_equal(edge, e) for e in (UP, DOWN, LEFT, RIGHT)]):
-            raise ValueError("Edge must be one of (UP, DOWN, LEFT, RIGHT)")
+        if not any([np.array_equal(edge, e) for e in (UP, DOWN, LEFT, RIGHT, ORIGIN)]):
+            raise ValueError("Edge must be one of (UP, DOWN, LEFT, RIGHT, ORIGIN)")
         if isinstance(point_or_mobject, Mobject):
             dest_pt = point_or_mobject.get_critical_point(edge)
         else:

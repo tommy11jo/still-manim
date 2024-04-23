@@ -1055,4 +1055,27 @@ def default_colors():
     canvas.snapshot(preview=True)
 
 
-default_colors()
+# default_colors()
+
+
+def fill_stroke():
+    # create a way to use default text size for a duration
+    # canvas.config.set_font_size(16)
+    c1 = Circle(radius=0.2, fill_color=YELLOW).add_label(Text("set fill", font_size=14))
+    c2 = Circle(radius=0.2, fill_color=YELLOW, stroke_color=GREEN).add_label(
+        Text("set stroke and fill", font_size=14)
+    )
+    c3 = Circle(radius=0.2, stroke_color=ORANGE).add_label(
+        Text("set stroke", font_size=14)
+    )
+    c4 = Circle(radius=0.2).add_label(Text("no set (use default)", font_size=14))
+    circle_demos = BoxList(c1, c2, c3, c4, aligned_edge=DOWN).shift(LEFT)
+
+    circle_demos.add_label(Text("Ways to color a circle"), width=4.0, buff=0.1)
+
+    canvas.add(circle_demos)
+
+    canvas.snapshot(preview=True)
+
+
+fill_stroke()

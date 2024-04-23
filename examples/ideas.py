@@ -36,7 +36,7 @@ def draw_planets():
     canvas.snapshot(preview=True)
 
 
-draw_planets()
+# draw_planets()
 
 
 def generate_lemons(stroke_width=4):
@@ -82,4 +82,4 @@ def lemon_logo():
     # canvas.draw()
 
 
-# lemon_logo()
+lemon_logo()

@@ -5,7 +5,6 @@ from smanim.typing import Vector3
 
 # Vector
 ORIGIN: Vector3 = np.array((0.0, 0.0, 0.0))
-CENTER = ORIGIN
 """The center of the coordinate system."""
 
 UP: Vector3 = np.array((0.0, 1.0, 0.0))

@@ -77,8 +77,9 @@ class VMobject(TransformableMobject, ABC):
                 )
             if stroke_color is not None:
                 stroke_opacity = stroke_opacity or 1.0
-                stroke_width = DEFAULT_STROKE_WIDTH
-            elif fill_color is not None:
+                stroke_width = stroke_width or DEFAULT_STROKE_WIDTH
+
+            if fill_color is not None:
                 fill_opacity = fill_opacity or 1.0
 
         self._stroke_color = stroke_color

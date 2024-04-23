@@ -90,8 +90,15 @@ class TransformableMobject(Mobject):
 
     # Frequently used patterns that depend on transformations
     def add_label(
-        self, label: TransformableMobject, direction: Vector3 = UP, buff=0.0
-    ) -> None:
-        label.stretch_to_fit_width(self.width)
+        self,
+        label: TransformableMobject,
+        direction: Vector3 = UP,
+        buff=0.0,
+        width=2.0,
+    ) -> TransformableMobject:
+        if isinstance(label, str):
+            raise ValueError("Use `Text` instead of a plain `str` in `add_label`")
+        label.stretch_to_fit_width(width)
         label.next_to(self, direction, buff=buff)
         self.add(label)
+        return self
