@@ -1,9 +1,10 @@
 from __future__ import annotations
 import base64
+import inspect
 import json
 from pathlib import Path
 from textwrap import dedent
-from typing import List, Sequence, Tuple
+from typing import List, NamedTuple, Sequence, Tuple
 
 import numpy as np
 
@@ -42,6 +43,13 @@ if "pyodide" not in sys.modules:
 __all__ = ["canvas", "Canvas"]
 
 
+class _SVGElementData(NamedTuple):
+    svg_els: Sequence[svg.Element]
+    data_attrs: dict
+
+
+# bidirectional complete
+# instance must be named lowercase 'canvas' to work
 class Canvas:
     def __init__(self, config: Config):
         self.config = config
@@ -57,6 +65,14 @@ class Canvas:
             if mobject in self.mobjects:
                 log.warning(f"Mobject already added: {mobject}")
             else:
+                if mobject.subpath is None:
+                    # assume this fn is called from the main file
+                    old_len = len(self.mobjects)
+                    caller_frame = inspect.stack()[1]
+                    lineno = caller_frame.lineno
+                    mobject.parent = None
+                    mobject.subpath = f"canvas.mobjects[{old_len}]"
+                    mobject.direct_lineno = lineno
                 self.mobjects.add(mobject)
 
     def remove(self, *mobjects):
@@ -115,12 +131,15 @@ class Canvas:
         else:
             mobjects_in_order = self.get_mobjects_to_display()
         svg_els_lst: List[svg.Element] = []
+        metadatas: List[dict] = []
         for mobject in mobjects_in_order:
             svg_func = self.get_to_svg_func(mobject)
             if svg_func is None:
                 continue
-            new_svg_els = svg_func(mobject)
-            svg_els_lst.extend(new_svg_els)
+            new_svg_data: _SVGElementData | None = svg_func(mobject)
+            if new_svg_data is not None:
+                svg_els_lst.extend(new_svg_data.svg_els)
+                metadatas.append(new_svg_data.data_attrs)
         if crop:
             x_munits, y_munits = self.mobjects.get_corner(UL)[:2]
             buffed_upper_left = np.array(
@@ -138,6 +157,13 @@ class Canvas:
             h = to_pixel_len(h_munits, self.config.pw, self.config.fw)
         else:
             x, y, w, h = 0, 0, self.config.pw, self.config.ph
+
+        # add the metadatas for each mobject for bidirectional editor
+        # hacky way to get around not being to add data attributes or dictionaries directly in the svg library
+        json_data = json.dumps(metadatas)
+        escaped_json_data = json_data.replace('"', "&quot;")
+        svg_els_lst.append(svg.Desc(id="metadata", content=escaped_json_data))
+
         svg_view_obj = svg.SVG(
             viewBox=svg.ViewBoxSpec(x, y, w, h),
             elements=svg_els_lst,
@@ -165,16 +191,13 @@ class Canvas:
         self.clear()
         return json.dumps(bbox)
 
-    def vmobject_to_svg_el(self, vmobject: VMobject) -> Sequence[svg.Element]:
+    def vmobject_to_svg_el(
+        self, vmobject: VMobject, decimal_precision: int = 3
+    ) -> _SVGElementData | None:
         if len(vmobject.points) == 0:  # handles VGroups
-            return []
-        points = to_pixel_coords(
-            vmobject.points,
-            self.config.pw,
-            self.config.ph,
-            self.config.fw,
-            self.config.fh,
-            self.config.fc,
+            return None
+        points = self._to_pixel_coords(
+            vmobject.points, decimal_precision=decimal_precision
         )
         if len(points) == 0:
             return
@@ -209,30 +232,14 @@ class Canvas:
         )
         kwargs["stroke_dasharray"] = vmobject.stroke_dasharray
 
-        return (svg.Path(d=svg_path, **kwargs),)
+        bi_kwargs = self._get_vmobject_data_attrs(vmobject)
 
-    def _to_pixel_coords(self, points: Point3D | InternalPoint3D_Array):
-        if points.shape == (3,):
-            point = points
-            return to_pixel_coords(
-                np.array([point]),
-                self.config.pw,
-                self.config.ph,
-                self.config.fw,
-                self.config.fh,
-                self.config.fc,
-            )[0]
-        else:
-            return to_pixel_coords(
-                points,
-                self.config.pw,
-                self.config.ph,
-                self.config.fw,
-                self.config.fh,
-                self.config.fc,
-            )
+        # Unfortunately, this library doesn't support data-* attrs so we have to use metadata
+        return _SVGElementData(
+            svg_els=(svg.Path(id=id(self), d=svg_path, **kwargs),), data_attrs=bi_kwargs
+        )
 
-    def text_to_svg_el(self, text_obj: Text):
+    def text_to_svg_el(self, text_obj: Text) -> _SVGElementData | None:
 
         start_pt = self._to_pixel_coords(text_obj.svg_upper_left)
 
@@ -295,7 +302,73 @@ class Canvas:
             ],
         )
 
-        return svg.Style(text=font_style_inline_font), text_svg_obj
+        bi_kwargs = self._get_text_obj_data_attrs(text_obj)
+        return _SVGElementData(
+            svg_els=(svg.Style(text=font_style_inline_font), text_svg_obj),
+            data_attrs=bi_kwargs,
+        )
+
+    def _to_pixel_coords(
+        self,
+        points: Point3D | InternalPoint3D_Array,
+        decimal_precision: int | None = None,
+    ) -> InternalPoint3D_Array:
+        if points.shape == (3,):
+            point = points
+            return to_pixel_coords(
+                np.array([point]),
+                self.config.pw,
+                self.config.ph,
+                self.config.fw,
+                self.config.fh,
+                self.config.fc,
+                decimal_precision=decimal_precision,
+            )[0]
+        else:
+            return to_pixel_coords(
+                points,
+                self.config.pw,
+                self.config.ph,
+                self.config.fw,
+                self.config.fh,
+                self.config.fc,
+                decimal_precision=decimal_precision,
+            )
+
+    def _get_vmobject_data_attrs(self, vmobject: VMobject, decimal_precision: int = 3):
+        """Get the data attributes of this vmobject for the bidirectional editor"""
+        bbox_in_pixels = self._to_pixel_coords(
+            np.array(vmobject.bbox), decimal_precision=decimal_precision
+        )
+        ul = bbox_in_pixels[1].tolist()
+        dr = bbox_in_pixels[3].tolist()
+
+        points_in_pixels = self._to_pixel_coords(
+            vmobject.points, decimal_precision=decimal_precision
+        ).tolist()
+
+        return {
+            "bbox_upper_left": ul,
+            "bbox_lower_right": dr,
+            "points": points_in_pixels,
+            "type": "vmobject",
+            "id": id(vmobject),
+        }
+
+    def _get_text_obj_data_attrs(self, text_obj: Text, decimal_precision: int = 3):
+        """Get the data attributes of this text object for the bidirectional editor."""
+        bbox_in_pixels = self._to_pixel_coords(
+            np.array(text_obj.bbox), decimal_precision=decimal_precision
+        )
+        ul = bbox_in_pixels[1].tolist()
+        dr = bbox_in_pixels[3].tolist()
+
+        return {
+            "bbox_upper_left": ul,
+            "bbox_lower_right": dr,
+            "type": "text",
+            "id": id(text_obj),
+        }
 
     def save_svg(
         self,

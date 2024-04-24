@@ -2,7 +2,13 @@ from typing import Tuple
 import numpy as np
 from smanim.config import Config
 from smanim.constants import RIGHT, TAU, X_AXIS, Y_AXIS, Z_AXIS
-from smanim.typing import ManimFloat, Point2D, Point3D_Array, Vector3
+from smanim.typing import (
+    InternalPoint3D_Array,
+    ManimFloat,
+    Point2D,
+    Point3D_Array,
+    Vector3,
+)
 from smanim.utils.logger import log
 
 
@@ -24,7 +30,8 @@ def to_pixel_coords(
     fh: float | None = None,
     fc: Vector3 | None = None,
     config: Config | None = None,
-):
+    decimal_precision: int | None = None,
+) -> InternalPoint3D_Array:
     if config is not None:
         pw, ph, fw, fh, fc = config.pw, config.ph, config.fw, config.fh, config.fc
     if len(points) == 0:
@@ -45,6 +52,9 @@ def to_pixel_coords(
     )
     # (N x 3) @ (3 x 2) = (N x 2)
     points = points @ coord_mat.T
+
+    if decimal_precision is not None:
+        points = np.around(points, decimals=decimal_precision)
     return points
 
 

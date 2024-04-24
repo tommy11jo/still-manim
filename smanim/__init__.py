@@ -23,3 +23,6 @@ from smanim.mobject.graphing.number_line import *
 from smanim.mobject.graphing.coordinate_systems import *
 
 from smanim.mobject.programming.box_list import *
+
+# traces all variable assignments
+from smanim.bidirectional import *
