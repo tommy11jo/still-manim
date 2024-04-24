@@ -45,11 +45,12 @@ class Graph(Group):
         vertex_label_config: dict = {},
         partitions: list[list[Hashable]] | None = None,
         root_vertex: Hashable | None = None,
+        **kwargs,
     ) -> None:
         if not issubclass(edge_type, Line):
             raise ValueError("edge_type must be `Line` or inherit from `Line`")
 
-        super().__init__()
+        super().__init__(**kwargs)
 
         nx_graph = Graph._empty_networkx_graph()
         nx_graph.add_nodes_from(vertices)
@@ -72,7 +73,10 @@ class Graph(Group):
         else:
             _vertex_config = {}
         _vertex_config.update(vertex_config)
-        self.vertices = {v: vertex_type(**_vertex_config) for v in vertices}
+        self.vertices = {
+            v: vertex_type(**_vertex_config, parent=self, subpath=f".vertices[{v}]")
+            for v in vertices
+        }
 
         for vid, vertex in self.vertices.items():
             vertex.move_to(_layout[vid])
@@ -99,6 +103,8 @@ class Graph(Group):
             (u, v): edge_type(
                 start=self.vertices[u],
                 end=self.vertices[v],
+                parent=self,
+                subpath=f".edges[{(u, v)}]",
                 **_edge_config,
             )
             for u, v in edges

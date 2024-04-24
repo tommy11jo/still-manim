@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
+import inspect
+import linecache
 from typing import List, Type
 from typing_extensions import Self
 
@@ -31,23 +33,81 @@ from smanim.utils.color import ManimColor
 from smanim.utils.logger import log
 from smanim.utils.space_ops import line_intersect
 
-__all__ = ["Mobject"]
+__all__ = ["Mobject", "mobject_registry"]
 
 
+mobject_registry = {}
+
+CUR_FNAME = "tracing_demo.py"
+# CUR_FNAME = "demo.py"
+# CUR_FNAME = "ideas.py"
+# CUR_FNAME = "main.py"
+
+
+def register_instances(cls):
+    original_init = cls.__init__
+
+    def new_init(self: Mobject, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        caller_frame = inspect.currentframe().f_back
+        upper_frame = caller_frame
+        while upper_frame is not None:
+            if CUR_FNAME in upper_frame.f_code.co_filename:
+                break
+            upper_frame = upper_frame.f_back
+        if upper_frame is None:
+            raise Exception("Make sure the CUR_FNAME is correct.")
+        upper_lineno = upper_frame.f_lineno
+
+        # find the original init call site of the mobject under construction
+        original_frame = caller_frame
+        while original_frame is not None:
+            if original_frame.f_code == self.__class__.__init__.__code__:
+                break
+            original_frame = original_frame.f_back
+        metadata = {
+            "upper_lineno": upper_lineno,
+            "instance": self,
+        }
+        if original_frame.f_back == upper_frame:
+            filename = upper_frame.f_code.co_filename
+            line = linecache.getline(filename, upper_lineno).strip()
+            tokens = line.strip().split("=")
+            if len(tokens) >= 2:
+                # only handles direct assignments
+                self.subpath = tokens[0].strip()
+
+        mobject_registry[id(self)] = metadata
+
+    cls.__init__ = new_init
+    return cls
+
+
+@register_instances
 class Mobject(ABC):
     """Base class for all objects that take up space.
+    Note: This class has been modified to support bidirectional editing.
     `bounding_points` represents the bounding polygon for this mobject (they do not include submobjects).
     Subclasses are responsible for setting the `bounding_points`.
     """
 
     def __init__(
-        self, bounding_points: InternalPoint3D_Array | None = None, z_index: int = 0
+        self,
+        bounding_points: InternalPoint3D_Array | None = None,
+        z_index: int = 0,
+        parent: Mobject | None = None,
+        subpath: str | None = None,
     ):
         if bounding_points is None:
             bounding_points = np.empty((0, 3))
         self._bounding_points = bounding_points
         self.z_index = z_index
         self.submobjects: List[Mobject] = []
+
+        # used for bidirectional editing
+        # TODO: Maybe use tokens for subpath instead of str
+        self.parent = parent
+        self.subpath = subpath
 
     @property
     def bounding_points(self):
@@ -57,9 +117,18 @@ class Mobject(ABC):
     def bounding_points(self, bounding_points: InternalPoint3D_Array):
         self._bounding_points = bounding_points
 
+    def get_path(self):
+        path = self.parent.get_path() if self.parent else ""
+        if self.subpath is None:
+            raise Exception("Subpath not set")
+
+        path += self.subpath
+        return path
+
     # Grouping
     def add(self, *mobjects: Mobject, insert_at_front: bool = False) -> Self:
         new_mobjects = []
+        old_len = len(self.submobjects)
         for mobject in mobjects:
             if mobject is self:
                 raise ValueError("Cannot add mobject to itself")
@@ -67,10 +136,17 @@ class Mobject(ABC):
                 log.warning(f"Mobject already added: {mobject}")
             else:
                 new_mobjects.append(mobject)
+                if mobject.subpath is None:
+                    mobject.subpath = f"[{old_len}]"
+                    mobject.parent = self
         if not insert_at_front:
             self.submobjects.extend(new_mobjects)
         else:
-            self.submobjects = new_mobjects + self.submobjects
+            # setup from scratch to reset subpaths and parents
+            old_submobjects = self.submobjects
+            self.submobjects = []
+            self.add(*old_submobjects)
+            # self.submobjects = new_mobjects + self.submobjects
         return self
 
     def remove(self, *mobjects) -> Self:

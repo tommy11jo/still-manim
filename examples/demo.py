@@ -1078,4 +1078,15 @@ def fill_stroke():
     canvas.snapshot(preview=True)
 
 
-fill_stroke()
+# fill_stroke()
+
+
+# TODO: why doesn't this work in browser but it works locally?
+# g[4].set_stroke(color=ORANGE)
+def grid_simple():
+    g = VGroup(*[Square() for i in range(8)]).arrange_in_grid(rows=2)
+    canvas.add(g)
+    canvas.snapshot(preview=True)
+
+
+grid_simple()

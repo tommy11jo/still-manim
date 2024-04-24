@@ -176,17 +176,14 @@ class VMobject(TransformableMobject, ABC):
 
     def set_stroke(
         self,
-        color: ManimColor | None = None,
-        width: float | None = None,
-        opacity: float | None = None,
+        color: ManimColor = WHITE,
+        width: float = DEFAULT_STROKE_WIDTH,
+        opacity: float = 1.0,
         family=False,
     ) -> Self:
-        if color:
-            self._stroke_color = color
-        if width:
-            self.stroke_width = width
-        if opacity:
-            self.stroke_opacity = opacity
+        self._stroke_color = color
+        self.stroke_width = width
+        self.stroke_opacity = opacity
         if family:
             for mem in self.get_family()[1:]:
                 mem.set_stroke(color=color, width=width, opacity=opacity, family=True)
