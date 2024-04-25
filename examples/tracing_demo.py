@@ -1,22 +1,23 @@
+import sys
 from smanim import *
 
 # Demos for bidirectional functionality
+sys._getframe().f_trace = global_trace_assignments
+sys.settrace(trace_assignments)
 
-# must actually call setup birdirectional for now
-setup_bidirectional(__file__)
 
-
-def demo1():
+def simple_assign():
     s = Square()
     canvas.add(s)
     canvas.snapshot(preview=True)
     print(s.get_path())
 
 
-# demo1()
+# simple_assign()
 
 
-def demo2():
+# trace only captures var assignment in this file, so does not capture the arrow components line and triangle
+def nested_mobject_assign():
     a = Arrow()
     canvas.add(a)
     canvas.snapshot(preview=True)
@@ -24,10 +25,12 @@ def demo2():
     print(a.end_tip.get_path())
 
 
-# demo2()
+# nested_mobject_assign()
 
 
-def demo3():
+# demonstrates multi_mobject
+# demonstrates reference to mobject created in another file
+def multi_mobject_assign():
     s = Square()
     c = Circle()
     b = BoxList(s, c)
@@ -38,7 +41,7 @@ def demo3():
     print(vlines[0].get_path())  # the first vline
 
 
-# demo3()
+# multi_mobject_assign()
 
 
 def complex_assign():
@@ -53,24 +56,6 @@ def complex_assign():
 # complex_assign()
 
 
-def _gen_circle():
-    c = Circle()
-    return c
-
-
-# Another example of why current approach doesn't work
-def assign_in_separate_fn():
-    c1 = _gen_circle().shift(RIGHT * 2)
-    c2 = _gen_circle()
-    canvas.add(c1, c2)
-    canvas.snapshot(preview=True)
-    print(c1.get_path())
-
-
-# assign_in_separate_fn()
-# TODO: Test insert_at_front resetting of subpaths and parents by doing a bring to front
-
-
 def graph_demo():
     g = Graph(vertices=range(4), edges=[(0, 1), (0, 2), (0, 3), (1, 3)])
     # this actually triggers an update to the subpath
@@ -82,7 +67,7 @@ def graph_demo():
     assert g.vertices[1].get_path() == "g.vertices[1]"
 
 
-graph_demo()
+# graph_demo()
 
 
 # direct adds should be avoided when possible
@@ -94,7 +79,79 @@ def direct_add():
 
 
 # direct_add()
-# TODO: testing adding an edge between nodes with an LLM using the reference technique above
 
-# TODO: Potential method is drawing all points and bboxes now and only showing them when user clicks
-# TODO: hover events example https://developer.mozilla.org/en-US/docs/Web/SVG/Element/a
+
+def more_circle():
+    c2 = Circle().shift(RIGHT * 2)
+    canvas.add(c2)
+    print("c2 subpath is", c2.subpath)
+
+
+def inner_function_call():
+    more_circle()
+    c = Circle()
+    canvas.add(c)
+    canvas.snapshot(preview=True)
+    print("c path is", c.get_path())
+
+
+# inner_function_call()
+
+
+class CircleShell(Mobject):
+    def __init__(self):
+        super().__init__()
+        inner_circle = Circle()
+        self.add(inner_circle)
+
+    # TODO: this should not be abstract, just make them do nothing by default
+    def rotate(self):
+        pass
+
+    def scale(self):
+        pass
+
+    def shift(self):
+        pass
+
+    def stretch(self):
+        pass
+
+
+def class_demo():
+    d = CircleShell()
+    canvas.add(d)
+    canvas.snapshot(preview=True)
+
+
+# class_demo()
+
+# global assigns are why the sys._getframe().f_trace assignment is needed
+# https://stackoverflow.com/questions/55998616/how-to-trace-code-run-in-global-scope-using-sys-settrace
+# global mobject assign
+# a = Square()
+
+
+def generate_circle():
+    circle = Circle()
+    return circle
+
+
+# assigns a name to the same mobject instance twice
+def repeated_assign():
+    a = generate_circle().shift(LEFT)
+    b = generate_circle()
+    c = generate_circle().shift(RIGHT)
+    canvas.add(a, b, c)
+    canvas.snapshot(preview=True)
+
+
+repeated_assign()
+
+# TODO: testing adding an edge between nodes with an LLM using the reference technique above
+# I'm worried the LLM will overindex on the user selected vertices g.vertices[0] and g.vertices[1] and try to draw a line between them rather than just changing edges in the constructor
+# TODO: Test insert_at_front resetting of subpaths and parents by doing a bring to front
+
+# Future: Current approach to assignment is not perfect. If an object reference is assigned a name multiple times, only the last time is captured.
+# I could use "access points" and let the LLM decide where to access
+# The LLM should be able to infer this though.
