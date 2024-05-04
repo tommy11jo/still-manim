@@ -114,7 +114,9 @@ class Graph(Group):
         self.vertex_labels: Group | None
         if include_vertex_labels:
             self.vertex_labels = self.generate_vertex_labels(**vertex_label_config)
-            self.add(self.vertex_labels)
+            self.vertex_labels.parent = self
+            self.vertex_labels.subpath = ".vertex_labels"
+            self.add(*self.vertex_labels)
         else:
             self.vertex_labels = None
 
@@ -173,11 +175,15 @@ class WeightedGraph(Graph):
         converted_labels: Dict[Tuple[Hashable, Hashable], Text] = {}
         for edge, label in edge_labels.items():
             if not isinstance(label, Text):
-                converted_labels[edge] = Text(str(label), **edge_label_config)
+                converted_labels[edge] = Text(
+                    str(label),
+                    subpath=f".edge_labels[{edge}]",
+                    parent=self,
+                    **edge_label_config,
+                )
             else:
                 converted_labels[edge] = label
-        edge_label_map = {}
-        edge_label_objs = Group()
+        edge_label_map: dict[str, Text] = {}
         for edge, weight_text in converted_labels.items():
             v1, v2 = edge
             edge_obj = self.edges[(v1, v2)]
@@ -186,9 +192,8 @@ class WeightedGraph(Graph):
             weight_text.add_surrounding_rect(
                 fill_color=CONFIG.bg_color, fill_opacity=1.0, buff=0.005
             )
-            edge_label_objs.add(weight_text)
             edge_label_map[edge] = weight_text
-        self.add(edge_label_objs)
+        self.add(*edge_label_map.values())
         self.edge_labels = edge_label_map
 
     @staticmethod

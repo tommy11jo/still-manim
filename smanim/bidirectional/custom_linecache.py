@@ -9,5 +9,9 @@ class CustomLineCache:
         return ""
 
     @classmethod
+    def getlines(cls, filename):
+        return [line + "\n" for line in cls._cache.get(filename, "").splitlines()]
+
+    @classmethod
     def cache(cls, filename, contents):
         cls._cache[filename] = contents

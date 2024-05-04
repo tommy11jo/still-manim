@@ -13,7 +13,11 @@ from smanim.utils.logger import log
 
 
 # pixel scalar => manim scalar
-def to_pixel_len(scalar: float, pw: float, fw: float):
+def to_pixel_len(
+    scalar: float, pw: float, fw: float, decimal_precision: int | None = None
+):
+    if decimal_precision is not None:
+        return np.around(scalar * (pw / fw), decimals=decimal_precision)
     return scalar * (pw / fw)
 
 

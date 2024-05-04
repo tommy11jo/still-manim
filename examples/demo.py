@@ -1089,4 +1089,61 @@ def grid_simple():
     canvas.snapshot(preview=True)
 
 
-grid_simple()
+# grid_simple()
+
+
+# testing the bbox metadatas
+def simple_group():
+    g = Group(Square().shift(LEFT), Square(color=GREEN), Square().shift(RIGHT))
+    canvas.add(g)
+    canvas.add(t)
+    canvas.snapshot(preview=True)
+
+
+# simple_group()
+
+
+def simpler_group():
+    g = Group(Circle())
+    canvas.add(g)
+    result = canvas.draw()
+    print(result)
+    # canvas.snapshot(preview=True)
+
+
+# simpler_group()
+
+
+class TwoCircle(VGroup):
+    def __init__(self):
+        super().__init__()
+        self.add(Circle())
+        self.add(Circle(color=RED).scale(0.5))
+
+
+def simple_vgroup_class():
+
+    g = TwoCircle()
+    canvas.add(g)
+    result = canvas.draw()
+    print(result)
+    # canvas.snapshot(preview=True)
+
+
+# simple_vgroup_class()
+
+
+def simple_sin():
+    n = NumberPlane.from_axes_ranges(
+        (-1, 1), (-1, 1), axis_config={"include_arrow_tips": False}, grid_lines=True
+    )
+    # print(n.grid_lines)
+    # print("end grid lines")
+    sin_graph_obj = n.plot(np.sin, color=RED)
+    cos_graph_obj = n.plot(np.cos, color=BLUE)
+    canvas.add(n)
+    # canvas.draw()
+    canvas.snapshot(preview=True)
+
+
+simple_sin()

@@ -4,7 +4,7 @@ import inspect
 import json
 from pathlib import Path
 from textwrap import dedent
-from typing import List, NamedTuple, Sequence, Tuple
+from typing import List, Tuple
 
 import numpy as np
 
@@ -19,7 +19,7 @@ from smanim.constants import (
 from smanim.mobject.geometry.polygon import Rectangle
 from smanim.mobject.group import Group
 from smanim.mobject.mobject import Mobject
-from smanim.mobject.vmobject import VMobject
+from smanim.mobject.vmobject import VGroup, VMobject
 from smanim.mobject.text.text_mobject import Text
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
 from smanim.utils.color import ManimColor
@@ -41,11 +41,6 @@ if "pyodide" not in sys.modules:
 
 
 __all__ = ["canvas", "Canvas"]
-
-
-class _SVGElementData(NamedTuple):
-    svg_els: Sequence[svg.Element]
-    data_attrs: dict
 
 
 # bidirectional complete
@@ -98,6 +93,8 @@ class Canvas:
 
     def get_to_svg_func(self, mobject: Mobject):
         to_svg_funcs = {
+            VGroup: self.group_to_svg_el,
+            Group: self.group_to_svg_el,
             VMobject: self.vmobject_to_svg_el,  # includes VGroup handling
             Text: self.text_to_svg_el,
             Mobject: None,
@@ -115,11 +112,12 @@ class Canvas:
         crop: bool = False,
         crop_buff: float = SMALL_BUFF,
         called_from_draw: bool = False,
-    ) -> Tuple[float, float, float, float]:
+    ) -> Tuple[Tuple[float, float, float, float], dict]:
         if not called_from_draw and BROWSER_ENV:
             raise Exception(
                 "Please use `canvas.draw()` instead of `canvas.snapshot` in the browser env."
             )
+        bg_rect = None
         if self.config.bg_color is not None and not ignore_bg:
             bg_rect = Rectangle(
                 width=self.config.fw,
@@ -131,15 +129,13 @@ class Canvas:
         else:
             mobjects_in_order = self.get_mobjects_to_display()
         svg_els_lst: List[svg.Element] = []
-        metadatas: List[dict] = []
         for mobject in mobjects_in_order:
             svg_func = self.get_to_svg_func(mobject)
             if svg_func is None:
                 continue
-            new_svg_data: _SVGElementData | None = svg_func(mobject)
-            if new_svg_data is not None:
-                svg_els_lst.extend(new_svg_data.svg_els)
-                metadatas.append(new_svg_data.data_attrs)
+            new_svg_els = svg_func(mobject)
+            if new_svg_els is not None:
+                svg_els_lst.extend(new_svg_els)
         if crop:
             x_munits, y_munits = self.mobjects.get_corner(UL)[:2]
             buffed_upper_left = np.array(
@@ -158,13 +154,8 @@ class Canvas:
         else:
             x, y, w, h = 0, 0, self.config.pw, self.config.ph
 
-        # add the metadatas for each mobject for bidirectional editor
-        # hacky way to get around not being to add data attributes or dictionaries directly in the svg library
-        json_data = json.dumps(metadatas)
-        escaped_json_data = json_data.replace('"', "&quot;")
-        svg_els_lst.append(svg.Desc(id="metadata", content=escaped_json_data))
-
         svg_view_obj = svg.SVG(
+            id="smanim-canvas",
             viewBox=svg.ViewBoxSpec(x, y, w, h),
             elements=svg_els_lst,
         )
@@ -174,14 +165,29 @@ class Canvas:
         else:
             suffix = 0
         self.save_svg(svg_view_obj, preview=preview, suffix=suffix)
-        return x, y, w, h
+
+        layer_metadatas = {}
+        # include the top canvas layer
+        layer_metadatas["canvas"] = {
+            "type": "canvas",
+            "id": "canvas",
+            "parent": "none",
+            "children": [f"id-{id(mob)}" for mob in self.mobjects],
+            "classname": type(self).__qualname__,
+        }
+        for mobject in self.mobjects:
+            self.populate_mobject_metadatas(mobject, layer_metadatas)
+        if bg_rect is not None:
+            self.populate_mobject_metadatas(bg_rect, layer_metadatas, is_bg_rect=True)
+
+        return (x, y, w, h), layer_metadatas
 
     # Used in pyodide web environment
     # Since the state of python program is maintained across calls to `runPython`, canvas state must be cleared here
     def draw(
         self, crop: bool = False, crop_buff: float = SMALL_BUFF
     ) -> Tuple[float, float, float, float]:
-        bbox = self.snapshot(
+        bbox, metadata = self.snapshot(
             overwrite=True,
             preview=False,
             crop=crop,
@@ -189,11 +195,11 @@ class Canvas:
             called_from_draw=True,
         )
         self.clear()
-        return json.dumps(bbox)
+        return json.dumps({"bbox": bbox, "metadata": metadata})
 
     def vmobject_to_svg_el(
         self, vmobject: VMobject, decimal_precision: int = 3
-    ) -> _SVGElementData | None:
+    ) -> Tuple[svg.Element] | None:
         if len(vmobject.points) == 0:  # handles VGroups
             return None
         points = self._to_pixel_coords(
@@ -232,14 +238,9 @@ class Canvas:
         )
         kwargs["stroke_dasharray"] = vmobject.stroke_dasharray
 
-        bi_kwargs = self._get_vmobject_data_attrs(vmobject)
+        return (svg.Path(id=f"id-{id(vmobject)}", d=svg_path, **kwargs),)
 
-        # Unfortunately, this library doesn't support data-* attrs so we have to use metadata
-        return _SVGElementData(
-            svg_els=(svg.Path(id=id(self), d=svg_path, **kwargs),), data_attrs=bi_kwargs
-        )
-
-    def text_to_svg_el(self, text_obj: Text) -> _SVGElementData | None:
+    def text_to_svg_el(self, text_obj: Text) -> Tuple[svg.Element] | None:
 
         start_pt = self._to_pixel_coords(text_obj.svg_upper_left)
 
@@ -251,11 +252,11 @@ class Canvas:
         base64_font = base64.b64encode(font_data).decode("utf-8")
 
         # can use foreign object to handle max_width and text wrapping in browser envs, but not for local svg
-        id = int(np.random.rand() * 10_000_000)
+        obj_id = f"id-{id(text_obj)}"
 
         font_style_inline_font = dedent(
             f"""
-            .styleClass{id} {{
+            .styleClass-{obj_id} {{
                 text-decoration: {font_family};
                 fill: {text_obj.fill_color.value};
                 font-size: {font_size}px;
@@ -292,21 +293,37 @@ class Canvas:
             )
         x_center, y_center = self._to_pixel_coords(text_obj.center)[:2]
         text_svg_obj = svg.Text(
+            id=obj_id,
             elements=text_tspan_objs,
             x=start_pt[0],
             y=start_pt[1],
-            class_=[f"styleClass{id}"],
+            class_=[f"styleClass-{obj_id}"],
             # svg transform is clockwise, so negate it
             transform=[
                 svg.Rotate(a=-text_obj.heading * RADIANS, x=x_center, y=y_center)
             ],
         )
 
-        bi_kwargs = self._get_text_obj_data_attrs(text_obj)
-        return _SVGElementData(
-            svg_els=(svg.Style(text=font_style_inline_font), text_svg_obj),
-            data_attrs=bi_kwargs,
+        return (svg.Style(text=font_style_inline_font), text_svg_obj)
+
+    def group_to_svg_el(self, group: Group, decimal_precision: int = 3):
+        bbox_in_pixels = self._to_pixel_coords(
+            np.array(group.bbox), decimal_precision=decimal_precision
         )
+        ul = bbox_in_pixels[1].tolist()
+        width = self._to_pixel_len(group.width)
+        height = self._to_pixel_len(group.height)
+
+        rect = svg.Rect(
+            id=f"id-{id(group)}",
+            fill="transparent",
+            # fill="rgba(0, 100, 100, 0.4)",
+            x=ul[0],
+            y=ul[1],
+            width=width,
+            height=height,
+        )
+        return (rect,)
 
     def _to_pixel_coords(
         self,
@@ -335,6 +352,30 @@ class Canvas:
                 decimal_precision=decimal_precision,
             )
 
+    def _to_pixel_len(self, value, decimal_precision: int = 3):
+        return to_pixel_len(
+            value,
+            self.config.pw,
+            self.config.fw,
+            decimal_precision=decimal_precision,
+        )
+
+    # TODO: Can remove bbox data since svg getBbox function can generate this directly
+    def _get_group_data_attrs(self, group: Group, decimal_precision: int = 3):
+        bbox_in_pixels = self._to_pixel_coords(
+            np.array(group.bbox), decimal_precision=decimal_precision
+        )
+        ul = bbox_in_pixels[1].tolist()
+        dr = bbox_in_pixels[3].tolist()
+
+        return {
+            "bbox_upper_left": ul,
+            "bbox_lower_right": dr,
+            "type": "group",
+            "id": f"id-{id(group)}",
+            "classname": type(group).__qualname__,
+        }
+
     def _get_vmobject_data_attrs(self, vmobject: VMobject, decimal_precision: int = 3):
         """Get the data attributes of this vmobject for the bidirectional editor"""
         bbox_in_pixels = self._to_pixel_coords(
@@ -352,7 +393,8 @@ class Canvas:
             "bbox_lower_right": dr,
             "points": points_in_pixels,
             "type": "vmobject",
-            "id": id(vmobject),
+            "id": f"id-{id(vmobject)}",
+            "classname": type(vmobject).__qualname__,
         }
 
     def _get_text_obj_data_attrs(self, text_obj: Text, decimal_precision: int = 3):
@@ -367,8 +409,39 @@ class Canvas:
             "bbox_upper_left": ul,
             "bbox_lower_right": dr,
             "type": "text",
-            "id": id(text_obj),
+            "id": f"id-{id(text_obj)}",
+            "classname": type(text_obj).__qualname__,
         }
+
+    def populate_mobject_metadatas(
+        self, mobject: Mobject, metadatas: dict, parent=None, is_bg_rect=False
+    ) -> None:
+        mob_id = f"id-{id(mobject)}"
+        if is_bg_rect:
+            mob_id = "bg_rect"
+            # bg_rect is an exception to the rule that metadatas is a map from id => metadata
+            # and that the id correspond to the svg element id
+            # bg_rect => metadata which has the true id of the bg_rect element
+        if parent is None:
+            parent_id = "canvas"
+        else:
+            parent_id = f"id-{id(parent)}"
+            metadatas[parent_id]["children"].append(mob_id)
+        if isinstance(mobject, VGroup):
+            bi_kwargs = self._get_group_data_attrs(mobject)
+        elif isinstance(mobject, Group):
+            bi_kwargs = self._get_group_data_attrs(mobject)
+        elif isinstance(mobject, VMobject):
+            bi_kwargs = self._get_vmobject_data_attrs(mobject)
+        elif isinstance(mobject, Text):
+            bi_kwargs = self._get_text_obj_data_attrs(mobject)
+        else:
+            raise Exception(f"Mobject of type {type(mobject)} not handled")
+        bi_kwargs["parent"] = parent_id
+        bi_kwargs["children"] = []
+        metadatas[mob_id] = bi_kwargs
+        for child in mobject.submobjects:
+            self.populate_mobject_metadatas(child, metadatas, mobject)
 
     def save_svg(
         self,
