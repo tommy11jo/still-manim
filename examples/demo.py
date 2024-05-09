@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from smanim import *
 from smanim.utils.space_ops import mirror_vector
@@ -1126,24 +1127,71 @@ def simple_vgroup_class():
     g = TwoCircle()
     canvas.add(g)
     result = canvas.draw()
-    print(result)
+    # print(result)
+    metadata = canvas.draw()
+    meta = json.loads(metadata)["metadata"]
+    print(meta)
     # canvas.snapshot(preview=True)
 
 
 # simple_vgroup_class()
 
 
-def simple_sin():
-    n = NumberPlane.from_axes_ranges(
-        (-1, 1), (-1, 1), axis_config={"include_arrow_tips": False}, grid_lines=True
-    )
-    # print(n.grid_lines)
-    # print("end grid lines")
-    sin_graph_obj = n.plot(np.sin, color=RED)
-    cos_graph_obj = n.plot(np.cos, color=BLUE)
+def y_axis_test():
+    n = NumberPlane().scale(0.5).shift(LEFT + DOWN * 2)
+    n.plot(lambda x: 2 * x + 1)
+    n.scale(0.5)
     canvas.add(n)
-    # canvas.draw()
     canvas.snapshot(preview=True)
 
 
-simple_sin()
+# y_axis_test()
+
+
+def tree_test():
+    g = Graph(
+        vertices=[0, 1, 2, 3, 4],
+        edges=[(0, 1), (0, 2), (2, 3), (2, 4)],
+        include_vertex_labels=True,
+        layout="tree",
+        root_vertex=0,
+    )
+    g.align_to(canvas.left, edge=LEFT)
+    canvas.add(g)
+
+    canvas.snapshot(preview=True)
+
+
+# tree_test()
+
+
+def arrow_pointer():
+    c = Circle()
+    a = Arrow.points_at(c, direction=LEFT)
+    g1 = Group(c, a)
+    c2 = Circle(color=RED)
+    a2 = Arrow.points_at(c2, direction=UP + RIGHT, length=0.5, buff=0)
+    g2 = Group(c2, a2)
+
+    groups = Group(g1, g2).arrange()
+    canvas.add(groups)
+    title = Text("Italics", italics=True).shift(UP * 2)
+    canvas.add(title)
+    canvas.snapshot(preview=True)
+
+
+# arrow_pointer()
+
+
+def next_to_and_align():
+    s = Square()
+    t = Text("This is the title")
+    # s.next_to(t, DOWN).align_to(t, LEFT)
+    # since this is so common i'm making a new syntax for it
+    # s.next_to(t, DOWN, aligned_edge=LEFT) or more simply
+    s.next_to(t, DOWN, LEFT)
+    canvas.add(s, t)
+    canvas.snapshot(preview=True)
+
+
+next_to_and_align()

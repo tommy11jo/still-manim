@@ -1,5 +1,7 @@
 from __future__ import annotations
 import base64
+from collections import namedtuple
+import html
 import inspect
 import json
 from pathlib import Path
@@ -10,10 +12,14 @@ import numpy as np
 
 from smanim.config import CONFIG, Config
 from smanim.constants import (
+    DOWN,
+    LEFT,
     ORIGIN,
     RADIANS,
+    RIGHT,
     SMALL_BUFF,
     UL,
+    UP,
     Z_INDEX_MIN,
 )
 from smanim.mobject.geometry.polygon import Rectangle
@@ -41,6 +47,12 @@ if "pyodide" not in sys.modules:
 
 
 __all__ = ["canvas", "Canvas"]
+
+
+MobjectMetadata = namedtuple(
+    "MobjectMetadata",
+    ["id", "type", "points", "children", "parent", "classname", "path", "lineno"],
+)
 
 
 # bidirectional complete
@@ -97,7 +109,7 @@ class Canvas:
             Group: self.group_to_svg_el,
             VMobject: self.vmobject_to_svg_el,  # includes VGroup handling
             Text: self.text_to_svg_el,
-            Mobject: None,
+            Mobject: self.group_to_svg_el,
         }
         for _type in to_svg_funcs:
             if isinstance(mobject, _type):
@@ -124,6 +136,8 @@ class Canvas:
                 height=self.config.fh,
                 fill_color=self.config.bg_color,
                 z_index=Z_INDEX_MIN,
+                parent=None,
+                subpath="canvas.mobjects[0]",
             )
             mobjects_in_order = [bg_rect] + self.get_mobjects_to_display()
         else:
@@ -168,13 +182,15 @@ class Canvas:
 
         layer_metadatas = {}
         # include the top canvas layer
-        layer_metadatas["canvas"] = {
-            "type": "canvas",
-            "id": "canvas",
-            "parent": "none",
-            "children": [f"id-{id(mob)}" for mob in self.mobjects],
-            "classname": type(self).__qualname__,
-        }
+
+        layer_metadatas["canvas"] = self._create_mobject_metadata(
+            mobject=None,
+            id="canvas",
+            mob_type="canvas",
+            parent="none",
+            children=[f"id-{id(mob)}" for mob in self.mobjects],
+        )
+
         for mobject in self.mobjects:
             self.populate_mobject_metadatas(mobject, layer_metadatas)
         if bg_rect is not None:
@@ -184,9 +200,7 @@ class Canvas:
 
     # Used in pyodide web environment
     # Since the state of python program is maintained across calls to `runPython`, canvas state must be cleared here
-    def draw(
-        self, crop: bool = False, crop_buff: float = SMALL_BUFF
-    ) -> Tuple[float, float, float, float]:
+    def draw(self, crop: bool = False, crop_buff: float = SMALL_BUFF) -> str:
         bbox, metadata = self.snapshot(
             overwrite=True,
             preview=False,
@@ -245,6 +259,8 @@ class Canvas:
         start_pt = self._to_pixel_coords(text_obj.svg_upper_left)
 
         font_family = text_obj.font_family
+        italics = text_obj.italics
+        bold = text_obj.bold
         font_size = text_obj.font_size
 
         with open(text_obj.font_path, "rb") as font_file:
@@ -254,24 +270,29 @@ class Canvas:
         # can use foreign object to handle max_width and text wrapping in browser envs, but not for local svg
         obj_id = f"id-{id(text_obj)}"
 
+        family_name_with_style = font_family
+        family_name_with_style += "italics" if italics else ""
+        family_name_with_style += "bold" if bold else ""
         font_style_inline_font = dedent(
             f"""
             .styleClass-{obj_id} {{
-                text-decoration: {font_family};
+                text-decoration: {text_obj.text_decoration};
                 fill: {text_obj.fill_color.value};
                 font-size: {font_size}px;
                 fill-opacity: {text_obj.fill_opacity};
-                font-family: {font_family};
+                font-family: {family_name_with_style};
             }}
             """
         )
-        if font_family not in self.loaded_fonts:
-            font_style_inline_font += f"@font-face {{ font-family: {font_family}; src: url(data:font/otf;base64,{base64_font}) format('opentype'); }}"
-            self.loaded_fonts.add(font_family)
+        if (font_family, italics, bold) not in self.loaded_fonts:
+            font_style_inline_font += f"@font-face {{ font-family: {family_name_with_style}; src: url(data:font/otf;base64,{base64_font}) format('opentype'); }}"
+            self.loaded_fonts.add((font_family, italics, bold))
 
         text_tspan_objs = []
 
         for i, raw_text in enumerate(text_obj.text_tokens):
+            # FUTURE: will need to sanitize if these diagrams can be shared
+            text = html.escape(raw_text)
             height = (
                 text_obj.font_ascent_pixels
                 + text_obj.font_descent_pixels
@@ -285,7 +306,7 @@ class Canvas:
 
             text_tspan_objs.append(
                 svg.TSpan(
-                    text=raw_text,
+                    text=text,
                     x=start_pt[0],
                     dy=height,
                     dx=text_obj.x_padding_in_pixels,
@@ -306,16 +327,17 @@ class Canvas:
 
         return (svg.Style(text=font_style_inline_font), text_svg_obj)
 
-    def group_to_svg_el(self, group: Group, decimal_precision: int = 3):
+    # handles complex mobjects with submobjects as well as groups
+    def group_to_svg_el(self, mobject: Mobject, decimal_precision: int = 3):
         bbox_in_pixels = self._to_pixel_coords(
-            np.array(group.bbox), decimal_precision=decimal_precision
+            np.array(mobject.bbox), decimal_precision=decimal_precision
         )
         ul = bbox_in_pixels[1].tolist()
-        width = self._to_pixel_len(group.width)
-        height = self._to_pixel_len(group.height)
+        width = self._to_pixel_len(mobject.width)
+        height = self._to_pixel_len(mobject.height)
 
         rect = svg.Rect(
-            id=f"id-{id(group)}",
+            id=f"id-{id(mobject)}",
             fill="transparent",
             # fill="rgba(0, 100, 100, 0.4)",
             x=ul[0],
@@ -360,58 +382,66 @@ class Canvas:
             decimal_precision=decimal_precision,
         )
 
-    # TODO: Can remove bbox data since svg getBbox function can generate this directly
-    def _get_group_data_attrs(self, group: Group, decimal_precision: int = 3):
-        bbox_in_pixels = self._to_pixel_coords(
-            np.array(group.bbox), decimal_precision=decimal_precision
+    def _get_mobject_data_attrs(
+        self, mobject: Mobject, decimal_precision: int = 3
+    ) -> dict:
+        return self._create_mobject_metadata(
+            mobject=mobject,
+            mob_type="mobject",
+            id=f"id-{id(mobject)}",
         )
-        ul = bbox_in_pixels[1].tolist()
-        dr = bbox_in_pixels[3].tolist()
 
-        return {
-            "bbox_upper_left": ul,
-            "bbox_lower_right": dr,
-            "type": "group",
-            "id": f"id-{id(group)}",
-            "classname": type(group).__qualname__,
-        }
+    def _get_group_data_attrs(self, group: Group, decimal_precision: int = 3) -> dict:
+        return self._create_mobject_metadata(
+            mobject=group,
+            mob_type="group",
+            id=f"id-{id(group)}",
+        )
 
-    def _get_vmobject_data_attrs(self, vmobject: VMobject, decimal_precision: int = 3):
+    def _get_vmobject_data_attrs(
+        self, vmobject: VMobject, decimal_precision: int = 3
+    ) -> dict:
         """Get the data attributes of this vmobject for the bidirectional editor"""
-        bbox_in_pixels = self._to_pixel_coords(
-            np.array(vmobject.bbox), decimal_precision=decimal_precision
-        )
-        ul = bbox_in_pixels[1].tolist()
-        dr = bbox_in_pixels[3].tolist()
-
         points_in_pixels = self._to_pixel_coords(
             vmobject.points, decimal_precision=decimal_precision
         ).tolist()
 
-        return {
-            "bbox_upper_left": ul,
-            "bbox_lower_right": dr,
-            "points": points_in_pixels,
-            "type": "vmobject",
-            "id": f"id-{id(vmobject)}",
-            "classname": type(vmobject).__qualname__,
-        }
-
-    def _get_text_obj_data_attrs(self, text_obj: Text, decimal_precision: int = 3):
-        """Get the data attributes of this text object for the bidirectional editor."""
-        bbox_in_pixels = self._to_pixel_coords(
-            np.array(text_obj.bbox), decimal_precision=decimal_precision
+        return self._create_mobject_metadata(
+            id=f"id-{id(vmobject)}",
+            mob_type="vmobject",
+            mobject=vmobject,
+            points=points_in_pixels,
         )
-        ul = bbox_in_pixels[1].tolist()
-        dr = bbox_in_pixels[3].tolist()
 
-        return {
-            "bbox_upper_left": ul,
-            "bbox_lower_right": dr,
-            "type": "text",
-            "id": f"id-{id(text_obj)}",
-            "classname": type(text_obj).__qualname__,
-        }
+    def _get_text_obj_data_attrs(
+        self, text_obj: Text, decimal_precision: int = 3
+    ) -> dict:
+        """Get the data attributes of this text object for the bidirectional editor."""
+        return self._create_mobject_metadata(
+            mobject=text_obj,
+            mob_type="text",
+            id=f"id-{id(text_obj)}",
+        )
+
+    def _create_mobject_metadata(
+        self,
+        mobject: Mobject | None,
+        id: str | None = None,
+        mob_type: str | None = None,
+        children: List[str] | None = None,
+        parent: str | None = None,
+        points: List[float] | None = None,
+    ) -> dict:
+        return MobjectMetadata(
+            id=id,
+            type=mob_type,
+            points=points,
+            children=children,
+            parent=parent,
+            classname=type(mobject).__qualname__ if mobject else "None",
+            path=mobject.get_path() if mobject else "None",
+            lineno=mobject.direct_lineno if mobject else -1,
+        )._asdict()
 
     def populate_mobject_metadatas(
         self, mobject: Mobject, metadatas: dict, parent=None, is_bg_rect=False
@@ -435,6 +465,8 @@ class Canvas:
             bi_kwargs = self._get_vmobject_data_attrs(mobject)
         elif isinstance(mobject, Text):
             bi_kwargs = self._get_text_obj_data_attrs(mobject)
+        elif isinstance(mobject, Mobject):
+            bi_kwargs = self._get_mobject_data_attrs(mobject)
         else:
             raise Exception(f"Mobject of type {type(mobject)} not handled")
         bi_kwargs["parent"] = parent_id
@@ -470,10 +502,34 @@ class Canvas:
     def shift(self, vector: Vector3) -> None:
         self.mobjects.shift(vector)
 
-    # Common helper functions that really change the underlying config
+    # Common helper functions that really use the underlying config
     def set_background(self, color: ManimColor) -> Canvas:
         self.config.bg_color = color
         return self
+
+    @property
+    def left(self):
+        return self.config.fw / 2 * LEFT
+
+    @property
+    def right(self):
+        return self.config.fw / 2 * RIGHT
+
+    @property
+    def top(self):
+        return self.config.fh / 2 * UP
+
+    @property
+    def bottom(self):
+        return self.config.fh / 2 * DOWN
+
+    @property
+    def width(self):
+        return self.right[0] - self.left[0]
+
+    @property
+    def height(self):
+        return self.top[1] - self.bottom[1]
 
     # Values here are in manim units
     def set_dimensions(self, width: int, height: int) -> None:

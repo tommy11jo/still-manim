@@ -56,10 +56,12 @@ class Polygram(VMobject):
     def __repr__(self) -> str:
         class_name = self.__class__.__qualname__
         vertices = self.vertices
-        clipped_pts = vertices if len(vertices) < 6 else vertices[:3] + vertices[-3:]
-        return (
-            f'{class_name}(vertices={" ,".join([f"Point({pt})" for pt in clipped_pts])}'
-        )
+        if len(vertices) < 6:
+            return f'{class_name}(vertices={" ,".join([f"Point({pt})" for pt in vertices])})'
+        else:
+            clipped_pts = vertices[:6]
+            remaining = len(vertices) - 6
+            return f'{class_name}(vertices={" ,".join([f"Point({pt})" for pt in clipped_pts])}, ...{remaining} more points)'
 
     # Override the core transformations to keep vertices updated
     def rotate(

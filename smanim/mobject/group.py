@@ -4,14 +4,12 @@ from smanim.constants import (
     DOWN,
     LEFT,
     ORIGIN,
-    OUT,
-    PI,
     RIGHT,
     UP,
 )
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.transformable import TransformableMobject
-from smanim.typing import Point3D, Vector3
+from smanim.typing import Vector3
 from smanim.utils.color import ManimColor
 
 __all__ = ["Group"]
@@ -42,31 +40,6 @@ class Group(TransformableMobject):
 
     def add(self, *mobjects: Mobject, insert_at_front: bool = False) -> Self:
         return super().add(*mobjects, insert_at_front=insert_at_front)
-
-    def rotate(
-        self,
-        angle: float = PI / 4,
-        axis: Vector3 = OUT,
-        about_point: Point3D | None = ORIGIN,
-    ) -> Self:
-        for mob in self.submobjects:
-            mob.rotate(angle, axis, about_point)
-        return self
-
-    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:
-        for mob in self.submobjects:
-            mob.scale(factor, about_point)
-        return self
-
-    def stretch(self, factor: float, dim: int) -> Self:
-        for mob in self.submobjects:
-            mob.stretch(factor, dim)
-        return self
-
-    def shift(self, vector: Vector3) -> Self:
-        for mob in self.submobjects:
-            mob.shift(vector)
-        return self
 
     def set_color(self, color: ManimColor, family: bool = True) -> Self:
         for mob in self.submobjects:

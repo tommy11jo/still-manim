@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing_extensions import Self
 import numpy as np
-from smanim.constants import ORIGIN, UP
+from smanim.constants import ORIGIN, OUT, PI, UP
 from smanim.mobject.mobject import Mobject
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
 from smanim.utils.space_ops import rotation_matrix
@@ -11,6 +11,32 @@ __all__ = ["TransformableMobject"]
 
 class TransformableMobject(Mobject):
     # Core transformations
+
+    def rotate(
+        self,
+        angle: float = PI / 4,
+        axis: Vector3 = OUT,
+        about_point: Point3D | None = ORIGIN,
+    ) -> Self:
+        for mob in self.submobjects:
+            mob.rotate(angle, axis, about_point)
+        return self
+
+    def scale(self, factor: float, about_point: Point3D = ORIGIN) -> Self:
+        for mob in self.submobjects:
+            mob.scale(factor, about_point)
+        return self
+
+    def stretch(self, factor: float, dim: int) -> Self:
+        for mob in self.submobjects:
+            mob.stretch(factor, dim)
+        return self
+
+    def shift(self, vector: Vector3) -> Self:
+        for mob in self.submobjects:
+            mob.shift(vector)
+        return self
+
     def rotate_points(
         self,
         points: InternalPoint3D_Array,
@@ -94,11 +120,12 @@ class TransformableMobject(Mobject):
         label: TransformableMobject,
         direction: Vector3 = UP,
         buff=0.0,
-        width=2.0,
+        use_parent_width=False,
     ) -> TransformableMobject:
         if isinstance(label, str):
             raise ValueError("Use `Text` instead of a plain `str` in `add_label`")
-        label.stretch_to_fit_width(width)
+        if use_parent_width:
+            label.stretch_to_fit_width(self.width)
         label.next_to(self, direction, buff=buff)
         self.add(label)
         return self

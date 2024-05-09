@@ -38,6 +38,9 @@ def wrap_text(
         left, top, right, bottom = font.getbbox(text)
         width = right - left
         height = bottom - top
+
+        # TODO: Fix bug. Why is width not working for getbbox or getlength
+        # width = font.getlength(text)
         return width, height
 
     to_process = text

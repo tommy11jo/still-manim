@@ -1,7 +1,7 @@
 from typing import Tuple
 from typing_extensions import Self
 import numpy as np
-from smanim.constants import LEFT, ORIGIN, PI, RIGHT, SMALL_BUFF
+from smanim.constants import DOWN, LEFT, ORIGIN, PI, RIGHT, SMALL_BUFF, TINY_BUFF
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.text.text_mobject import Text
 from smanim.mobject.geometry.tips import ArrowTip, ArrowTriangleFilledTip
@@ -241,6 +241,29 @@ class Arrow(TipableLine):
             self.add(self.start_tip)
         self.set_color(color)
         self.set_opacity(opacity)
+
+    @classmethod
+    def points_at(
+        cls,
+        mobject_or_point: Mobject | Point3D,
+        direction: Vector3 = DOWN,  # defines the direction of the arrow
+        length=1.0,
+        buff=TINY_BUFF,
+        **arrow_config,
+    ):
+        direction = direction / np.linalg.norm(direction)
+
+        if isinstance(mobject_or_point, Mobject):
+            intersection_pt = mobject_or_point.get_closest_intersecting_point_2d(
+                mobject_or_point.center[:2], (-1 * direction)[:2]
+            )
+
+            end_pt = intersection_pt - buff * direction
+            start_pt = end_pt - direction * length
+        else:
+            end_pt = np.array(mobject_or_point - buff * direction, dtype=ManimFloat)
+            start_pt = end_pt - direction * length
+        return cls(start=start_pt, end=end_pt, **arrow_config)
 
     @property
     def start(self) -> Point3D:  # override

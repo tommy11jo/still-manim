@@ -5,6 +5,7 @@ from __future__ import annotations
 from smanim.config import CONFIG
 from smanim.mobject.geometry.circle import Dot
 from smanim.mobject.text.text_mobject import Text
+from smanim.mobject.transformable import TransformableMobject
 from smanim.typing import AdjacencyListGraph, WeightedAdjacencyListGraph
 from smanim.utils.color import GRAY
 
@@ -21,7 +22,7 @@ from smanim.mobject.group import Group
 from smanim.mobject.mobject import Mobject
 
 
-class Graph(Group):
+class Graph(TransformableMobject):
     """Supports directed and undirected graphs with unweighted edges.
     Layout constructed using underlying networkx library, which can be configured using:
     - `layout`: str that can be set to "circular", "kamada_kawai", "planar", "random", "shell", "spectral", "partite", "tree", "spiral", "spring"
@@ -30,8 +31,8 @@ class Graph(Group):
 
     def __init__(
         self,
-        vertices: list[Hashable],
-        edges: list[tuple[Hashable, Hashable]],
+        vertices: list[Hashable] | None = None,
+        edges: list[tuple[Hashable, Hashable]] | None = None,
         layout: str | dict = "spring",
         layout_scale: (
             float | tuple
@@ -51,6 +52,9 @@ class Graph(Group):
             raise ValueError("edge_type must be `Line` or inherit from `Line`")
 
         super().__init__(**kwargs)
+        if vertices is None and edges is None:
+            vertices = [0, 1, 2]
+            edges = [(0, 1), (1, 2), (2, 0)]
 
         nx_graph = Graph._empty_networkx_graph()
         nx_graph.add_nodes_from(vertices)
@@ -250,6 +254,8 @@ def _determine_graph_layout(
         else:
             return {k: np.append(v, [0]) for k, v in auto_layout.items()}
     elif layout == "tree":
+        if root_vertex is None:
+            raise ValueError("Root vertex not specified.")
         return _tree_layout(
             nx_graph, root_vertex=root_vertex, scale=layout_scale, **layout_config
         )

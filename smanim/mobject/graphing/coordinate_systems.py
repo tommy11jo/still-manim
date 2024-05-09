@@ -73,6 +73,8 @@ class Axes(Group):
         graph = ParametricFunction(
             function=lambda t: self.coords_to_point(t, function(t)),
             underlying_function=function,
+            y_min=self.y_axis.coord_to_point(self.y_axis.x_min)[1],
+            y_max=self.y_axis.coord_to_point(self.y_axis.x_max)[1],
             t_range=x_range,
             scaling=self.x_axis.scaling,
             use_vectorized=use_vectorized,

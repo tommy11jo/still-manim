@@ -34,8 +34,6 @@ class FunctionTodo(NamedTuple):
 # Edge Case: The last line cannot be an assign anyway, because it must be canvas.draw() in browser
 
 
-processed_lines = set()
-
 # map from frame_id => metadata for var assign capture
 # line events
 function_todos: dict[str, FunctionTodo] = {}
@@ -43,17 +41,16 @@ function_todos: dict[str, FunctionTodo] = {}
 
 # called to reset global state without re-importing all modules on pyodide side
 def reset_bidirectional():
-    global processed_lines, function_todos
+    global function_todos
     function_todos = {}
-    processed_lines = set()
 
 
 def update_mobject_metadata(
     mobject: Mobject, var_to_capture: str, line_to_process: int
 ):
-    print(
-        f"Var '{var_to_capture}' assigned at line {line_to_process} for mobject: {mobject}"
-    )
+    # print(
+    #     f"Var '{var_to_capture}' assigned at line {line_to_process} for mobject: {mobject}"
+    # )
     mobject.parent = None
     mobject.subpath = var_to_capture
     mobject.direct_lineno = line_to_process
@@ -87,12 +84,7 @@ def trace_assignments(frame: FrameType, event, arg):
 
                     del function_todos[frame_id]
 
-            if (
-                expr_str
-                and not expr_str.startswith("#")
-                and lineno not in processed_lines
-            ):
-                processed_lines.add(lineno)
+            if expr_str and not expr_str.startswith("#"):
                 try:
                     tree = ast.parse(expr_str, mode="exec")
                     for node in ast.walk(tree):
@@ -110,7 +102,8 @@ def trace_assignments(frame: FrameType, event, arg):
 
         if event == "return":
             if frame_id in function_todos:
-                line_to_process, var_to_capture = function_todos[frame_id]
+                todo = function_todos[frame_id]
+                line_to_process, var_to_capture, _ = todo
                 if line_to_process is not None and lineno >= line_to_process:
                     value = frame.f_locals.get(var_to_capture, "Unavailable")
                     if isinstance(value, Mobject):

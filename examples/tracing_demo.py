@@ -146,11 +146,23 @@ def repeated_assign():
     canvas.snapshot(preview=True)
 
 
-repeated_assign()
+# repeated_assign()
+def test():
+    n = NumberPlane.from_axes_ranges(
+        (-6, 6), (-2, 2), axis_config={"include_arrow_tips": False}
+    )
+    sin_graph_obj = n.plot(np.sin, color=RED)
+
+    canvas.add(n)
+    canvas.draw()
+
+
+test()
 
 # TODO: testing adding an edge between nodes with an LLM using the reference technique above
 # I'm worried the LLM will overindex on the user selected vertices g.vertices[0] and g.vertices[1] and try to draw a line between them rather than just changing edges in the constructor
 # TODO: Test insert_at_front resetting of subpaths and parents by doing a bring to front
+
 
 # Future: Current approach to assignment is not perfect. If an object reference is assigned a name multiple times, only the last time is captured.
 # I could use "access points" and let the LLM decide where to access

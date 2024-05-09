@@ -42,6 +42,9 @@ class BoxList(Group):
             x_coord = mobject.left[0] - x_padding
             line_xcoords.append(x_coord)
         line_xcoords.append(mobject.right[0] + x_padding)
+
+        # for mobject in mobjects:
+        #     mobject.set_path_if_not_exists(parent=self, subpath=f"[]")
         self.add(*mobjects)
 
         top_y_coord = self.top[1]
@@ -54,7 +57,7 @@ class BoxList(Group):
             dl = [x_coord, y_bottom, 0]
             vlines.add(Line(ul, dl, **line_config))
 
-        self.add(vlines)
+        self.add(*vlines)
 
         ur, ul, dl, dr = self.bbox
         ul += LEFT * (_stroke_width / 2)
@@ -62,6 +65,6 @@ class BoxList(Group):
         dl += LEFT * (_stroke_width / 2)
         dr += RIGHT * (_stroke_width / 2)
         hlines = Group(Line(ul, ur, **line_config), Line(dl, dr, **line_config))
-        self.add(hlines)
+        self.add(*hlines)
 
         self.move_to_origin()
