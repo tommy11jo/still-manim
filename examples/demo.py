@@ -262,22 +262,31 @@ def arc_to_arc_arrow():
 # arc_to_arc_arrow()
 
 
+def simple_brace():
+    s = Square()
+    b = Brace.from_mobject_edge(s)
+    canvas.add(s, b)
+    canvas.snapshot(preview=True)
+
+
+# simple_brace()
+
+
 def brace_on_text_and_shapes():
     c = Circle()
-    b = Brace(c)
+    b = Brace.from_mobject_edge(c)
     g = VGroup(c, b).shift(LEFT * 3)
     canvas.add(g)
 
     l1 = Line()
-    b1 = Brace(l1)
+    b1 = Brace.from_mobject_edge(l1)
     g1 = VGroup(l1, b1).shift(UP * 2)
     canvas.add(g1)
     t = Text("brace for it")
     # Demo of how brace location is determined from bounding points
     for d in t.bounding_points:
         canvas.add(Dot(d))
-    b2 = Brace(t, buff=0.0)
-    # Must use Group due to Text not being a VMobject (i.e. an object made of bezier curves only)
+    b2 = Brace.from_mobject_edge(t, buff=0.0)
     g2 = Group(t, b2)
     canvas.add(g2)
     canvas.snapshot(preview=True)
@@ -286,17 +295,40 @@ def brace_on_text_and_shapes():
 # brace_on_text_and_shapes()
 
 
-def brace_between_test():
-    s1 = Square().shift(LEFT * 2)
-    canvas.add(s1)
-    s2 = Square().shift(RIGHT * 2)
-    canvas.add(s2)
-    b = Brace.from_positions(s1, s2, color=RED)
-    canvas.add(b)
+def labeled_brace():
+    r = Rectangle().shift(DOWN)
+    l2 = LabeledBrace(
+        start=r.get_corner(DL),
+        end=r.get_corner(UR),
+        label=Text("First", font_size=10),
+        label_buff=0,
+    )
+    r2 = Rectangle().rotate(PI / 6).shift(UP * 1.5)
+    text = Text("second", font_size=10)
+    l3 = LabeledBrace(r2.vertices[0], r2.vertices[2], label=text, label_buff=0)
+    canvas.add(r2, l3)
+
+    canvas.add(r, l2)
     canvas.snapshot(preview=True)
 
 
-# brace_between_test()
+# labeled_brace()
+
+
+def brace_span():
+    c = Circle()
+    b = Brace.from_mobject_edge(c, UP)
+    b2 = Brace.from_mobject_edge(c, DOWN, color=RED)
+    b3 = Brace.from_mobject_edge(c, RIGHT, color=BLUE)
+    canvas.add(c, b, b2, b3)
+
+    s = Square().shift(UR * 3)
+    b1 = LabeledBrace.from_mobject_edge(s, LEFT, label=Text("left"))
+    canvas.add(s, b1)
+    canvas.snapshot(preview=True)
+
+
+# brace_span()
 
 
 def wrapping_text():
@@ -956,46 +988,6 @@ def move_to_testing():
 # move_to_testing()
 
 
-def labeled_brace():
-    # c = Circle()
-    # l1 = LabeledBrace(c, label=Text("hi there"), direction=RIGHT)
-    # canvas.add(c, l1)
-
-    r = Rectangle().shift(DOWN)
-    l2 = LabeledBrace.from_positions(
-        start=r.get_corner(DL),
-        end=r.get_corner(UR),
-        label=Text("First", font_size=10),
-        label_buff=0,
-    )
-    r2 = Rectangle().rotate(PI / 6).shift(UP * 1.5)
-    text = Text("second", font_size=10)
-    l3 = LabeledBrace.from_positions(
-        r2.vertices[0], r2.vertices[2], label=text, label_buff=0
-    )
-    canvas.add(r2, l3)
-
-    canvas.add(r, l2)
-    canvas.snapshot(preview=True)
-
-
-# labeled_brace()
-
-
-def brace_span():
-    c = Circle()
-    b = Brace.from_mobject_edge(c, UP)
-    canvas.add(c, b)
-
-    s = Square().shift(UR * 3)
-    b1 = LabeledBrace.from_mobject_edge(s, LEFT, label=Text("left"))
-    canvas.add(s, b1)
-    canvas.snapshot(preview=True)
-
-
-# brace_span()
-
-
 def box_list():
     b = BoxList(
         *[Square(fill_color=RED, fill_opacity=i / 8).scale(0.2) for i in range(1, 9)]
@@ -1194,4 +1186,14 @@ def next_to_and_align():
     canvas.snapshot(preview=True)
 
 
-next_to_and_align()
+# next_to_and_align()
+
+
+def introduce_lambda():
+    lamb = LambdaWithEyes()
+    lamb.move_to(ORIGIN)
+    canvas.add(lamb)
+    canvas.snapshot(preview=True)
+
+
+introduce_lambda()

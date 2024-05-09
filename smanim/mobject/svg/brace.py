@@ -30,6 +30,7 @@ path_string_template = (
 )
 
 
+# brace by default has its center "sharp tip" pointing down
 class Brace(VMobjectFromSVGPath):
     def __init__(
         self,
@@ -71,28 +72,24 @@ class Brace(VMobjectFromSVGPath):
         class_name = self.__class__.__qualname__
         return f"{class_name}(start={self.start}, end={self.end})"
 
-    @classmethod
-    def from_positions(
-        cls,
-        start: Point3D | Mobject,
-        end: Point3D | Mobject,
-        **kwargs,
-    ) -> Brace | LabeledBrace:
-        """A brace between the start item and end item. Handles mobjects, which main constructor does not."""
-        return cls(start=start, end=end, **kwargs)
-
     # Rule: It is expected to use keyword names when constructing any object in still-manim
     # TODO: Use Point3D and Vector3D consistently
     @classmethod
     def from_mobject_edge(
         cls, mobject: Mobject, edge: Point3D = DOWN, buff: float = SMALL_BUFF, **kwargs
     ):
-        if np.array_equal(edge, UP) or np.array_equal(edge, DOWN):
+        if np.array_equal(edge, DOWN):
             start = mobject.get_corner(edge + LEFT)
             end = mobject.get_corner(edge + RIGHT)
-        elif np.array_equal(edge, LEFT) or np.array_equal(edge, RIGHT):
+        elif np.array_equal(edge, UP):
+            start = mobject.get_corner(edge + RIGHT)
+            end = mobject.get_corner(edge + LEFT)
+        elif np.array_equal(edge, RIGHT):
             start = mobject.get_corner(edge + DOWN)
             end = mobject.get_corner(edge + UP)
+        elif np.array_equal(edge, LEFT):
+            start = mobject.get_corner(edge + UP)
+            end = mobject.get_corner(edge + DOWN)
         else:
             raise ValueError("Brace must be in UP, DOWN, LEFT, or RIGHT directions")
         brace = cls(start + edge * buff, end + edge * buff, **kwargs)
@@ -132,5 +129,5 @@ class LabeledBrace(Brace):
         label.rotate_in_place(angle)
         perp_dir = np.array([-dir_y, dir_x, 0])
         midpoint = self.midpoint
-        label.move_to(midpoint + perp_dir * (buff + (label_height / 2)))
+        label.move_to(midpoint - perp_dir * (buff + (label_height / 2)))
         self.add(label)
