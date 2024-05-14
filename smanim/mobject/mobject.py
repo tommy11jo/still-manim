@@ -36,18 +36,30 @@ __all__ = ["Mobject"]
 
 class Mobject(ABC):
     """Base class for all objects that take up space.
+    Note: This class has been modified to support bidirectional editing.
     `bounding_points` represents the bounding polygon for this mobject (they do not include submobjects).
     Subclasses are responsible for setting the `bounding_points`.
     """
 
     def __init__(
-        self, bounding_points: InternalPoint3D_Array | None = None, z_index: int = 0
+        self,
+        bounding_points: InternalPoint3D_Array | None = None,
+        z_index: int = 0,
+        parent: Mobject | None = None,
+        subpath: str | None = None,
+        direct_lineno: int | None = None,
     ):
         if bounding_points is None:
             bounding_points = np.empty((0, 3))
         self._bounding_points = bounding_points
         self.z_index = z_index
         self.submobjects: List[Mobject] = []
+
+        # used for bidirectional editing
+        # TODO: Maybe use tokens for subpath instead of str
+        self.parent = parent
+        self.subpath = subpath
+        self.direct_lineno = direct_lineno
 
     @property
     def bounding_points(self):
@@ -57,9 +69,24 @@ class Mobject(ABC):
     def bounding_points(self, bounding_points: InternalPoint3D_Array):
         self._bounding_points = bounding_points
 
+    def get_path(self) -> str:
+        path = self.parent.get_path() if self.parent else ""
+        if self.subpath is None:
+            return "None"
+
+        path += self.subpath
+        return path
+
+    # Bidirectional Ops
+    def set_path_if_not_exists(self, parent: Mobject, subpath: str):
+        if self.subpath is None:
+            self.parent = parent
+            self.subpath = subpath
+
     # Grouping
     def add(self, *mobjects: Mobject, insert_at_front: bool = False) -> Self:
         new_mobjects = []
+        old_len = len(self.submobjects)
         for mobject in mobjects:
             if mobject is self:
                 raise ValueError("Cannot add mobject to itself")
@@ -67,10 +94,18 @@ class Mobject(ABC):
                 log.warning(f"Mobject already added: {mobject}")
             else:
                 new_mobjects.append(mobject)
+                # reset the mobject subpath, except when it's set by a direct assignment in the trace
+                if mobject.direct_lineno is None:
+                    mobject.subpath = f"[{old_len}]"
+                    mobject.parent = self
         if not insert_at_front:
             self.submobjects.extend(new_mobjects)
         else:
-            self.submobjects = new_mobjects + self.submobjects
+            # setup from scratch to reset subpaths and parents
+            old_submobjects = self.submobjects
+            self.submobjects = []
+            self.add(*new_mobjects)
+            self.add(*old_submobjects)
         return self
 
     def remove(self, *mobjects) -> Self:
@@ -160,11 +195,22 @@ class Mobject(ABC):
 
     def get_closest_intersecting_point_2d(
         self, ray_origin: Point2D, ray_direction: Point2D
-    ):
+    ) -> Point3D:
         """Return the closest intersecting point between a ray and the bounding polygon of this mobject.
-        Handles rays shot from within or from outside the bounding polygon."""
-        points_ahead = np.roll(self.bounding_points, -1, axis=0)
-        line_segments = [(p1, p2) for p1, p2 in zip(self.bounding_points, points_ahead)]
+        Handles rays shot from within or from outside the bounding polygon.
+        """
+        return self.get_closest_intersecting_point_2d_helper(
+            self.bounding_points, ray_origin, ray_direction
+        )
+
+    def get_closest_intersecting_point_2d_helper(
+        self,
+        bounding_points: Point3D_Array,
+        ray_origin: Point2D,
+        ray_direction: Point2D,
+    ) -> Point3D:
+        points_ahead = np.roll(bounding_points, -1, axis=0)
+        line_segments = [(p1, p2) for p1, p2 in zip(bounding_points, points_ahead)]
         intersections_and_params = []
         for p1, p2 in line_segments:
             intersection, param = line_intersect(
@@ -203,6 +249,7 @@ class Mobject(ABC):
         self,
         mobject_or_point: Mobject | Point3D,
         direction: Vector3 = RIGHT,  # think of this as bbox point
+        aligned_edge: Vector3 | None = None,
         buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     ) -> Self:
         """Moves this mobject to the to an edge of another mobject"""
@@ -221,6 +268,9 @@ class Mobject(ABC):
         cur_pt = self.get_critical_point(-direction)
         to_shift = (dest_pt - cur_pt) + direction * buff
         self.shift(to_shift)
+
+        if aligned_edge is not None:
+            self.align_to(mobject_or_point, aligned_edge)
         return self
 
     def move_to(self, point_or_mobject: Point3D | Mobject) -> Self:
@@ -261,19 +311,27 @@ class Mobject(ABC):
     # Core transformations must be overridden by all subclasses
     @abstractmethod
     def rotate(self, angle: float, axis: Vector3, about_point: Point3D) -> Self:
-        raise NotImplementedError("Has to be implemented in subclass")
+        raise NotImplementedError(
+            "Use TransformableMobject to accept default spatial transformations."
+        )
 
     @abstractmethod
     def scale(self, factor: float, about_point: Point3D) -> Self:
-        raise NotImplementedError("Has to be implemented in subclass")
+        raise NotImplementedError(
+            "Use TransformableMobject to accept default spatial transformations."
+        )
 
     @abstractmethod
     def stretch(self, factor: float, dim: int) -> Self:
-        raise NotImplementedError("Has to be implemented in subclass")
+        raise NotImplementedError(
+            "Use TransformableMobject to accept default spatial transformations."
+        )
 
     @abstractmethod
     def shift(self, vector: Vector3) -> Self:
-        raise NotImplementedError("Has to be implemented in subclass")
+        raise NotImplementedError(
+            "Use TransformableMobject to accept default spatial transformations."
+        )
 
     ## Layering
     # Rule: All else being equal, mobjects are painted in the order they are listed
@@ -292,6 +350,7 @@ class Mobject(ABC):
             self.add(mobject, insert_at_front=True)
         else:
             mobject.z_index = bottom_z_index - 1
+
         return self
 
     def bring_to_front(self, mobject: Mobject) -> Self:

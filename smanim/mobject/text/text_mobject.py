@@ -1,5 +1,4 @@
 from __future__ import annotations
-import html
 from pathlib import Path
 from typing_extensions import Literal, Self
 import numpy as np
@@ -22,6 +21,7 @@ __all__ = ["Text"]
 
 current_script_directory = Path(__file__).parent
 
+# TODO: move this functionality into config
 font_family = "computer-modern"
 font_dir = "fonts/computer-modern/"
 # (Bold, Italic)
@@ -31,11 +31,17 @@ font_paths_by_style = {
     (False, False): "cmunrm.ttf",
     (True, True): "cmunbi.ttf",
 }
+# font_family = "Roboto"
+# font_dir = "fonts/Roboto/"
+# font_paths_by_style = {
+#     (False, False): "Roboto-Regular.ttf",
+#     (True, False): "Roboto-Bold.ttf",
+#     (False, True): "Roboto-Italic.ttf",
+#     (True, True): "Roboto-BoldItalic.ttf",
+# }
 
 
 # FUTURE: Add two text elements together
-
-
 class Text(TransformableMobject):
     def __init__(
         self,
@@ -55,8 +61,6 @@ class Text(TransformableMobject):
         x_padding: float = 0,
         y_padding: float = 0,
         leading: float = 0.2,  # percent (as decimal) of line height for spacing between lines
-        # x_padding: float = TEXT_X_PADDING,
-        # y_padding: float = TEXT_Y_PADDING,
         **kwargs,
     ):
         if not isinstance(text, str):
@@ -64,14 +68,14 @@ class Text(TransformableMobject):
         if len(text) == 0:
             raise ValueError("Text cannot be empty")
         super().__init__(z_index=z_index, **kwargs)
-        # FUTURE: will need to sanitize if these diagrams can be shared
-        text = html.escape(text)
         self.raw_text = text
         self._heading = start_angle
 
         self.fill_color = color
         self.fill_opacity = opacity
         self.text_decoration = text_decoration
+        self.italics = italics
+        self.bold = bold
         font_file = font_paths_by_style[(bold, italics)]
 
         font_path: Path = current_script_directory / font_dir / font_file
@@ -106,7 +110,7 @@ class Text(TransformableMobject):
         self.font_family = font_family
         self.font_size = font_size
         self.font_path = font_path
-        font = ImageFont.truetype(font_path, font_size)
+        font = ImageFont.truetype(str(font_path), font_size)
         self.x_padding = x_padding
         self.y_padding = y_padding
         self.x_padding_in_pixels = to_pixel_len(x_padding, CONFIG.pw, CONFIG.fw)
@@ -142,10 +146,11 @@ class Text(TransformableMobject):
         self.font_widths = np.array(
             [pair[0] + self.x_padding_in_pixels * 2 for pair in dims]
         )
-        line_width_in_munits = (
-            max_width
-            if len(text_tokens) > 1
-            else to_manim_len(self.font_widths[0], CONFIG.pw, CONFIG.fw)
+        # use actual widths and not max_width so that addition of text looks more natural (to name one reason)
+        line_width_in_munits = to_manim_len(
+            max(self.font_widths) if len(text_tokens) > 1 else self.font_widths[0],
+            CONFIG.pw,
+            CONFIG.fw,
         )
 
         bbox_height = (

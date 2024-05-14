@@ -5,6 +5,7 @@ from __future__ import annotations
 from smanim.config import CONFIG
 from smanim.mobject.geometry.circle import Dot
 from smanim.mobject.text.text_mobject import Text
+from smanim.mobject.transformable import TransformableMobject
 from smanim.typing import AdjacencyListGraph, WeightedAdjacencyListGraph
 from smanim.utils.color import GRAY
 
@@ -21,7 +22,7 @@ from smanim.mobject.group import Group
 from smanim.mobject.mobject import Mobject
 
 
-class Graph(Group):
+class Graph(TransformableMobject):
     """Supports directed and undirected graphs with unweighted edges.
     Layout constructed using underlying networkx library, which can be configured using:
     - `layout`: str that can be set to "circular", "kamada_kawai", "planar", "random", "shell", "spectral", "partite", "tree", "spiral", "spring"
@@ -30,8 +31,8 @@ class Graph(Group):
 
     def __init__(
         self,
-        vertices: list[Hashable],
-        edges: list[tuple[Hashable, Hashable]],
+        vertices: list[Hashable] | None = None,
+        edges: list[tuple[Hashable, Hashable]] | None = None,
         layout: str | dict = "spring",
         layout_scale: (
             float | tuple
@@ -45,11 +46,15 @@ class Graph(Group):
         vertex_label_config: dict = {},
         partitions: list[list[Hashable]] | None = None,
         root_vertex: Hashable | None = None,
+        **kwargs,
     ) -> None:
         if not issubclass(edge_type, Line):
             raise ValueError("edge_type must be `Line` or inherit from `Line`")
 
-        super().__init__()
+        super().__init__(**kwargs)
+        if vertices is None and edges is None:
+            vertices = [0, 1, 2]
+            edges = [(0, 1), (1, 2), (2, 0)]
 
         nx_graph = Graph._empty_networkx_graph()
         nx_graph.add_nodes_from(vertices)
@@ -72,7 +77,10 @@ class Graph(Group):
         else:
             _vertex_config = {}
         _vertex_config.update(vertex_config)
-        self.vertices = {v: vertex_type(**_vertex_config) for v in vertices}
+        self.vertices = {
+            v: vertex_type(**_vertex_config, parent=self, subpath=f".vertices[{v}]")
+            for v in vertices
+        }
 
         for vid, vertex in self.vertices.items():
             vertex.move_to(_layout[vid])
@@ -99,6 +107,8 @@ class Graph(Group):
             (u, v): edge_type(
                 start=self.vertices[u],
                 end=self.vertices[v],
+                parent=self,
+                subpath=f".edges[{(u, v)}]",
                 **_edge_config,
             )
             for u, v in edges
@@ -108,7 +118,9 @@ class Graph(Group):
         self.vertex_labels: Group | None
         if include_vertex_labels:
             self.vertex_labels = self.generate_vertex_labels(**vertex_label_config)
-            self.add(self.vertex_labels)
+            self.vertex_labels.parent = self
+            self.vertex_labels.subpath = ".vertex_labels"
+            self.add(*self.vertex_labels)
         else:
             self.vertex_labels = None
 
@@ -167,11 +179,15 @@ class WeightedGraph(Graph):
         converted_labels: Dict[Tuple[Hashable, Hashable], Text] = {}
         for edge, label in edge_labels.items():
             if not isinstance(label, Text):
-                converted_labels[edge] = Text(str(label), **edge_label_config)
+                converted_labels[edge] = Text(
+                    str(label),
+                    subpath=f".edge_labels[{edge}]",
+                    parent=self,
+                    **edge_label_config,
+                )
             else:
                 converted_labels[edge] = label
-        edge_label_map = {}
-        edge_label_objs = Group()
+        edge_label_map: dict[str, Text] = {}
         for edge, weight_text in converted_labels.items():
             v1, v2 = edge
             edge_obj = self.edges[(v1, v2)]
@@ -180,9 +196,8 @@ class WeightedGraph(Graph):
             weight_text.add_surrounding_rect(
                 fill_color=CONFIG.bg_color, fill_opacity=1.0, buff=0.005
             )
-            edge_label_objs.add(weight_text)
             edge_label_map[edge] = weight_text
-        self.add(edge_label_objs)
+        self.add(*edge_label_map.values())
         self.edge_labels = edge_label_map
 
     @staticmethod
@@ -239,6 +254,8 @@ def _determine_graph_layout(
         else:
             return {k: np.append(v, [0]) for k, v in auto_layout.items()}
     elif layout == "tree":
+        if root_vertex is None:
+            raise ValueError("Root vertex not specified.")
         return _tree_layout(
             nx_graph, root_vertex=root_vertex, scale=layout_scale, **layout_config
         )

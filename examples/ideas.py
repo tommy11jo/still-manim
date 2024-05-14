@@ -53,8 +53,8 @@ def generate_lemons(stroke_width=4):
 
     spikes = VGroup()
     for prop in range(8):
-        vector = Vector(c.point_from_proportion(prop / 8))
-        spikes.add(vector)
+        line = Line(ORIGIN, c.point_from_proportion(prop / 8))
+        spikes.add(line)
     lemon.add(spikes)
 
     other_lemon: VGroup = lemon.copy()

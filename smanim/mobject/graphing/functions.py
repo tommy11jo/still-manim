@@ -5,6 +5,7 @@ import numpy as np
 from smanim.mobject.geometry.polygon import Polygram
 from smanim.mobject.graphing.scale import _ScaleBase, LinearBase
 from smanim.mobject.vmobject import VGroup
+from smanim.typing import ManimFloat
 from smanim.utils.color import WHITE, ManimColor
 
 
@@ -63,6 +64,8 @@ class ParametricFunction(VGroup):
         underlying_function: Callable[
             [float, float], float
         ],  # domain is x values on cartesian graph and range is y values on cartesian graph
+        y_min: float,  # actual value in the scene
+        y_max: float,  # actual value in the scene
         t_range: Sequence[float] | None = None,
         scaling: _ScaleBase = LinearBase(),
         dt: float = 1e-8,
@@ -88,7 +91,9 @@ class ParametricFunction(VGroup):
         self.t_min, self.t_max, self.t_step = t_range
 
         super().__init__(stroke_color=color, **kwargs)
-        self.add_subcurves(default_stroke_color=self.stroke_color)
+        self.add_subcurves(
+            y_min=y_min, y_max=y_max, default_stroke_color=self.stroke_color
+        )
 
     def get_function(self):
         return self.function
@@ -96,7 +101,7 @@ class ParametricFunction(VGroup):
     def get_point_from_function(self, t):
         return self.function(t)
 
-    def add_subcurves(self, **polygram_style) -> None:
+    def add_subcurves(self, y_min: float, y_max: float, **polygram_style) -> None:
         if self.discontinuities is not None:
             discontinuities = filter(
                 lambda t: self.t_min <= t <= self.t_max,
@@ -131,8 +136,30 @@ class ParametricFunction(VGroup):
             else:
                 points = np.array([self.function(t) for t in t_range])
 
-            polygram = Polygram(points, **polygram_style)
-            self.add(polygram)
+            polygrams = VGroup()
+            cur_points_lst = []
+            for p in points:
+                if y_min <= p[1] <= y_max:
+                    cur_points_lst.append(p)
+                else:
+                    cur_points_lst.append(p)
+                    if len(cur_points_lst) > 1:
+                        polygrams.add(
+                            Polygram(
+                                np.array(cur_points_lst, dtype=ManimFloat),
+                                **polygram_style,
+                            )
+                        )
+                    cur_points_lst = []
+            if len(cur_points_lst) > 1:
+                self.add(
+                    Polygram(
+                        np.array(cur_points_lst, dtype=ManimFloat),
+                        **polygram_style,
+                    )
+                )
+            if len(polygrams) > 1:
+                self.add(polygrams)
             # make smooth used to be here and would be useful to have
 
     def gen_derivative_fn(

@@ -8,10 +8,11 @@ from smanim.typing import ManimFloat, Point3D
 __all__ = ["VMobjectFromSVGPath"]
 
 
-def _to_3d(x: float, y: float) -> np.ndarray:
-    return np.array([x, y, 0.0])
+def _to_3d(x, y, z=0) -> np.ndarray:
+    return np.array([x, -y, 0.0])
 
 
+# assumes points are in manim units
 class VMobjectFromSVGPath(VMobject):
     """Extracts points from the given SVG path to use the "manim intermediate repr" for things like rotation."""
 

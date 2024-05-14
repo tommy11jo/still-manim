@@ -73,6 +73,8 @@ class Axes(Group):
         graph = ParametricFunction(
             function=lambda t: self.coords_to_point(t, function(t)),
             underlying_function=function,
+            y_min=self.y_axis.coord_to_point(self.y_axis.x_min)[1],
+            y_max=self.y_axis.coord_to_point(self.y_axis.x_max)[1],
             t_range=x_range,
             scaling=self.x_axis.scaling,
             use_vectorized=use_vectorized,
@@ -112,8 +114,8 @@ class NumberPlane(Axes):
         cls,
         x_axis_range: Sequence[float],
         y_axis_range: Sequence[float],
-        x_length: float | None = None,
-        y_length: float | None = None,
+        x_length: float = 4,
+        y_length: float = 4,
         fill_canvas: bool = True,  # whether to span the full canvas size
         axis_config: dict = {},
         **kwargs,

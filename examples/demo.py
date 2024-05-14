@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from smanim import *
 from smanim.utils.space_ops import mirror_vector
@@ -261,22 +262,31 @@ def arc_to_arc_arrow():
 # arc_to_arc_arrow()
 
 
+def simple_brace():
+    s = Square()
+    b = Brace.from_mobject_edge(s)
+    canvas.add(s, b)
+    canvas.snapshot(preview=True)
+
+
+# simple_brace()
+
+
 def brace_on_text_and_shapes():
     c = Circle()
-    b = Brace(c)
+    b = Brace.from_mobject_edge(c)
     g = VGroup(c, b).shift(LEFT * 3)
     canvas.add(g)
 
     l1 = Line()
-    b1 = Brace(l1)
+    b1 = Brace.from_mobject_edge(l1)
     g1 = VGroup(l1, b1).shift(UP * 2)
     canvas.add(g1)
     t = Text("brace for it")
     # Demo of how brace location is determined from bounding points
     for d in t.bounding_points:
         canvas.add(Dot(d))
-    b2 = Brace(t, buff=0.0)
-    # Must use Group due to Text not being a VMobject (i.e. an object made of bezier curves only)
+    b2 = Brace.from_mobject_edge(t, buff=0.0)
     g2 = Group(t, b2)
     canvas.add(g2)
     canvas.snapshot(preview=True)
@@ -285,17 +295,40 @@ def brace_on_text_and_shapes():
 # brace_on_text_and_shapes()
 
 
-def brace_between_test():
-    s1 = Square().shift(LEFT * 2)
-    canvas.add(s1)
-    s2 = Square().shift(RIGHT * 2)
-    canvas.add(s2)
-    b = Brace.from_positions(s1, s2, color=RED)
-    canvas.add(b)
+def labeled_brace():
+    r = Rectangle().shift(DOWN)
+    l2 = LabeledBrace(
+        start=r.get_corner(DL),
+        end=r.get_corner(UR),
+        label=Text("First", font_size=10),
+        label_buff=0,
+    )
+    r2 = Rectangle().rotate(PI / 6).shift(UP * 1.5)
+    text = Text("second", font_size=10)
+    l3 = LabeledBrace(r2.vertices[0], r2.vertices[2], label=text, label_buff=0)
+    canvas.add(r2, l3)
+
+    canvas.add(r, l2)
     canvas.snapshot(preview=True)
 
 
-# brace_between_test()
+# labeled_brace()
+
+
+def brace_span():
+    c = Circle()
+    b = Brace.from_mobject_edge(c, UP)
+    b2 = Brace.from_mobject_edge(c, DOWN, color=RED)
+    b3 = Brace.from_mobject_edge(c, RIGHT, color=BLUE)
+    canvas.add(c, b, b2, b3)
+
+    s = Square().shift(UR * 3)
+    b1 = LabeledBrace.from_mobject_edge(s, LEFT, label=Text("left"))
+    canvas.add(s, b1)
+    canvas.snapshot(preview=True)
+
+
+# brace_span()
 
 
 def wrapping_text():
@@ -895,7 +928,7 @@ def arrange_in_grid():
         ]
     )
     # v.arrange()
-    v.arrange_in_grid(cols=6, buff_within_col=0.5, row_aligned_edge=DOWN)
+    v.arrange_in_grid(num_cols=6, buff_within_col=0.5, aligned_edge_within_row=DOWN)
     canvas.add(v)
     canvas.snapshot(preview=True)
 
@@ -911,7 +944,7 @@ def simplest_grid():
             for i in range(1, n)
         ]
     )
-    s.arrange_in_grid(rows=2, row_aligned_edge=DOWN)
+    s.arrange_in_grid(num_rows=2, aligned_edge_within_row=DOWN)
     canvas.add(s)
     canvas.snapshot(preview=True)
 
@@ -953,46 +986,6 @@ def move_to_testing():
 
 
 # move_to_testing()
-
-
-def labeled_brace():
-    # c = Circle()
-    # l1 = LabeledBrace(c, label=Text("hi there"), direction=RIGHT)
-    # canvas.add(c, l1)
-
-    r = Rectangle().shift(DOWN)
-    l2 = LabeledBrace.from_positions(
-        start=r.get_corner(DL),
-        end=r.get_corner(UR),
-        label=Text("First", font_size=10),
-        label_buff=0,
-    )
-    r2 = Rectangle().rotate(PI / 6).shift(UP * 1.5)
-    text = Text("second", font_size=10)
-    l3 = LabeledBrace.from_positions(
-        r2.vertices[0], r2.vertices[2], label=text, label_buff=0
-    )
-    canvas.add(r2, l3)
-
-    canvas.add(r, l2)
-    canvas.snapshot(preview=True)
-
-
-# labeled_brace()
-
-
-def brace_span():
-    c = Circle()
-    b = Brace.from_mobject_edge(c, UP)
-    canvas.add(c, b)
-
-    s = Square().shift(UR * 3)
-    b1 = LabeledBrace.from_mobject_edge(s, LEFT, label=Text("left"))
-    canvas.add(s, b1)
-    canvas.snapshot(preview=True)
-
-
-# brace_span()
 
 
 def box_list():
@@ -1078,4 +1071,181 @@ def fill_stroke():
     canvas.snapshot(preview=True)
 
 
-fill_stroke()
+# fill_stroke()
+
+
+def grid_simple():
+    g = VGroup(*[Square() for i in range(8)])
+    g.arrange_in_grid(num_rows=2)
+    canvas.add(g)
+    canvas.snapshot(preview=True)
+
+
+# grid_simple()
+
+
+def simple_group():
+    g = Group(Square().shift(LEFT), Square(color=GREEN), Square().shift(RIGHT))
+    canvas.add(g)
+    canvas.snapshot(preview=True)
+
+
+# simple_group()
+
+
+def simpler_group():
+    g = Group(Circle())
+    canvas.add(g)
+    result = canvas.draw()
+    print(result)
+    # canvas.snapshot(preview=True)
+
+
+# simpler_group()
+
+
+class TwoCircle(VGroup):
+    def __init__(self):
+        super().__init__()
+        self.add(Circle())
+        self.add(Circle(color=RED).scale(0.5))
+
+
+def simple_vgroup_class():
+
+    g = TwoCircle()
+    canvas.add(g)
+    result = canvas.draw()
+    # print(result)
+    metadata = canvas.draw()
+    meta = json.loads(metadata)["metadata"]
+    print(meta)
+    # canvas.snapshot(preview=True)
+
+
+# simple_vgroup_class()
+
+
+def y_axis_test():
+    n = NumberPlane().scale(0.5).shift(LEFT + DOWN * 2)
+    n.plot(lambda x: 2 * x + 1)
+    n.scale(0.5)
+    canvas.add(n)
+    canvas.snapshot(preview=True)
+
+
+# y_axis_test()
+
+
+def tree_test():
+    g = Graph(
+        vertices=[0, 1, 2, 3, 4],
+        edges=[(0, 1), (0, 2), (2, 3), (2, 4)],
+        include_vertex_labels=True,
+        layout="tree",
+        root_vertex=0,
+    )
+    g.align_to(canvas.left, edge=LEFT)
+    canvas.add(g)
+
+    canvas.snapshot(preview=True)
+
+
+# tree_test()
+
+
+def arrow_pointer():
+    c = Circle()
+    a = Arrow.points_at(c, direction=LEFT)
+    g1 = Group(c, a)
+    c2 = Circle(color=RED)
+    a2 = Arrow.points_at(c2, direction=UP + RIGHT, length=0.5, buff=0)
+    g2 = Group(c2, a2)
+
+    groups = Group(g1, g2).arrange()
+    canvas.add(groups)
+    title = Text("Italics", italics=True).shift(UP * 2)
+    canvas.add(title)
+    canvas.snapshot(preview=True)
+
+
+# arrow_pointer()
+
+
+def next_to_and_align():
+    s = Square()
+    t = Text("This is the title")
+    # s.next_to(t, DOWN).align_to(t, LEFT)
+    # since this is so common i'm making a new syntax for it
+    # s.next_to(t, DOWN, aligned_edge=LEFT) or more simply
+    s.next_to(t, DOWN, LEFT)
+    canvas.add(s, t)
+    canvas.snapshot(preview=True)
+
+
+# next_to_and_align()
+
+
+def introduce_lambda():
+    lamb = LambdaWithEyes()
+    lamb.move_to(ORIGIN)
+    canvas.add(lamb)
+    canvas.snapshot(preview=True)
+
+
+# introduce_lambda()
+
+
+def simple_italics():
+    t1 = (
+        Text("Two things I really like about Manim are its ")
+        + Text("relative positioning commands ", italics=True)
+        + Text("and its ")
+        + Text("spatial transformations", italics=True)
+    ).shift(LEFT * 3)
+    canvas.add(t1)
+    canvas.snapshot(preview=True)
+
+
+# simple_italics()
+
+
+def box_list_down():
+    c = Circle(color=RED, opacity=0.5)
+    s = Square(color=BLUE, opacity=0.5)
+    t = Triangle()
+    b1 = BoxList(c, s, t, direction=DOWN).shift(LEFT)
+    b2 = BoxList(c.copy(), s.copy(), t.copy(), direction=UP)
+    g1 = Group(b1, b2).arrange().scale(0.5)
+    t1 = Text("Vertical flow").next_to(g1, UP)
+    canvas.add(g1, t1)
+    b3 = BoxList(c.copy(), s.copy(), t.copy(), direction=RIGHT).shift(LEFT)
+    b4 = BoxList(c.copy(), s.copy(), t.copy(), direction=LEFT)
+    g2 = Group(b3, b4).arrange(direction=DOWN).next_to(g1)
+    t2 = Text("Horizontal flow").next_to(g2, UP)
+    canvas.add(g2, t2)
+    # b = BoxList(c, s)
+    canvas.snapshot(preview=True)
+
+
+# box_list_down()
+
+
+def fill_opacity():
+    c = Circle(fill_color=GREEN, fill_opacity=0.0)
+    canvas.add(c)
+    canvas.snapshot(preview=True)
+
+
+# fill_opacity()
+
+
+# Bug: The spacing is different locally and in the browser on this example, an extra space after "its" in browser
+def text_spacing():
+    t1 = Text("The spacing is different locally and in the browser on this example")
+    t1.add_surrounding_rect(buff=0)
+    canvas.add(t1)
+    canvas.snapshot(preview=True)
+
+
+text_spacing()

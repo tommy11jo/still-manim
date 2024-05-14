@@ -1,3 +1,4 @@
+import sys
 from typing import Hashable, List, Tuple
 from pathlib import Path
 from smanim import *
@@ -70,6 +71,11 @@ def digraph(graph):
 # digraph(GRAPH1)
 
 
+# Demos for bidirectional functionality
+sys._getframe().f_trace = global_trace_assignments
+sys.settrace(trace_assignments)
+
+
 def weighted_digraph(graph):
     vertices, edges, edge_labels = WeightedGraph.from_adjacency_list(graph)
     graph = WeightedGraph(
@@ -79,13 +85,16 @@ def weighted_digraph(graph):
         edge_labels=edge_labels,
         edge_type=Arrow,
         layout_config={"seed": 2},
+        include_vertex_labels=True,
     )
-    graph.generate_vertex_labels()
     canvas.add(graph)
     canvas.snapshot(preview=True)
+    print(graph.get_path())
+    print(graph.edge_labels[(0, 1)].get_path())
+    print(graph.vertex_labels[0].get_path())
 
 
-# weighted_digraph(WEIGHTED_GRAPH1)
+weighted_digraph(WEIGHTED_GRAPH1)
 
 
 def tree(graph):
@@ -94,7 +103,12 @@ def tree(graph):
         vertices, edges, layout="tree", root_vertex=0, include_vertex_labels=True
     )
     canvas.add(graph)
-    canvas.snapshot(preview=True)
+    # canvas.snapshot(preview=True)
+    result = canvas.draw()
+    print(graph.get_path())
+    print(graph.edges[(0, 1)].get_path())
+    print(graph.vertex_labels[2].get_path())
+    # print(result)
 
 
-tree(TREE1)
+# tree(TREE1)
