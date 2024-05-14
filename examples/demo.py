@@ -928,7 +928,7 @@ def arrange_in_grid():
         ]
     )
     # v.arrange()
-    v.arrange_in_grid(cols=6, buff_within_col=0.5, row_aligned_edge=DOWN)
+    v.arrange_in_grid(num_cols=6, buff_within_col=0.5, aligned_edge_within_row=DOWN)
     canvas.add(v)
     canvas.snapshot(preview=True)
 
@@ -944,7 +944,7 @@ def simplest_grid():
             for i in range(1, n)
         ]
     )
-    s.arrange_in_grid(rows=2, row_aligned_edge=DOWN)
+    s.arrange_in_grid(num_rows=2, aligned_edge_within_row=DOWN)
     canvas.add(s)
     canvas.snapshot(preview=True)
 
@@ -1074,10 +1074,9 @@ def fill_stroke():
 # fill_stroke()
 
 
-# TODO: why doesn't this work in browser but it works locally?
-# g[4].set_stroke(color=ORANGE)
 def grid_simple():
-    g = VGroup(*[Square() for i in range(8)]).arrange_in_grid(rows=2)
+    g = VGroup(*[Square() for i in range(8)])
+    g.arrange_in_grid(num_rows=2)
     canvas.add(g)
     canvas.snapshot(preview=True)
 
@@ -1085,11 +1084,9 @@ def grid_simple():
 # grid_simple()
 
 
-# testing the bbox metadatas
 def simple_group():
     g = Group(Square().shift(LEFT), Square(color=GREEN), Square().shift(RIGHT))
     canvas.add(g)
-    canvas.add(t)
     canvas.snapshot(preview=True)
 
 
@@ -1196,4 +1193,59 @@ def introduce_lambda():
     canvas.snapshot(preview=True)
 
 
-introduce_lambda()
+# introduce_lambda()
+
+
+def simple_italics():
+    t1 = (
+        Text("Two things I really like about Manim are its ")
+        + Text("relative positioning commands ", italics=True)
+        + Text("and its ")
+        + Text("spatial transformations", italics=True)
+    ).shift(LEFT * 3)
+    canvas.add(t1)
+    canvas.snapshot(preview=True)
+
+
+# simple_italics()
+
+
+def box_list_down():
+    c = Circle(color=RED, opacity=0.5)
+    s = Square(color=BLUE, opacity=0.5)
+    t = Triangle()
+    b1 = BoxList(c, s, t, direction=DOWN).shift(LEFT)
+    b2 = BoxList(c.copy(), s.copy(), t.copy(), direction=UP)
+    g1 = Group(b1, b2).arrange().scale(0.5)
+    t1 = Text("Vertical flow").next_to(g1, UP)
+    canvas.add(g1, t1)
+    b3 = BoxList(c.copy(), s.copy(), t.copy(), direction=RIGHT).shift(LEFT)
+    b4 = BoxList(c.copy(), s.copy(), t.copy(), direction=LEFT)
+    g2 = Group(b3, b4).arrange(direction=DOWN).next_to(g1)
+    t2 = Text("Horizontal flow").next_to(g2, UP)
+    canvas.add(g2, t2)
+    # b = BoxList(c, s)
+    canvas.snapshot(preview=True)
+
+
+# box_list_down()
+
+
+def fill_opacity():
+    c = Circle(fill_color=GREEN, fill_opacity=0.0)
+    canvas.add(c)
+    canvas.snapshot(preview=True)
+
+
+# fill_opacity()
+
+
+# Bug: The spacing is different locally and in the browser on this example, an extra space after "its" in browser
+def text_spacing():
+    t1 = Text("The spacing is different locally and in the browser on this example")
+    t1.add_surrounding_rect(buff=0)
+    canvas.add(t1)
+    canvas.snapshot(preview=True)
+
+
+text_spacing()

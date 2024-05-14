@@ -2,6 +2,7 @@ from smanim.typing import *
 from smanim.constants import *
 from smanim.config import *
 
+from smanim.canvas import *
 from smanim.utils.color import *
 from smanim.utils.logger import *
 from smanim.canvas import *

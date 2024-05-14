@@ -62,14 +62,18 @@ class VMobject(TransformableMobject, ABC):
         if fill_color is None and stroke_color is None:
             if color is not None:
                 fill_color = color
-                fill_opacity = fill_opacity or opacity or 1.0
+                if fill_opacity is None:
+                    fill_opacity = opacity if opacity is not None else 1.0
             elif default_fill_color is None and default_stroke_color is not None:
                 stroke_color = default_stroke_color
-                stroke_opacity = stroke_opacity or opacity or 1.0
-                stroke_width = stroke_width or 4.0
+                if stroke_opacity is None:
+                    stroke_opacity = opacity if opacity is not None else 1.0
+                if stroke_width is None:
+                    stroke_width = 4.0
             else:
                 fill_color = default_fill_color or WHITE
-                fill_opacity = fill_opacity or 1.0
+                if fill_opacity is None:
+                    fill_opacity = 1.0
         else:
             if color:
                 raise ValueError(
@@ -77,10 +81,12 @@ class VMobject(TransformableMobject, ABC):
                 )
             if stroke_color is not None:
                 stroke_opacity = stroke_opacity or 1.0
-                stroke_width = stroke_width or DEFAULT_STROKE_WIDTH
+                if stroke_width is None:
+                    stroke_width = DEFAULT_STROKE_WIDTH
 
             if fill_color is not None:
-                fill_opacity = fill_opacity or 1.0
+                if fill_opacity is None:
+                    fill_opacity = 1.0
 
         self._stroke_color = stroke_color
         self.stroke_opacity = stroke_opacity

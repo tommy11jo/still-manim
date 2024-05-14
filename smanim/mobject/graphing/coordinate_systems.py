@@ -114,8 +114,8 @@ class NumberPlane(Axes):
         cls,
         x_axis_range: Sequence[float],
         y_axis_range: Sequence[float],
-        x_length: float | None = None,
-        y_length: float | None = None,
+        x_length: float = 4,
+        y_length: float = 4,
         fill_canvas: bool = True,  # whether to span the full canvas size
         axis_config: dict = {},
         **kwargs,

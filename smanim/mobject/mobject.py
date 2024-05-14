@@ -69,10 +69,10 @@ class Mobject(ABC):
     def bounding_points(self, bounding_points: InternalPoint3D_Array):
         self._bounding_points = bounding_points
 
-    def get_path(self):
+    def get_path(self) -> str:
         path = self.parent.get_path() if self.parent else ""
         if self.subpath is None:
-            raise Exception(f"Subpath not set for mobject {self}")
+            return "None"
 
         path += self.subpath
         return path
@@ -195,11 +195,22 @@ class Mobject(ABC):
 
     def get_closest_intersecting_point_2d(
         self, ray_origin: Point2D, ray_direction: Point2D
-    ):
+    ) -> Point3D:
         """Return the closest intersecting point between a ray and the bounding polygon of this mobject.
-        Handles rays shot from within or from outside the bounding polygon."""
-        points_ahead = np.roll(self.bounding_points, -1, axis=0)
-        line_segments = [(p1, p2) for p1, p2 in zip(self.bounding_points, points_ahead)]
+        Handles rays shot from within or from outside the bounding polygon.
+        """
+        return self.get_closest_intersecting_point_2d_helper(
+            self.bounding_points, ray_origin, ray_direction
+        )
+
+    def get_closest_intersecting_point_2d_helper(
+        self,
+        bounding_points: Point3D_Array,
+        ray_origin: Point2D,
+        ray_direction: Point2D,
+    ) -> Point3D:
+        points_ahead = np.roll(bounding_points, -1, axis=0)
+        line_segments = [(p1, p2) for p1, p2 in zip(bounding_points, points_ahead)]
         intersections_and_params = []
         for p1, p2 in line_segments:
             intersection, param = line_intersect(

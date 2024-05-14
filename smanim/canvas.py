@@ -59,6 +59,9 @@ MobjectMetadata = namedtuple(
 # instance must be named lowercase 'canvas' to work
 class Canvas:
     def __init__(self, config: Config):
+        self.reset_canvas(config)
+
+    def reset_canvas(self, config: Config):
         self.config = config
 
         self.mobjects = Group()
@@ -88,9 +91,6 @@ class Canvas:
                 log.warning(f"Mobject not found: {mobject}")
             else:
                 self.mobjects.remove(mobject)
-
-    def clear(self):
-        self.mobjects = Group()
 
     def get_mobjects_to_display(
         self,
@@ -200,15 +200,18 @@ class Canvas:
 
     # Used in pyodide web environment
     # Since the state of python program is maintained across calls to `runPython`, canvas state must be cleared here
-    def draw(self, crop: bool = False, crop_buff: float = SMALL_BUFF) -> str:
+    def draw(
+        self, crop: bool = False, ignore_bg: bool = False, crop_buff: float = SMALL_BUFF
+    ) -> str:
         bbox, metadata = self.snapshot(
             overwrite=True,
             preview=False,
             crop=crop,
+            ignore_bg=ignore_bg,
             crop_buff=crop_buff,
             called_from_draw=True,
         )
-        self.clear()
+        self.reset_canvas(self.config)
         return json.dumps({"bbox": bbox, "metadata": metadata})
 
     def vmobject_to_svg_el(

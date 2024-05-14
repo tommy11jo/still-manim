@@ -110,7 +110,7 @@ class Text(TransformableMobject):
         self.font_family = font_family
         self.font_size = font_size
         self.font_path = font_path
-        font = ImageFont.truetype(font_path, font_size)
+        font = ImageFont.truetype(str(font_path), font_size)
         self.x_padding = x_padding
         self.y_padding = y_padding
         self.x_padding_in_pixels = to_pixel_len(x_padding, CONFIG.pw, CONFIG.fw)
@@ -146,11 +146,11 @@ class Text(TransformableMobject):
         self.font_widths = np.array(
             [pair[0] + self.x_padding_in_pixels * 2 for pair in dims]
         )
-        # uncertain decision: use max_width or use the max of the actual widths
-        line_width_in_munits = (
-            max_width
-            if len(text_tokens) > 1
-            else to_manim_len(self.font_widths[0], CONFIG.pw, CONFIG.fw)
+        # use actual widths and not max_width so that addition of text looks more natural (to name one reason)
+        line_width_in_munits = to_manim_len(
+            max(self.font_widths) if len(text_tokens) > 1 else self.font_widths[0],
+            CONFIG.pw,
+            CONFIG.fw,
         )
 
         bbox_height = (

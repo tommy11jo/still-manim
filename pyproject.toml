@@ -1,6 +1,9 @@
 [tool.poetry]
 name = "still-manim"
-version = "0.9.4"
+# testing version
+version = "1.0.8"
+# prod version
+# version = "0.1.1"
 description = ""
 authors = ["tom11my <tommy11jo@gmail.com>"]
 readme = "README.md"
@@ -14,7 +17,7 @@ python = "^3.10"
 numpy = "^1.26.4"
 svg-py = "^1.4.3"
 svgelements = "^1.9.6"
-pillow = "^10.2.0"
+pillow = "^10.0.0"
 networkx = "^3.2.1"
 fonttools = "^4.50.0"
 typing-extensions = "^4.11.0"

@@ -25,7 +25,7 @@ def wrap_text(
     words = text.split(" ")
     text_tokens = []
     dims = []  # tracks dimensions of each text token
-    font = ImageFont.truetype(font_path, font_size)
+    font = ImageFont.truetype(str(font_path), font_size)
     x_size = font.getlength("x")
     approx_num_chars_per_line = int(max_width_in_pixels / x_size)
     if approx_num_chars_per_line == 0:
@@ -73,6 +73,9 @@ def wrap_text(
 
             cur_ind -= 1
             one_back = " ".join(words[word_ind:cur_ind])
+            # add extra space for copying and pasting smoothness, if not the last word
+            if cur_ind != len(words):
+                one_back += " "
             width, height = get_dim_lens(one_back)
             text_tokens.append(one_back)
             dims.append((width, height))
@@ -80,7 +83,8 @@ def wrap_text(
         else:
             while width > max_width_in_pixels:
                 cur_ind -= 1
-                cur_text = " ".join(words[word_ind:cur_ind])
+                # add extra space for copying and pasting smoothness, guaranteed not the last word
+                cur_text = " ".join(words[word_ind:cur_ind]) + " "
                 width, height = get_dim_lens(cur_text)
                 if cur_ind == word_ind:
                     # choosing to show the whole word and not wrap it, if it's too big for it's own line
