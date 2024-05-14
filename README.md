@@ -9,7 +9,7 @@ Try it in the [web editor](idraw.chat) (source code [here](https://github.com/to
 
 Example 1:
 
-```
+```python
 # this code creates the logo SVG at the top of this README
 from smanim import *
 stroke_width = 1
@@ -47,10 +47,9 @@ canvas.draw(crop=True)
 ```
 
 Example 2:
-![Graph Demo](./public/graph-demo.svg)
+<img src="./public/graph-demo.svg" alt="Graph Demo" height="300">
 
-```
-
+```python
 from smanim import *
 canvas.set_dimensions(6, 6)
 WEIGHTED_GRAPH1 = {
@@ -77,7 +76,7 @@ start_vertex.set_color(RED)
 pointer = Arrow.points_at(start_vertex, direction=LEFT, color=RED, length=0.5)
 start_text = Text("start", color=RED).next_to(pointer)
 canvas.add(graph, pointer, start_text)
-canvas.draw()
+canvas.draw(crop=True)
 # use canvas.snapshot(preview=True) instead of canvas.draw() if you are running locally
 ```
 
@@ -118,28 +117,28 @@ pip install still-manim
 
 ### Cloning
 
-1. Clone this repo
+1. Clone this repo:
 
-```
+```shell
 git clone https://github.com/tommy11jo/still-manim.git
 ```
 
-2. Install the deps the first time you open this repo.
+2. Install the deps the first time you open this repo:
 
-```
+```shell
 poetry install
 ```
 
-3. Init the python env each time you open this repo.
+3. Init the python env each time you open this repo:
 
-```
+```shell
 poetry shell
 ```
 
 5. Run your first still-manim program by navigating to the `examples` folder and running:
 
-```
-python3 hello-world.py
+```shell
+python3 hello_world.py
 ```
 
 ## Notes
