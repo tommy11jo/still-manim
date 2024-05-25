@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing_extensions import Self
 import numpy as np
-from smanim.constants import ORIGIN, OUT, PI, UP
+from smanim.constants import MED_SMALL_BUFF, ORIGIN, OUT, PI, UP
 from smanim.mobject.mobject import Mobject
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
 from smanim.utils.space_ops import rotation_matrix
@@ -115,17 +115,19 @@ class TransformableMobject(Mobject):
         return self
 
     # Frequently used patterns that depend on transformations
-    def add_label(
+    def create_label(
         self,
-        label: TransformableMobject,
+        text: str,
         direction: Vector3 = UP,
-        buff=0.0,
+        buff=MED_SMALL_BUFF,
         use_parent_width=False,
-    ) -> TransformableMobject:
-        if isinstance(label, str):
-            raise ValueError("Use `Text` instead of a plain `str` in `add_label`")
+        **text_kwargs,
+    ) -> TransformableMobject:  # cannot return `Text` due to circular import
+
+        from smanim.mobject.text.text_mobject import Text
+
+        label = Text(text, **text_kwargs)
         if use_parent_width:
             label.stretch_to_fit_width(self.width)
         label.next_to(self, direction, buff=buff)
-        self.add(label)
-        return self
+        return label

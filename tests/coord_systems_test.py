@@ -9,7 +9,7 @@ CONFIG.save_file_dir = Path(__file__).parent / "media"
 def simple_number_line():
     n = NumberLine([-3, 4, 1], include_arrow_tips=False)
     canvas.add(n)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # simple_number_line()
@@ -23,7 +23,7 @@ def number_line_with_vector():
     g = Group(n, v)
     g.scale(1.3)
     canvas.add(g)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # number_line_with_vector()
@@ -45,7 +45,7 @@ def number_line_custom_arrow_tip():
     baby_tips_line.labels.set_opacity(opacity=1.0)
 
     canvas.add(baby_tips_line)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # number_line_custom_arrow_tip()
@@ -54,7 +54,7 @@ def number_line_custom_arrow_tip():
 def axes():
     a = Axes()
     canvas.add(a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # axes()
@@ -66,7 +66,7 @@ def custom_axes():
     a = Axes(x_axis, y_axis)
     a.move_to_origin()
     canvas.add(a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # custom_axes()
@@ -78,7 +78,7 @@ def y_axis_shift():
     y_axis.shift(RIGHT)
     canvas.add(y_axis)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # y_axis_shift()
@@ -90,7 +90,7 @@ def graph_vector():
     point_end = axes.coords_to_point(1, 2)
     v = Arrow(origin_point, point_end, fill_color=RED)
     canvas.add(axes, v)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # graph_vector()
@@ -105,22 +105,22 @@ def labeled_vector_on_graph():
     x_axis_point = axes.coords_to_point(1, 0)
 
     comps_group = Group()
-    y_comp = Line(x_axis_point, point_end, stroke_color=BLUE)
+    y_comp = Line(x_axis_point, point_end, color=BLUE)
     y_comp_label = Text("[0, 2]").next_to(y_comp, RIGHT, buff=TINY_BUFF)
     comps_group.add(y_comp, y_comp_label)
-    x_comp = Line(y_axis_point, point_end, stroke_color=BLUE)
+    x_comp = Line(y_axis_point, point_end, color=BLUE)
     x_comp_label = Text("[1, 0]").next_to(x_comp, UP, buff=TINY_BUFF)
     comps_group.add(x_comp, x_comp_label)
     comps_group.set_opacity(0.5)
     canvas.add(comps_group)
 
-    v = Arrow(origin_point, point_end, fill_color=RED)
-    v.add_label(Text("v", color=RED))
+    v = Arrow(origin_point, point_end, color=RED)
+    v.create_label("v", color=RED)
     canvas.add(v)
     label = Text("Vector Components", font_size=H1_FONT_SIZE)
     label.next_to(axes, UP)
     canvas.add(label)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # labeled_vector_on_graph()
@@ -129,7 +129,7 @@ def labeled_vector_on_graph():
 def grid_lines():
     graph = NumberPlane()
     canvas.add(graph)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # grid_lines()
@@ -148,7 +148,7 @@ def simple_plot():
     # graph.center()
     canvas.add(graph)
     # canvas.scale(2)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # simple_plot()
@@ -175,7 +175,7 @@ def discontinuous_plot():
         stroke_color=GREEN,
     )
     canvas.add(ax2)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # discontinuous_plot()
@@ -190,7 +190,7 @@ def number_line_spanning():
     canvas.add(Dot(n.start, fill_color=GREEN))
     canvas.add(Dot([0, 0, 0]))
     canvas.add(n)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # number_line_spanning()
@@ -206,7 +206,7 @@ def derivative_plot():
     cos_label = Text("y = cos(x)", color=BLUE, font_size=30).next_to(cos_graph_obj, UP)
     cos_label.shift(LEFT * 0.6)
     canvas.add(n, sin_label, cos_label)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # derivative_plot()
@@ -216,7 +216,7 @@ def scale_before_number_line():
     just_sin = NumberPlane().scale(0.3)
     just_sin.plot(np.sin)
     canvas.add(just_sin)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # scale_before_number_line()
@@ -231,29 +231,16 @@ def number_plane_without_origin():
         axis_config={"color": RED},
     )
     canvas.add(n)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # number_plane_without_origin()
 
 
-# solved
-def text_stretch_bug():
-    n = NumberLine((2, 3))
-    for label in n.labels:
-        label.add_surrounding_rect()
-    n.stretch_to_fit_width(canvas.config.fw)
-    canvas.add(n)
-    canvas.snapshot(preview=True)
-
-
-# text_stretch_bug()
-
-
 def number_line_length():
     n = NumberLine((2, 3), length=canvas.config.fw)
     canvas.add(n)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # number_line_length()

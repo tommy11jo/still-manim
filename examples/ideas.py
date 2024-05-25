@@ -25,15 +25,16 @@ def draw_planets():
         / 2
     )
     mercury = Circle(fill_color=GOLD_A, radius=mercury_width).shift(LEFT * 2)
-    mercury.add_label(Text("Mercury"))
-    mercury.add_surrounding_rect(stroke_color=GREY)
+    mercury.add(SurroundingRectangle(mercury, stroke_color=GRAY))
     venus = Circle(fill_color=LIGHT_BROWN, radius=venus_width)
     earth = Circle(fill_color=BLUE, radius=earth_width)
     mars = Circle(fill_color=RED, radius=mars_width)
     planets = Group(mercury, venus, earth, mars)
     planets.arrange(aligned_edge=UP)
-    canvas.add(planets)
-    canvas.snapshot(preview=True)
+
+    mercury_label = mercury.create_label("Mercury")
+    canvas.add(planets, mercury_label)
+    canvas.snapshot()
 
 
 # draw_planets()
@@ -78,8 +79,8 @@ def lemon_logo():
     title.next_to(lemons, buff=0.05)
     canvas.add(lemons, title)
 
-    canvas.snapshot(preview=True, crop=True)
+    canvas.snapshot(crop=True)
     # canvas.draw()
 
 
-lemon_logo()
+# lemon_logo()

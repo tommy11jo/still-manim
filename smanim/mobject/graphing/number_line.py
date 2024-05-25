@@ -38,10 +38,7 @@ class NumberLine(Group):
         # Entire __init__ assumes number line is horizontal
         # No need to style VMobjects at constructions. They will be uniformly styled at end of __init__
         super().__init__(**kwargs)
-        self.line = TipableLine(
-            x_range[0] * RIGHT,
-            x_range[1] * RIGHT,
-        )
+        self.line = TipableLine(x_range[0] * RIGHT, x_range[1] * RIGHT)
         self.add(self.line)
         if len(x_range) == 2:
             self.x_range = np.array([x_range[0], x_range[1], 1], dtype=float)
@@ -157,7 +154,4 @@ class NumberLine(Group):
         """Accepts a coordinate value along the number line and returns its position in the scene.
         Extrapolate the point even if the point is not directly on the number line"""
         units_from_start = value - self.x_min
-        return (
-            self.line.start
-            + self.line.get_direction() * units_from_start * self.step_size
-        )
+        return self.line.start + self.line.direction * units_from_start * self.step_size

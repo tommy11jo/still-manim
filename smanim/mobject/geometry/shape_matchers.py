@@ -3,9 +3,9 @@ from smanim.mobject.geometry.line import Line
 from smanim.mobject.mobject import Mobject
 from smanim.mobject.geometry.polygon import Rectangle
 from smanim.mobject.vmobject import VGroup
-from smanim.utils.color import RED, YELLOW, ManimColor
+from smanim.utils.color import GRAY, RED, ManimColor
 
-__all__ = ["Cross", "_SurroundingRectangle"]
+__all__ = ["Cross", "SurroundingRectangle"]
 
 
 class Cross(VGroup):
@@ -31,14 +31,13 @@ class Cross(VGroup):
         self.set_stroke(color=stroke_color, width=stroke_width, opacity=stroke_opacity)
 
 
-# Not meant to be exposed to user since they can just call `mobject.get_surrounding_rect`
-class _SurroundingRectangle(Rectangle):
+class SurroundingRectangle(Rectangle):
     """A rectangle surrounding `Mobject`"""
 
     def __init__(
         self,
         mobject: Mobject,
-        stroke_color: ManimColor = YELLOW,
+        stroke_color: ManimColor = GRAY,
         buff: float = SMALL_BUFF,
         corner_radius: float = 0.0,
         **kwargs,

@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 from smanim.config import CONFIG
 from smanim.constants import DOWN, LEFT, RIGHT, SMALL_BUFF, UP
@@ -15,7 +16,7 @@ __all__ = ["BoxList"]
 class BoxList(Group):
     def __init__(
         self,
-        *mobjects: Mobject,
+        *mobjects: Tuple[Mobject, ...],
         direction: Vector3 = RIGHT,
         aligned_edge: Vector3 | None = None,
         x_padding: str = SMALL_BUFF,

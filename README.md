@@ -3,7 +3,10 @@
 ![Still Manim Logo](./public/still-manim-logo.svg)
 still-manim is a python library for drawing static graphics of conceptual content in domains like math and programming.
 It's based on 3blue1brown's animation library, [manim](https://github.com/3b1b/manim), except it is designed for static graphics and for running in the browser.
-Try it in the [web editor](idraw.chat) (source code [here](https://github.com/tommy11jo/still-manim-editor)).
+The library outputs SVGs.
+
+Try it in the [web editor](https://idraw.chat) (source code [here](https://github.com/tommy11jo/still-manim-editor)).
+[Documentation](https://smanim-docs.vercel.app)
 
 ## Examples
 
@@ -43,10 +46,11 @@ title.next_to(lemons, buff=0.05)
 canvas.add(lemons, title)
 
 canvas.draw(crop=True)
-# use canvas.snapshot(preview=True) instead of canvas.draw() if you are running locally
+# use canvas.snapshot(crop=True) instead if you are running locally
 ```
 
 Example 2:
+
 <img src="./public/graph-demo.svg" alt="Graph Demo" height="300">
 
 ```python
@@ -76,13 +80,14 @@ start_vertex.set_color(RED)
 pointer = Arrow.points_at(start_vertex, direction=LEFT, color=RED, length=0.5)
 start_text = Text("start", color=RED).next_to(pointer)
 canvas.add(graph, pointer, start_text)
+
 canvas.draw(crop=True)
-# use canvas.snapshot(preview=True) instead of canvas.draw() if you are running locally
+# use canvas.snapshot(crop=True) instead  if you are running locally
 ```
 
 ## Goals
 
-- Run in the browser
+- Run in the browser (must be pure python or packages easily supported by pyodide, unlike original manim)
 - Allow flexible and clear construction of domain-specific graphical objects in as little python code as possible
 - Present language constructs to an LLM tutor, understanding that an LLM might not have great spatial awareness
 - Provide sensible support for human-AI interaction while editing diagrams (for example, by tracking the line of code for each variable assignment to a mobject and storing that in the mobject element in the SVG.)
@@ -94,7 +99,9 @@ canvas.draw(crop=True)
 - **Lines**: line segments, arrows, vectors
 - **Graphs**: directed graphs, undirected graphs, weighted graphs
 - **Cartesian Graphs**: number lines, 2D cartesian graphs, functions for those graphs (Note: The API is very unstable here)
-- **Text**: font size, font color, etc.
+- **Text**: font family (Roboto or computer-modern), font size, font color, font opacity, font decoration, bold, italics
+- **Grouping**: groups, box lists
+- **Annotations**: crosses, labels, surrounding rectangles
 
 still-manim does not support all the different types of Mobjects in manim. Also, still-manim is entirely in 2D for now.
 
@@ -143,6 +150,5 @@ python3 hello_world.py
 
 ## Notes
 
-- Documentation coming soon (maybe).
-- Some examples can be found in `examples/` and `tests/` in this repo. More examples can be found in the [web editor](idraw.chat) .
+- Examples can be found in the [web editor](https://idraw.chat) .
 - The API exposed to users for this project is loosely based on the Manim Community's [variant of manim](https://github.com/ManimCommunity/manim/).

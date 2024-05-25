@@ -9,7 +9,7 @@ sys.settrace(trace_assignments)
 def simple_assign():
     s = Square()
     canvas.add(s)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
     print(s.get_path())
 
 
@@ -20,7 +20,7 @@ def simple_assign():
 def nested_mobject_assign():
     a = Arrow()
     canvas.add(a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
     print(a.get_path())
     print(a.end_tip.get_path())
 
@@ -35,7 +35,7 @@ def multi_mobject_assign():
     c = Circle()
     b = BoxList(s, c)
     canvas.add(b)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
     print(b.get_path())
     vlines = b[3]
     print(vlines[0].get_path())  # the first vline
@@ -48,7 +48,7 @@ def complex_assign():
     g = Group(*[Square() for _ in range(3)]).arrange()
     s = Square()
     canvas.add(g)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
     print(g[0].get_path())
     print(s.get_path())
 
@@ -62,19 +62,19 @@ def graph_demo():
     start_vertex = g.vertices[0]
     start_vertex.set_color(RED)
     canvas.add(g)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
     assert g.vertices[0].get_path() == "start_vertex"
     assert g.vertices[1].get_path() == "g.vertices[1]"
 
 
-# graph_demo()
+graph_demo()
 
 
 # direct adds should be avoided when possible
 # the reference is stored as canvas.mobjects[k], which the LLM can access but is less clear than a var reference
 def direct_add():
     canvas.add(Circle())
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
     print(canvas.mobjects[0].get_path())
 
 
@@ -91,7 +91,7 @@ def inner_function_call():
     more_circle()
     c = Circle()
     canvas.add(c)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
     print("c path is", c.get_path())
 
 
@@ -121,7 +121,7 @@ class CircleShell(Mobject):
 def class_demo():
     d = CircleShell()
     canvas.add(d)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # class_demo()
@@ -143,7 +143,7 @@ def repeated_assign():
     b = generate_circle()
     c = generate_circle().shift(RIGHT)
     canvas.add(a, b, c)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # repeated_assign()
@@ -157,7 +157,7 @@ def test():
     canvas.draw()
 
 
-test()
+# test()
 
 # TODO: testing adding an edge between nodes with an LLM using the reference technique above
 # I'm worried the LLM will overindex on the user selected vertices g.vertices[0] and g.vertices[1] and try to draw a line between them rather than just changing edges in the constructor

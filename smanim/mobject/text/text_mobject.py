@@ -4,7 +4,6 @@ from typing_extensions import Literal, Self
 import numpy as np
 from smanim.config import CONFIG
 from smanim.constants import (
-    DEFAULT_FONT_SIZE,
     ORIGIN,
     OUT,
     PI,
@@ -12,7 +11,7 @@ from smanim.constants import (
 )
 from smanim.mobject.transformable import TransformableMobject
 from smanim.typing import Point3D, Vector3
-from smanim.utils.color import WHITE, ManimColor
+from smanim.utils.color import ManimColor
 from smanim.utils.space_ops import to_manim_len, to_pixel_len
 from smanim.utils.text_ops import wrap_text
 from PIL import ImageFont
@@ -21,24 +20,28 @@ __all__ = ["Text"]
 
 current_script_directory = Path(__file__).parent
 
-# TODO: move this functionality into config
-font_family = "computer-modern"
-font_dir = "fonts/computer-modern/"
-# (Bold, Italic)
-font_paths_by_style = {
+CM_FONT_NAME = "computer-modern"
+ROBOTO_FONT_NAME = "Roboto"
+
+# (Bold, Italic) => file name
+font_paths_by_style_cm = {
     (True, False): "cmunbx.ttf",
     (False, True): "cmunti.ttf",
     (False, False): "cmunrm.ttf",
     (True, True): "cmunbi.ttf",
 }
-# font_family = "Roboto"
-# font_dir = "fonts/Roboto/"
-# font_paths_by_style = {
-#     (False, False): "Roboto-Regular.ttf",
-#     (True, False): "Roboto-Bold.ttf",
-#     (False, True): "Roboto-Italic.ttf",
-#     (True, True): "Roboto-BoldItalic.ttf",
-# }
+font_paths_by_style_roboto = {
+    (False, False): "Roboto-Regular.ttf",
+    (True, False): "Roboto-Bold.ttf",
+    (False, True): "Roboto-Italic.ttf",
+    (True, True): "Roboto-BoldItalic.ttf",
+}
+
+FONT_DIRS = {CM_FONT_NAME: "fonts/computer-modern/", ROBOTO_FONT_NAME: "fonts/Roboto"}
+FONT_PATHS_BY_STYLE = {
+    CM_FONT_NAME: font_paths_by_style_cm,
+    ROBOTO_FONT_NAME: font_paths_by_style_roboto,
+}
 
 
 # FUTURE: Add two text elements together
@@ -48,16 +51,17 @@ class Text(TransformableMobject):
         text: str,
         position: Point3D = UL,  # coords of upper left corner
         start_angle: float = 0,  # in radians
-        color: ManimColor = WHITE,
+        color: ManimColor | None = None,  # use default in CONFIG: WHITE
+        font_family: str | None = None,  # use default in CONFIG: "computer-modern"
+        font_size: float | None = None,  # use default in CONFIG: DEFAULT_FONT_SIZE
         opacity: float = 1.0,
-        max_width: float | None = 6.0,  # in internal manim units
-        z_index: int = 1,  # text is by default above the normal 0 z-index
-        font_size: float = DEFAULT_FONT_SIZE,
         text_decoration: Literal[
             "none", "underline", "overline", "line-through"
         ] = "none",
         bold: bool = False,
         italics: bool = False,
+        z_index: int = 1,  # text is by default above the normal 0 z-index
+        max_width: float | None = 6.0,  # in internal manim units
         x_padding: float = 0,
         y_padding: float = 0,
         leading: float = 0.2,  # percent (as decimal) of line height for spacing between lines
@@ -68,16 +72,28 @@ class Text(TransformableMobject):
         if len(text) == 0:
             raise ValueError("Text cannot be empty")
         super().__init__(z_index=z_index, **kwargs)
+
         self.raw_text = text
         self._heading = start_angle
 
-        self.fill_color = color
-        self.fill_opacity = opacity
         self.text_decoration = text_decoration
         self.italics = italics
         self.bold = bold
-        font_file = font_paths_by_style[(bold, italics)]
 
+        self.fill_opacity = opacity
+        # use defaults from CONFIG for global text styling
+        font_family = (
+            font_family if font_family is not None else CONFIG.default_text_font_family
+        )
+        self.fill_color = color if color is not None else CONFIG.default_text_color
+        font_size = (
+            font_size if font_size is not None else CONFIG.default_text_font_size
+        )
+        if font_family not in FONT_PATHS_BY_STYLE:
+            raise ValueError(f"Illegal font family: {font_family}")
+
+        font_file = FONT_PATHS_BY_STYLE[font_family][(bold, italics)]
+        font_dir = FONT_DIRS[font_family]
         font_path: Path = current_script_directory / font_dir / font_file
 
         self.setup_text_layout(
@@ -242,11 +258,11 @@ class Text(TransformableMobject):
             mob.scale(factor, about_point)
         return self
 
-    # Currently stretches both bbox and the text itself
+    # Currently stretches both bbox and the text itself and the position of the text
     def stretch(self, factor: float, dim: int) -> Self:
         self.setup_text_layout(
             text=self.raw_text,
-            position=self.position,
+            position=self.position * factor,
             font_family=self.font_family,
             font_size=self.font_size,
             font_path=self.font_path,
@@ -285,6 +301,8 @@ class Text(TransformableMobject):
             for mem in self.get_family()[1:]:
                 mem.set_opacity(opacity=opacity, family=True)
 
+    # TODO: unstable function, creates awkward nesting, probably should use a TextGroup or something
+    # TODO: I should probably remove add_label for the same reason. Though it also breaks positioning which is another issue.
     def __add__(self, text: Text) -> Text:
         chain = self.copy()
         text.next_to(chain, buff=0.0)
