@@ -68,7 +68,7 @@ class Canvas:
         self.num_snapshots = 0
         self.loaded_fonts = set()
 
-    def add(self, *mobjects):
+    def add(self, *mobjects: Tuple[Mobject, ...]):
         for mobject in mobjects:
             if not isinstance(mobject, Mobject):
                 raise ValueError(f"Added item must be of type Mobject: {mobject}")
@@ -85,7 +85,7 @@ class Canvas:
                     mobject.direct_lineno = lineno
                 self.mobjects.add(mobject)
 
-    def remove(self, *mobjects):
+    def remove(self, *mobjects: Tuple[Mobject, ...]):
         for mobject in mobjects:
             if mobject not in self.mobjects:
                 log.warning(f"Mobject not found: {mobject}")
@@ -118,7 +118,7 @@ class Canvas:
 
     def snapshot(
         self,
-        preview: bool = False,
+        preview: bool = True,
         overwrite: bool = False,
         ignore_bg: bool = False,
         crop: bool = False,
@@ -129,6 +129,7 @@ class Canvas:
             raise Exception(
                 "Please use `canvas.draw()` instead of `canvas.snapshot` in the browser env."
             )
+
         bg_rect = None
         if self.config.bg_color is not None and not ignore_bg:
             bg_rect = Rectangle(
@@ -505,11 +506,6 @@ class Canvas:
     def shift(self, vector: Vector3) -> None:
         self.mobjects.shift(vector)
 
-    # Common helper functions that really use the underlying config
-    def set_background(self, color: ManimColor) -> Canvas:
-        self.config.bg_color = color
-        return self
-
     @property
     def left(self):
         return self.config.fw / 2 * LEFT
@@ -534,13 +530,34 @@ class Canvas:
     def height(self):
         return self.top[1] - self.bottom[1]
 
-    # Values here are in manim units
-    def set_dimensions(self, width: int, height: int) -> None:
+    ## `canvas` operations that change the underlying config
+    def set_background(self, color: ManimColor) -> Canvas:
+        self.config.bg_color = color
+        return self
+
+    def set_dimensions(self, width: int, height: int) -> Canvas:
+        # Values here are in manim units
         self.config.fw = width
         self.config.pw = int(width * self.config.density)
 
         self.config.fh = height
         self.config.ph = int(height * self.config.density)
+        return self
+
+    def set_global_text_styles(
+        self,
+        color: ManimColor | None = None,
+        font_size: int | None = None,
+        font_family: str | None = None,
+    ) -> Canvas:
+        """Sets the global text styles, which apply to all text created after this function call"""
+        if color is not None:
+            self.config.default_text_color = color
+        if font_size is not None:
+            self.config.default_text_font_size = font_size
+        if font_family is not None:
+            self.config.default_text_font_family = font_family
+        return self
 
     def scale_to_fit(self, buff: float = SMALL_BUFF):
         """Scales all mobjects so that they fit on this canvas

@@ -11,7 +11,7 @@ canvas = Canvas(CONFIG)
 def simple_square():
     s = Square()
     canvas.add(s)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # simple_square()
@@ -20,7 +20,7 @@ def simple_square():
 def simple_triangle():
     t = Triangle()
     canvas.add(t)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # simple_triangle()
@@ -30,7 +30,7 @@ def square_stroke():
     # this shows that SVG draws stroke equally on inner and outer border
     s1 = Square(stroke_color=BLUE, stroke_width=30).shift(LEFT * 2)
     canvas.add(s1)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # square_stroke()
@@ -48,7 +48,7 @@ def polygons_next_to():
     t.next_to(s, RIGHT).align_to(t, DOWN)
     canvas.add(t)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
     # canvas.add(s)
     # canvas.snapshot()
 
@@ -71,7 +71,7 @@ def align_square():
     s.align_to(s1, edge=UP)
     canvas.add(s)
     canvas.add(s1)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # align_square()
@@ -81,7 +81,7 @@ def rotate_hexagon():
     p = RegularPolygon()
     p.rotate(PI / 30)
     canvas.add(p)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # rotate_hexagon()
@@ -94,7 +94,7 @@ def position_square():
     # s.set_y(3)
     canvas.add(s)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # position_square()
@@ -110,7 +110,7 @@ def stroke_and_fill():
     # this time, the fill color overrides
     canvas.add(s2)
     canvas.add(s1)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # stroke_and_fill()
@@ -126,7 +126,7 @@ def stroke_family():
     s1.set_stroke(ORANGE, family=True)
     # s1.set_stroke(ORANGE, family=False)
     canvas.add(s1)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # stroke_family()
@@ -145,7 +145,7 @@ def group_with_submobject():
     # v.set_fill(GREEN)
     v.set_stroke(BLUE)
     canvas.add(v)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # group_with_submobject()
@@ -163,7 +163,7 @@ def polygon_z_index():
     t2 = Text("z-index for red square set to -1").next_to(g2, UP)
     canvas.add(g2, t2)
     # s2 = Square(z_index=-1).shift(LEFT)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # polygon_z_index()
@@ -182,7 +182,7 @@ def polygon_bring_to_back():
     t2 = Text("Red square brought to back within group g2").next_to(g2, UP)
     canvas.add(g2, t2)
     # s2 = Square(z_index=-1).shift(LEFT)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # polygon_bring_to_back()
@@ -195,7 +195,7 @@ def square_to_rect_line():
     canvas.add(s)
     canvas.add(r)
     canvas.add(line)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # square_to_rect_line()
@@ -206,7 +206,7 @@ def square_to_square_arrow():
     right = Square().shift(RIGHT * 2)
     arrow = Arrow(left, right)
     canvas.add(arrow, left, right)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # square_to_square_arrow()
@@ -218,7 +218,7 @@ def dashed_arrow():
     arrow = Arrow(s, r, buff=0.2, dashed=True)
     canvas.add(s, r, arrow)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # dashed_arrow()
@@ -234,7 +234,7 @@ def simple_arcs():
     half_circle = Arc.from_points(UR, DR, radius=1)
     half_circle.next_to(quarter_circle, LEFT)
     canvas.add(half_circle)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # simple_arcs()
@@ -256,7 +256,7 @@ def arc_to_arc_arrow():
         d = Dot(np.array(pt), fill_color=BLUE)
         canvas.add(d)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # arc_to_arc_arrow()
@@ -266,7 +266,7 @@ def simple_brace():
     s = Square()
     b = Brace.from_mobject_edge(s)
     canvas.add(s, b)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # simple_brace()
@@ -289,7 +289,7 @@ def brace_on_text_and_shapes():
     b2 = Brace.from_mobject_edge(t, buff=0.0)
     g2 = Group(t, b2)
     canvas.add(g2)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # brace_on_text_and_shapes()
@@ -309,7 +309,7 @@ def labeled_brace():
     canvas.add(r2, l3)
 
     canvas.add(r, l2)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # labeled_brace()
@@ -325,7 +325,7 @@ def brace_span():
     s = Square().shift(UR * 3)
     b1 = LabeledBrace.from_mobject_edge(s, LEFT, label=Text("left"))
     canvas.add(s, b1)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # brace_span()
@@ -342,7 +342,7 @@ def wrapping_text():
     # t = Text("and thistextispastthewidthbutstaysasone", max_width=2.0)
     # t.next_to(s)
     canvas.add(t)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # wrapping_text()
@@ -351,7 +351,7 @@ def wrapping_text():
 def text_with_html_chars():
     t = Text("&&hi&&")
     canvas.add(t)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # text_with_html_chars()
@@ -363,7 +363,7 @@ def arrow_scale():
     # a.scale(2)
     a.scale(0.5)
     canvas.add(a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # arrow_scale()
@@ -374,7 +374,7 @@ def submobject_scale():
     s.add(Square().shift(UR))
     s.scale(0.6)
     canvas.add(s)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # submobject_scale()
@@ -393,7 +393,7 @@ def scale_group():
     # g.scale(0.2)
 
     canvas.add(g)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # scale_group()
@@ -408,7 +408,7 @@ def text_center():
     canvas.add(t)
     d = Dot(t.center)
     canvas.add(d)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # text_center()
@@ -418,7 +418,7 @@ def line_scalar():
     l1 = Line()
     l2 = Line().shift(DOWN).scale(2)
     canvas.add(l1, l2)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # line_scalar()
@@ -430,7 +430,7 @@ def tip_scalar():
     a = Arrow(tip_scalar=0.5).shift(DOWN)
 
     canvas.add(a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # tip_scalar()
@@ -439,7 +439,7 @@ def tip_scalar():
 def labeled_dot():
     l1 = LabeledDot(label=Text("hi"))
     canvas.add(l1)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # labeled_dot()
@@ -456,7 +456,7 @@ def nested_group():
     g.add(g1)
 
     canvas.add(g)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # nested_group()
@@ -468,7 +468,7 @@ def rounded_rect():
     # incorrect, radius too large
     # r = Rectangle(corner_radius=0.5 + 0.01)
     canvas.add(r)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # rounded_rect()
@@ -485,7 +485,7 @@ def rounded_shapes():
         vertices=[[0, 1, 0], [1, 0, 0], [-1, 0, 0]], corner_radius=0.1
     ).shift(RIGHT * 2)
     canvas.add(reverse_t)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # rounded_shapes()
@@ -494,7 +494,7 @@ def rounded_shapes():
 def arc_between():
     a = Arc.from_points([-0.9, 0.5, 0], [0, -1, 0])
     canvas.add(a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # arc_between()
@@ -504,7 +504,7 @@ def arc_along_square():
     s = Square().shift(LEFT + 2 * UP)
     a = Arc.from_points(s.get_corner(DL), s.get_corner(DR))
     canvas.add(s, a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # arc_along_square()
@@ -512,13 +512,13 @@ def arc_along_square():
 
 def surround_shapes():
     c = Circle()
-    c.add_surrounding_rect()
-    canvas.add(c)
+    c_rect = SurroundingRectangle(c)
+    canvas.add(c, c_rect)
 
     t = Text("hey").shift(UR * 1.2)
-    t.add_surrounding_rect(corner_radius=0.1)
-    canvas.add(t)
-    canvas.snapshot(preview=True)
+    t_rect = SurroundingRectangle(t)
+    canvas.add(t, t_rect)
+    canvas.snapshot()
 
 
 # surround_shapes()
@@ -529,7 +529,7 @@ def cross_square():
     c = Cross(s)
 
     canvas.add(s, c)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # cross_square()
@@ -539,7 +539,7 @@ def cross_text():
     t = Text("2 > 7")
     c = Cross(t, stroke_opacity=0.6, scale_factor=0.4)
     canvas.add(t, c)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # cross_text()
@@ -582,7 +582,7 @@ def vector_addition():
     canvas.add(vectorSum)
     canvas.add(sum_label)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # vector_addition()
@@ -593,21 +593,18 @@ def my_vector_addition():
     v1 = Arrow(start=LEFT * 2, end=UP * 2 + LEFT * 2, fill_color=BLUE)
     # Making the text use "color" vs the arrow use "fill_color" is a bit tough
     # FUTURE: Maybe every object can a default fill_color or stroke_color that gets set when color is passed in
-    v1_label = Text("v1 label")
-    v1.add_label(v1_label)
+    v1_label = v1.create_label("v1_label")
 
     v2 = Arrow(start=UP * 2 + LEFT * 2, end=UP * 2 + RIGHT * 2, fill_color=GREEN)
-    v2_label = Text("v2")
-    v2.add_label(v2_label)
+    v2_label = v2.create_label("v2")
 
     vsum = Arrow(start=LEFT * 2, end=UP * 2 + RIGHT * 2, fill_color=RED)
-    vsum_label = Text("v1 + v2 and more text to demo")
-    vsum.add_label(vsum_label, opposite_side=True)
+    vsum_label = vsum.create_label("v1 + v2 and more text to demo", opposite_side=True)
     canvas.add(v1, v1_label)
     canvas.add(v2, v2_label)
     canvas.add(vsum, vsum_label)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # my_vector_addition()
@@ -615,19 +612,16 @@ def my_vector_addition():
 
 def flipped_vector_label():
     v0 = Arrow().shift(UP * 3)
-    label0 = Text("basic")
-    v0.add_label(label0)
+    label0 = v0.create_label("basic")
 
-    canvas.add(v0)
+    canvas.add(v0, label0)
     v1 = Arrow(start=RIGHT * 2, end=DOWN * 2 + LEFT * 2, fill_color=RED)
-    label1 = Text("x + y")
-    v1.add_label(label1)
-    canvas.add(v1)
+    label1 = v1.create_label("x + y")
+    canvas.add(v1, label1)
     v2 = Arrow(start=ORIGIN, end=UP + LEFT, fill_color=RED)
-    label2 = Text("z + w")
-    v2.add_label(label2)
-    canvas.add(v2)
-    canvas.snapshot(preview=True)
+    label2 = v2.create_label("z + w")
+    canvas.add(v2, label2)
+    canvas.snapshot()
 
 
 # flipped_vector_label()
@@ -635,83 +629,34 @@ def flipped_vector_label():
 
 def label_arrow_cases():
     v1 = Arrow(start=LEFT, end=RIGHT)
-    v1.add_label(Text("v1"))
+    canvas.add(v1.create_label("v1"))
 
     v2 = Arrow(start=ORIGIN + RIGHT * 0.1, end=UR)
-    v2.add_label(Text("v2 at PI/4"))
+    canvas.add(v2.create_label("v2 at PI/4"))
 
     v3 = Arrow(start=ORIGIN + UP * 0.1, end=UL)
-    v3.add_label(Text("v3 at 3PI/4"))
+    canvas.add(v3.create_label("v3 at 3PI/4"))
 
     v4 = Arrow(start=ORIGIN + LEFT * 0.1, end=DL)
-    v4.add_label(Text("v4"))
+    canvas.add(v4.create_label("v4"))
 
     v5 = Arrow(start=ORIGIN + DOWN * 0.1, end=DR)
-    v5.add_label(Text("v5"))
+    canvas.add(v5.create_label("v5"))
 
     v6 = Arrow(start=ORIGIN + DOWN * 0.2, end=DOWN - 0.01)
-    v6.add_label(Text("v6"))
+    canvas.add(v6.create_label("v6"))
 
     canvas.add(v1, v2, v3, v4, v5, v6)
 
-    canvas.snapshot(preview=True)
-
-
-# label_arrow_cases()
-
-
-def surrounding_rect_mob_with_submobs():
-    s = Square()
-    t = Text("Text width automatically")
-
-    s.add_label(t)
-    s.add_surrounding_rect()
-
-    t.add_surrounding_rect(stroke_color=RED, z_index=20)
-    canvas.add(s)
-    canvas.snapshot(preview=True)
-
-
-# surrounding_rect_mob_with_submobs()
-
-
-def reactive_surrounding_rect():
-    t1 = Text("water bottle").shift(UP)
-    t1.add_surrounding_rect()
-    canvas.add(t1)
-    t1.rotate(PI / 6)
-    r = Rectangle(width=3.0).shift(LEFT * 4)
-    # takes 0.05 seconds for `wrap_text` originally
-    t2 = Text(
-        "Text width automatically set to rect width and should wrap accordingly. Text width automatically set to rect width and should wrap accordingly",
-    )
-    t2.add_surrounding_rect(fill_color=RED, fill_opacity=0.3, corner_radius=0.2)
-
-    # takes 0.08 seconds for `wrap_text` during stretching
-    t2.stretch_to_fit_width(r.width)
-    t2.next_to(r, DOWN, buff=0.1)
-    canvas.add(r, t2)
-    canvas.snapshot(preview=True)
-
-
-# I'm mostly timing this to see speed of text wrapping (which is a bit janky)
-# start_time = time.time()
-# reactive_surrounding_rect()
-
-# end_time = time.time()
-# print("total time", end_time - start_time)
-# locally this takes 0.09 seconds, will it be similar in browser env?
-# https://pyodide.org/en/stable/project/roadmap.html
-# pyodide is typically 3-5x slower so between 0.3 to 0.5 seconds + js overhead to load a basic diagram with text right now
-# p5.js load time is also like 0.5 seconds for basic things
+    canvas.snapshot()
 
 
 def rect_surrounding_circle():
     c = Circle()
-    c.add_surrounding_rect()
+    c_rect = SurroundingRectangle(c)
     c.shift(RIGHT)
-    canvas.add(c)
-    canvas.snapshot(preview=True)
+    canvas.add(c, c_rect)
+    canvas.snapshot()
 
 
 # rect_surrounding_circle()
@@ -719,11 +664,12 @@ def rect_surrounding_circle():
 
 def single_letter_with_bg():
     letter = Text("h")
-    letter.add_surrounding_rect(fill_color=RED, fill_opacity=0.3)
-    # Surrounding rect keeps up even after shift
+    l_rect = SurroundingRectangle(letter, fill_color=RED, fill_opacity=0.3)
+    # must add surrounding rect directly so that letter shift includes it
+    letter.add(l_rect)
     letter.shift(RIGHT * 3)
     canvas.add(letter)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # single_letter_with_bg()
@@ -735,7 +681,7 @@ def arrow_next_to():
     a.next_to(s)
 
     canvas.add(s, a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # arrow_next_to()
@@ -744,7 +690,7 @@ def arrow_next_to():
 def double_arrow():
     a = Arrow(at_start=True, at_end=True)
     canvas.add(a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # double_arrow()
@@ -761,7 +707,7 @@ def text_rotation():
 
     g.rotate(PI)
     canvas.add(g)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # text_rotation()
@@ -789,7 +735,7 @@ def text_rotation_internals():
     canvas.add(t1_ul)
     canvas.add(t1_center, t2_center)
     canvas.add(o, t1, t2)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # text_rotation_internals()
@@ -803,7 +749,7 @@ def vector_mirror_about():
     c_vec = mirror_vector(b_vec, a_vec)
     c = Vector(c_vec)
     canvas.add(a, b, c)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # vector_mirror_about()
@@ -821,7 +767,7 @@ def test_draw():
 def vector_inputs():
     v = Vector(UL * 3)
     canvas.add(v)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # vector_inputs()
@@ -834,7 +780,7 @@ def vgroup_ops():
     g.rotate()
     g.set_color(BLUE)
     canvas.add(g)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # vgroup_ops()
@@ -846,7 +792,7 @@ def row_and_col():
     s = VGroup(*squares).arrange()
     c = VGroup(*circles).arrange(direction=DOWN, aligned_edge=RIGHT)
     canvas.add(c, s)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # row_and_col()
@@ -862,7 +808,7 @@ def text_add():
     # canvas.add(group, adder)
     result = hi + there + adder
     canvas.add(result)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # text_add()
@@ -877,7 +823,7 @@ def text_bbox():
     for p in t.bounding_points:
         canvas.add(Dot(p))
     canvas.add(t)
-    canvas.snapshot(preview=True, crop=True)
+    canvas.snapshot(crop=True)
 
 
 # text_bbox()
@@ -890,7 +836,7 @@ def point_from_prop():
     canvas.add(c)
     canvas.add(p1, p2)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # point_from_prop()
@@ -899,7 +845,7 @@ def point_from_prop():
 def dot_default_color():
     d = Dot()
     canvas.add(d)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # dot_default_color()
@@ -909,7 +855,7 @@ def arrow_color():
     a = Arrow()
     a.set_color(GREEN).set_opacity(0.5)
     canvas.add(a)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # arrow_color()
@@ -930,7 +876,7 @@ def arrange_in_grid():
     # v.arrange()
     v.arrange_in_grid(num_cols=6, buff_within_col=0.5, aligned_edge_within_row=DOWN)
     canvas.add(v)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # arrange_in_grid()
@@ -946,7 +892,7 @@ def simplest_grid():
     )
     s.arrange_in_grid(num_rows=2, aligned_edge_within_row=DOWN)
     canvas.add(s)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # simplest_grid()
@@ -956,7 +902,7 @@ def init_text_location():
     c = Circle()
     t = Text("hello world, that's a wrap this text i mean")
     canvas.add(c, t)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # init_text_location()
@@ -967,7 +913,7 @@ def next_to_testing():
     r = Rectangle(height=1.5)
     c.next_to(r, direction=UR)
     canvas.add(c, r)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # next_to_testing()
@@ -982,7 +928,7 @@ def move_to_testing():
     r = Rectangle(height=1.5).shift(RIGHT)
     c.move_to(r).align_to(r, UP)
     canvas.add(c, r)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # move_to_testing()
@@ -998,7 +944,7 @@ def box_list():
     canvas.add(b2)
 
     canvas.add(b)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # box_list()
@@ -1010,7 +956,7 @@ def align_to_buff():
     # c.align_to(r, UP, buff=0.2)
     c.align_to(r, RIGHT, buff=0.2)
     canvas.add(c, r)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # align_to_buff()
@@ -1019,8 +965,8 @@ def align_to_buff():
 def default_colors():
     # default fill color is blue, but can override it
     c = Circle(fill_color=RED)
-    c.add_label(Text("hi"))
-    canvas.add(c)
+    c_label = c.create_label("hi")
+    canvas.add(c, c_label)
 
     # default fill color is white
     d = Dot().shift(RIGHT)
@@ -1035,8 +981,8 @@ def default_colors():
     canvas.add(a)
 
     # default stroke is white
-    l = Line().shift(UP * 2)
-    canvas.add(l)
+    line = Line().shift(UP * 2)
+    canvas.add(line)
 
     # default stroke is blue
     a = Arc().shift(RIGHT)
@@ -1045,30 +991,32 @@ def default_colors():
     c2 = Circle(stroke_color=ORANGE).shift(UP * 3)
     canvas.add(c2)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # default_colors()
 
 
 def fill_stroke():
-    # create a way to use default text size for a duration
-    # canvas.config.set_font_size(16)
-    c1 = Circle(radius=0.2, fill_color=YELLOW).add_label(Text("set fill", font_size=14))
-    c2 = Circle(radius=0.2, fill_color=YELLOW, stroke_color=GREEN).add_label(
-        Text("set stroke and fill", font_size=14)
-    )
-    c3 = Circle(radius=0.2, stroke_color=ORANGE).add_label(
-        Text("set stroke", font_size=14)
-    )
-    c4 = Circle(radius=0.2).add_label(Text("no set (use default)", font_size=14))
-    circle_demos = BoxList(c1, c2, c3, c4, aligned_edge=DOWN).shift(LEFT)
+    c1 = Circle(radius=0.2, fill_color=YELLOW)
+    c1.add(c1.create_label("set fill", font_size=14))
 
-    circle_demos.add_label(Text("Ways to color a circle"), width=4.0, buff=0.1)
+    c2 = Circle(radius=0.2, fill_color=YELLOW, stroke_color=GREEN)
+    c2.add(c2.create_label("set stroke and fill", font_size=14))
+
+    c3 = Circle(radius=0.2, stroke_color=ORANGE)
+    c3.add(c3.create_label("set stroke", font_size=14))
+
+    c4 = Circle(radius=0.2)
+    c4.add(c4.create_label("no set (use default)", font_size=14))
+
+    circle_demos = BoxList(c1, c2, c3, c4, aligned_edge=DOWN).shift(LEFT)
+    circle_demos.add(
+        circle_demos.create_label("Ways to color a circle", max_width=4.0, buff=0.1)
+    )
 
     canvas.add(circle_demos)
-
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # fill_stroke()
@@ -1078,7 +1026,7 @@ def grid_simple():
     g = VGroup(*[Square() for i in range(8)])
     g.arrange_in_grid(num_rows=2)
     canvas.add(g)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # grid_simple()
@@ -1087,7 +1035,7 @@ def grid_simple():
 def simple_group():
     g = Group(Square().shift(LEFT), Square(color=GREEN), Square().shift(RIGHT))
     canvas.add(g)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # simple_group()
@@ -1098,7 +1046,7 @@ def simpler_group():
     canvas.add(g)
     result = canvas.draw()
     print(result)
-    # canvas.snapshot(preview=True)
+    # canvas.snapshot()
 
 
 # simpler_group()
@@ -1120,7 +1068,7 @@ def simple_vgroup_class():
     metadata = canvas.draw()
     meta = json.loads(metadata)["metadata"]
     print(meta)
-    # canvas.snapshot(preview=True)
+    # canvas.snapshot()
 
 
 # simple_vgroup_class()
@@ -1131,7 +1079,7 @@ def y_axis_test():
     n.plot(lambda x: 2 * x + 1)
     n.scale(0.5)
     canvas.add(n)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # y_axis_test()
@@ -1148,7 +1096,7 @@ def tree_test():
     g.align_to(canvas.left, edge=LEFT)
     canvas.add(g)
 
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # tree_test()
@@ -1166,7 +1114,7 @@ def arrow_pointer():
     canvas.add(groups)
     title = Text("Italics", italics=True).shift(UP * 2)
     canvas.add(title)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # arrow_pointer()
@@ -1180,7 +1128,7 @@ def next_to_and_align():
     # s.next_to(t, DOWN, aligned_edge=LEFT) or more simply
     s.next_to(t, DOWN, LEFT)
     canvas.add(s, t)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # next_to_and_align()
@@ -1190,7 +1138,7 @@ def introduce_lambda():
     lamb = LambdaWithEyes()
     lamb.move_to(ORIGIN)
     canvas.add(lamb)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # introduce_lambda()
@@ -1204,7 +1152,7 @@ def simple_italics():
         + Text("spatial transformations", italics=True)
     ).shift(LEFT * 3)
     canvas.add(t1)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # simple_italics()
@@ -1225,7 +1173,7 @@ def box_list_down():
     t2 = Text("Horizontal flow").next_to(g2, UP)
     canvas.add(g2, t2)
     # b = BoxList(c, s)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # box_list_down()
@@ -1234,7 +1182,7 @@ def box_list_down():
 def fill_opacity():
     c = Circle(fill_color=GREEN, fill_opacity=0.0)
     canvas.add(c)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # fill_opacity()
@@ -1243,9 +1191,69 @@ def fill_opacity():
 # Bug: The spacing is different locally and in the browser on this example, an extra space after "its" in browser
 def text_spacing():
     t1 = Text("The spacing is different locally and in the browser on this example")
-    t1.add_surrounding_rect(buff=0)
-    canvas.add(t1)
-    canvas.snapshot(preview=True)
+    t1_rect = SurroundingRectangle(t1, buff=0)
+    canvas.add(t1, t1_rect)
+    canvas.snapshot()
 
 
-text_spacing()
+# text_spacing()
+
+
+def to_edge_demo():
+    c = Circle()
+    t = Text("Title").to_edge(UP)
+    label = Text("label").to_edge(LEFT, buff=0)
+    canvas.add(t, c, label)
+    canvas.snapshot()
+
+
+# to_edge_demo()
+
+
+def nline_stretch():
+    y_axis = NumberLine(color=GRAY)
+    y_axis.stretch(0.5, dim=0)
+    y_axis.rotate(PI / 8)
+    canvas.add(y_axis)
+    canvas.snapshot(crop=True)
+
+
+# nline_stretch()
+
+
+def global_font_style():
+    canvas.set_global_text_styles(color=RED, font_family="Roboto")
+    t1 = Text("red")
+
+    t2 = Text("blue", color=BLUE)
+    t3 = Text("red again")
+    canvas.add(*Group(t1, t2, t3).arrange())
+    canvas.snapshot(ignore_bg=True)
+
+
+# global_font_style()
+def close_to_demo():
+    vertices = [0, 1, 2, 3, 4]
+    edges = [(0, 1), (1, 2), (1, 3), (2, 3), (3, 0), (3, 4)]
+    g = Graph(
+        vertices=vertices, edges=edges, layout="circular", include_vertex_labels=True
+    )
+    labels = Group()
+    for v in g.vertices.values():
+        t = Text("∞").close_to(v, g.get_family())
+        labels.add(t)
+    canvas.add(g, labels)
+    canvas.snapshot()
+
+
+# close_to_demo()
+
+
+def label_line():
+    line = Line()
+    l1_label = line.create_label("l1")
+    canvas.add(line, l1_label)
+    canvas.snapshot()
+
+
+label_line()

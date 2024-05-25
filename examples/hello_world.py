@@ -1,5 +1,7 @@
 from smanim import *
 
 c = Circle(stroke_color=RED)
-canvas.add(c)
-canvas.snapshot(preview=True)
+t = Text("Hello World")
+t.next_to(c, UP)
+canvas.add(c, t)
+canvas.snapshot()

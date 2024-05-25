@@ -44,7 +44,7 @@ def graph(graph):
         edge_config={"color": BLUE},
     )
     canvas.add(vgraph)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # graph(GRAPH1)
@@ -65,7 +65,7 @@ def digraph(graph):
         include_vertex_labels=True,
     )
     canvas.add(vgraph)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
 
 
 # digraph(GRAPH1)
@@ -81,20 +81,20 @@ def weighted_digraph(graph):
     graph = WeightedGraph(
         vertices,
         edges,
-        vertex_config={"fill_color": GRAY},
+        vertex_config={"fill_color": GRAY, "radius": 0.2},
         edge_labels=edge_labels,
         edge_type=Arrow,
         layout_config={"seed": 2},
         include_vertex_labels=True,
     )
     canvas.add(graph)
-    canvas.snapshot(preview=True)
+    canvas.snapshot()
     print(graph.get_path())
     print(graph.edge_labels[(0, 1)].get_path())
     print(graph.vertex_labels[0].get_path())
 
 
-weighted_digraph(WEIGHTED_GRAPH1)
+# weighted_digraph(WEIGHTED_GRAPH1)
 
 
 def tree(graph):
@@ -103,7 +103,7 @@ def tree(graph):
         vertices, edges, layout="tree", root_vertex=0, include_vertex_labels=True
     )
     canvas.add(graph)
-    # canvas.snapshot(preview=True)
+    # canvas.snapshot()
     result = canvas.draw()
     print(graph.get_path())
     print(graph.edges[(0, 1)].get_path())

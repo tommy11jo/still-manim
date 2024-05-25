@@ -114,7 +114,11 @@ class LabeledBrace(Brace):
             label = Text("label")
         self.add_label(label=label, buff=label_buff)
 
-    def add_label(self, label: Text, buff: float = 0) -> None:
+    def add_label(
+        self,
+        label: Text,
+        buff: float = 0,
+    ) -> None:
         diff = self.end - self.start
         line_len = np.linalg.norm(diff)
         unit_dir = diff / line_len

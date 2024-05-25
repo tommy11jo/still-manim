@@ -1,10 +1,10 @@
 from typing import Tuple
 from typing_extensions import Self
 import numpy as np
-from smanim.constants import DOWN, LEFT, ORIGIN, PI, RIGHT, SMALL_BUFF, TINY_BUFF
+from smanim.constants import DOWN, LEFT, MED_SMALL_BUFF, ORIGIN, PI, RIGHT, TINY_BUFF
 from smanim.mobject.mobject import Mobject
-from smanim.mobject.text.text_mobject import Text
 from smanim.mobject.geometry.tips import ArrowTip, ArrowTriangleFilledTip
+from smanim.mobject.text.text_mobject import Text
 from smanim.mobject.vmobject import VMobject
 from smanim.typing import ManimFloat, Point3D, Vector3
 from smanim.utils.color import WHITE, ManimColor
@@ -26,6 +26,10 @@ class Line(VMobject):
         opacity: float = 1.0,
         **kwargs,
     ):
+        if "stroke_color" in kwargs:
+            color = kwargs.pop("stroke_color")
+        if "stroke_opacity" in kwargs:
+            opacity = kwargs.pop("stroke_opacity")
         start_pt, end_pt = Line.find_line_anchors(start, end)
         if 2 * buff > np.linalg.norm(end_pt - start_pt):
             raise ValueError("Buff is larger than 2 * line_length")
@@ -73,11 +77,14 @@ class Line(VMobject):
         self._end_pt = end
         self.points = self._points_from_start_and_end()
 
-    def get_direction(self):
+    @property
+    def direction(self) -> Point3D:
         return (self.end - self.start) / np.linalg.norm(self.end - self.start)
 
-    def get_angle(self):
-        dir = self.get_direction()
+    @property
+    def angle(self) -> float:
+        # in radians
+        dir = self.direction
         return angle_from_vector(dir)
 
     @property
@@ -121,11 +128,13 @@ class Line(VMobject):
             end_pt += 0.0001
         return start_pt, end_pt
 
-    # FUTURE: Determine whether this function is worth keeping
-    # Helper function for labeling lines/arrows/vectors in their natural direction when possible and always readable
-    def add_label(
-        self, label: Text, buff: float = SMALL_BUFF, opposite_side=False
-    ) -> None:
+    def create_label(
+        self,
+        text: str,
+        buff: float = MED_SMALL_BUFF,
+        opposite_side=False,
+        **text_kwargs,
+    ) -> Text:
         diff = self.end - self.start
         line_len = np.linalg.norm(diff)
         unit_dir = diff / line_len
@@ -139,12 +148,13 @@ class Line(VMobject):
         if angle >= PI / 2:
             angle -= PI
             flipped_scalar = -1
+        label = Text(text, **text_kwargs)
         label.rotate_in_place(angle)
         perp_dir = np.array([-dir_y, dir_x, 0])
         sign = -1 * flipped_scalar if opposite_side else 1 * flipped_scalar
         midpoint = self.start + unit_dir * (line_len / 2)
         label.move_to(midpoint + sign * perp_dir * buff)
-        self.add(label)
+        return label
 
     @property
     def midpoint(self):
@@ -182,7 +192,7 @@ class TipableLine(Line):
             **kwargs,
         )
         rotate_scalar = 1 if at_start else -1
-        tip.rotate(self.get_angle() + rotate_scalar * PI / 2)
+        tip.rotate(self.angle + rotate_scalar * PI / 2)
 
         anchor = self.start if at_start else self.end
         tip.shift(anchor - tip.base)

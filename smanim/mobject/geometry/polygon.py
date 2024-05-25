@@ -107,7 +107,6 @@ class Polygon(Polygram):
     ):
         if not has_default_colors_set(kwargs):
             kwargs["default_fill_color"] = BLUE
-        self._vertices = np.array(vertices, dtype=ManimFloat)
         self.corner_radius = corner_radius
         super().__init__(is_closed=True, vertices=vertices, **kwargs)
         if corner_radius > 0:
@@ -189,7 +188,7 @@ class Rectangle(Polygon):
 
 
 class Square(Polygon):
-    def __init__(self, side_length: int = 2, **kwargs):
+    def __init__(self, side_length: float = 2.0, **kwargs):
         half_side = side_length / 2
         super().__init__(
             [UR * half_side, UL * half_side, DL * half_side, DR * half_side],
@@ -198,7 +197,7 @@ class Square(Polygon):
 
     @property
     def side_length(self):
-        return np.linalg.norm(self.vertices[-1] - self.vertices[0])
+        return self.width
 
     def __repr__(self):
         class_name = self.__class__.__qualname__
@@ -218,5 +217,6 @@ class RegularPolygon(Polygon):
 
 
 class Triangle(RegularPolygon):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(n=3, **kwargs)
+    def __init__(self, side_length: float = 2.0, **kwargs) -> None:
+        half_side = side_length / 2
+        super().__init__(n=3, radius=half_side, **kwargs)

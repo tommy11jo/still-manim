@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 from smanim.constants import ORIGIN, RIGHT, TAU, UP
 from smanim.mobject.vmobject import VMobject
@@ -79,7 +80,7 @@ class Arc(VMobject):
         ) = None,  # in radians, note: use `angle` instead of `radius` when specified to help define the arc
         radius: float = 1.0,
         **kwargs,
-    ):
+    ) -> Arc:
         # The arc will be formed counter-clockwise from start to end along the circle
         start = np.array(start)
         end = np.array(end)

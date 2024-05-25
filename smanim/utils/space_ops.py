@@ -152,3 +152,38 @@ def angle_from_vector(vector3: Vector3):
     if angle < 0:
         angle += TAU
     return angle
+
+
+def project_polygon(vertices, axis):
+    """
+    Projects the vertices of a polygon onto an axis and returns the minimum and maximum scalar values.
+    """
+    projections = np.dot(vertices, axis)
+    return np.min(projections), np.max(projections)
+
+
+def polygon_intersection(polygon1: np.ndarray, polygon2: np.ndarray) -> bool:
+    """
+    Returns whether two convex polygons intersect using the Separating Axis Theorem.
+    """
+    polygon1_2d = polygon1[:, :2]
+    polygon2_2d = polygon2[:, :2]
+    polygons = [polygon1_2d, polygon2_2d]
+
+    for polygon in polygons:
+        num_vertices = polygon.shape[0]
+
+        for i in range(num_vertices):
+            current_vertex = polygon[i]
+            next_vertex = polygon[(i + 1) % num_vertices]
+
+            edge = next_vertex - current_vertex
+            axis = np.array([-edge[1], edge[0]])
+
+            min1, max1 = project_polygon(polygon1_2d, axis)
+            min2, max2 = project_polygon(polygon2_2d, axis)
+
+            if max1 < min2 or max2 < min1:
+                return False
+
+    return True

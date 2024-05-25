@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from smanim.config import CONFIG
 from smanim.mobject.geometry.circle import Dot
+from smanim.mobject.geometry.shape_matchers import SurroundingRectangle
 from smanim.mobject.text.text_mobject import Text
 from smanim.mobject.transformable import TransformableMobject
 from smanim.typing import AdjacencyListGraph, WeightedAdjacencyListGraph
@@ -12,7 +13,7 @@ from smanim.utils.color import GRAY
 __all__ = ["Graph", "WeightedGraph"]
 
 from copy import copy
-from typing import Dict, Hashable, Iterable, Tuple
+from typing import Dict, Hashable, Iterable, List, Tuple
 
 import networkx as nx
 import numpy as np
@@ -135,7 +136,9 @@ class Graph(TransformableMobject):
         )
 
     @staticmethod
-    def from_adjacency_list(graph: AdjacencyListGraph):
+    def from_adjacency_list(
+        graph: AdjacencyListGraph,
+    ) -> Tuple[List[Hashable], List[Tuple[Hashable, Hashable]]]:
         # graph is a map from vertex => [vertex1, vertex2, ...]
         vertices = list(graph.keys())
         edges = []
@@ -144,7 +147,6 @@ class Graph(TransformableMobject):
                 edges.append((vertex, neighbor))
         return vertices, edges
 
-    # TODO: make this a generate and allow the init to call it and pass in label_config
     def generate_vertex_labels(
         self, labels: Iterable[str] | None = None, label_config: dict = {}
     ) -> Group:
@@ -187,21 +189,32 @@ class WeightedGraph(Graph):
                 )
             else:
                 converted_labels[edge] = label
-        edge_label_map: dict[str, Text] = {}
+        edge_label_map: dict[Tuple[Hashable, Hashable], Text] = {}
         for edge, weight_text in converted_labels.items():
             v1, v2 = edge
             edge_obj = self.edges[(v1, v2)]
 
             weight_text.move_to(edge_obj.midpoint)
-            weight_text.add_surrounding_rect(
-                fill_color=CONFIG.bg_color, fill_opacity=1.0, buff=0.005
+            weight_text.add(
+                SurroundingRectangle(
+                    weight_text,
+                    fill_color=CONFIG.bg_color,
+                    fill_opacity=1.0,
+                    buff=0.005,
+                )
             )
             edge_label_map[edge] = weight_text
         self.add(*edge_label_map.values())
         self.edge_labels = edge_label_map
 
     @staticmethod
-    def from_adjacency_list(graph: WeightedAdjacencyListGraph):
+    def from_adjacency_list(
+        graph: WeightedAdjacencyListGraph,
+    ) -> Tuple[
+        List[Hashable],
+        List[Tuple[Hashable, Hashable]],
+        Dict[Tuple[Hashable, Hashable], Hashable],
+    ]:
         # graph is a map from vertex => [(vertex1, weight1), (vertex2, weight2), ...]
         vertices = list(graph.keys())
         edges = []

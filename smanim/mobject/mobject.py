@@ -3,12 +3,14 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import List, Type
+from typing import List, Sequence, Tuple, Type
 from typing_extensions import Self
 
 import numpy as np
 
+from smanim.config import CONFIG
 from smanim.constants import (
+    DEFAULT_MOBJECT_TO_EDGE_BUFFER,
     DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     DL,
     DOWN,
@@ -29,7 +31,7 @@ from smanim.typing import (
 )
 from smanim.utils.color import ManimColor
 from smanim.utils.logger import log
-from smanim.utils.space_ops import line_intersect
+from smanim.utils.space_ops import line_intersect, polygon_intersection
 
 __all__ = ["Mobject"]
 
@@ -61,6 +63,10 @@ class Mobject(ABC):
         self.subpath = subpath
         self.direct_lineno = direct_lineno
 
+        # used for tracking whether a manual assignment was made
+        # TODO: Might need a better way
+        self.path_assigned = subpath is not None
+
     @property
     def bounding_points(self):
         return self._bounding_points
@@ -84,7 +90,9 @@ class Mobject(ABC):
             self.subpath = subpath
 
     # Grouping
-    def add(self, *mobjects: Mobject, insert_at_front: bool = False) -> Self:
+    def add(
+        self, *mobjects: Tuple[Mobject, ...], insert_at_front: bool = False
+    ) -> Self:
         new_mobjects = []
         old_len = len(self.submobjects)
         for mobject in mobjects:
@@ -95,7 +103,7 @@ class Mobject(ABC):
             else:
                 new_mobjects.append(mobject)
                 # reset the mobject subpath, except when it's set by a direct assignment in the trace
-                if mobject.direct_lineno is None:
+                if not mobject.path_assigned and mobject.direct_lineno is None:
                     mobject.subpath = f"[{old_len}]"
                     mobject.parent = self
         if not insert_at_front:
@@ -108,7 +116,7 @@ class Mobject(ABC):
             self.add(*old_submobjects)
         return self
 
-    def remove(self, *mobjects) -> Self:
+    def remove(self, *mobjects: Tuple[Mobject, ...]) -> Self:
         for mobject in mobjects:
             if mobject is self:
                 log.error("Cannot remove mobject from itself")
@@ -252,14 +260,9 @@ class Mobject(ABC):
         aligned_edge: Vector3 | None = None,
         buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
     ) -> Self:
-        """Moves this mobject to the to an edge of another mobject"""
-        if not any(
-            [
-                np.array_equal(direction, e)
-                for e in (UP, DOWN, LEFT, RIGHT, UR, UL, DL, DR)
-            ]
-        ):
-            raise ValueError("`direction` must be a bbox point, such as UP or LEFT")
+        """Moves this mobject to the edge of another mobject, given by `direction`. Optionally aligns the edges perpendicular to `direction` using `aligned_edge`."""
+        self._require_direction_as_bbox(direction)
+
         if isinstance(mobject_or_point, Mobject):
             dest_pt = mobject_or_point.get_critical_point(direction)
         else:
@@ -271,6 +274,41 @@ class Mobject(ABC):
 
         if aligned_edge is not None:
             self.align_to(mobject_or_point, aligned_edge)
+        return self
+
+    def close_to(
+        self,
+        mobject_or_point: Mobject,
+        obstacle_mobjects: Sequence[Mobject],  # potentially colliding mobjects
+        direction: Vector3 = RIGHT,  # the direction to try first
+        buff: float = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
+    ) -> Self:
+        """Moves this mobject close to another mobject, like `next_to`.
+        Except that other directions are tried if the specified `direction` causes an intersection.
+        Is only an approximation since it treats the `bounding_points` as a polygon rather than bezier curves.
+        A faster approach could use bboxes but would be less precise.
+        """
+        if not isinstance(mobject_or_point, Mobject):
+            raise TypeError("Only mobjects are handled")
+
+        # Try these directions in order and accept the first one that does not cause an intersection
+        directions = [direction, RIGHT, UP, LEFT, DOWN, UR, UL, DL, DR, direction]
+
+        for dir in directions:
+            self.next_to(mobject_or_point, dir, buff=buff)
+            cur_bounding_points = self.bounding_points
+            intersection_found = False
+            for other in obstacle_mobjects:
+                other_bounding_points = other.bounding_points
+                if (
+                    other is not self
+                    and len(other_bounding_points) > 0
+                    and polygon_intersection(cur_bounding_points, other_bounding_points)
+                ):
+                    intersection_found = True
+                    break
+            if not intersection_found:
+                break
         return self
 
     def move_to(self, point_or_mobject: Point3D | Mobject) -> Self:
@@ -304,9 +342,20 @@ class Mobject(ABC):
             self.shift(np.array([dest_pt[0] - cur[0], 0, 0]) - edge * buff)
         return self
 
+    # TODO: Change this to move_to(ORIGIN)
     def move_to_origin(self) -> Self:
         self.shift(-self.center)
         return self
+
+    def to_edge(
+        self, edge: Vector3 = LEFT, buff: float = DEFAULT_MOBJECT_TO_EDGE_BUFFER
+    ) -> Self:
+        if not any([np.array_equal(edge, e) for e in (UP, DOWN, LEFT, RIGHT)]):
+            raise ValueError("Edge must be one of (UP, DOWN, LEFT, RIGHT)")
+        frame_x_radius = CONFIG.fw / 2
+        frame_y_radius = CONFIG.fh / 2
+        new_point = edge * np.array([frame_x_radius, frame_y_radius, 0])
+        return self.align_to(new_point, edge, buff)
 
     # Core transformations must be overridden by all subclasses
     @abstractmethod
@@ -384,12 +433,14 @@ class Mobject(ABC):
         pass
 
     # Frequently used patterns
-    def add_surrounding_rect(self, **rect_config) -> None:
-        # to avoid circular import
-        from smanim.mobject.geometry.shape_matchers import _SurroundingRectangle
-
-        rect = _SurroundingRectangle(self, **rect_config)
-        self.add(rect)
-
     def copy(self) -> Mobject:
         return deepcopy(self)
+
+    def _require_direction_as_bbox(self, direction: Vector3):
+        if not any(
+            [
+                np.array_equal(direction, e)
+                for e in (UP, DOWN, LEFT, RIGHT, UR, UL, DL, DR)
+            ]
+        ):
+            raise ValueError("`direction` must be a bbox point, such as UP or LEFT")

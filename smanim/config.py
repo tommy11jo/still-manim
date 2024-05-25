@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
-from smanim.constants import LOW_RES, ORIGIN
-from smanim.utils.color import BLACK, ManimColor
+from smanim.constants import DEFAULT_FONT_SIZE, LOW_RES, ORIGIN
+from smanim.utils.color import BLACK, WHITE, ManimColor
 
 
 __all__ = ["Config", "CONFIG"]
@@ -42,6 +42,9 @@ class Config:
         frame_center: float | None = None,
         bg_color: ManimColor | None = None,
         save_file_dir: Path | None = None,
+        default_text_color: ManimColor = WHITE,
+        default_text_font_size: int = DEFAULT_FONT_SIZE,
+        default_text_font_family: str = "computer-modern",
     ):
         DEFAULT_DENSITY = LOW_RES
         DEFAULT_FRAME_HEIGHT = 8
@@ -62,6 +65,10 @@ class Config:
         self.pw = int(self.fw * self.density)  # pixel width
         self.ph = int(self.fh * self.density)  # pixel height
         self.mk_dir_attempted = False
+
+        self.default_text_color = default_text_color
+        self.default_text_font_size = default_text_font_size
+        self.default_text_font_family = default_text_font_family
 
     def mk_save_dir_if_not_exists(self):
         if self.mk_dir_attempted:
