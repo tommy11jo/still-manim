@@ -372,7 +372,7 @@ def _tree_layout(
             obstruction[y] = x + 1
             continue
 
-        t = C.pop()
+        t = C.pop(0)  # children should be placed left->right
         pt = parent[t]
 
         ct = [u for u in list(T.neighbors(t)) if u != pt]

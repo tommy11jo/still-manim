@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing_extensions import Self
 import numpy as np
-from smanim.constants import MED_SMALL_BUFF, ORIGIN, OUT, PI, UP
+from smanim.constants import ORIGIN, OUT, PI, TINY_BUFF, UP
 from smanim.mobject.mobject import Mobject
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
 from smanim.utils.space_ops import rotation_matrix
@@ -119,7 +119,7 @@ class TransformableMobject(Mobject):
         self,
         text: str,
         direction: Vector3 = UP,
-        buff=MED_SMALL_BUFF,
+        buff: float = TINY_BUFF,
         use_parent_width=False,
         **text_kwargs,
     ) -> TransformableMobject:  # cannot return `Text` due to circular import

@@ -1,5 +1,4 @@
 import math
-from typing import Tuple
 from typing_extensions import Self
 from smanim.constants import (
     DEFAULT_MOBJECT_TO_MOBJECT_BUFFER,
@@ -18,7 +17,7 @@ __all__ = ["Group"]
 
 
 class Group(TransformableMobject):
-    def __init__(self, *mobjects: Tuple[Mobject, ...], **kwargs):
+    def __init__(self, *mobjects: Mobject, **kwargs):
         super().__init__(**kwargs)
         self.add(*mobjects)
 
@@ -40,9 +39,7 @@ class Group(TransformableMobject):
     def __iadd__(self, mobject: Mobject) -> Self:
         return self.add(mobject)
 
-    def add(
-        self, *mobjects: Tuple[Mobject, ...], insert_at_front: bool = False
-    ) -> Self:
+    def add(self, *mobjects: Mobject, insert_at_front: bool = False) -> Self:
         return super().add(*mobjects, insert_at_front=insert_at_front)
 
     def set_color(self, color: ManimColor, family: bool = True) -> Self:

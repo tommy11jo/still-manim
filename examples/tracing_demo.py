@@ -57,7 +57,11 @@ def complex_assign():
 
 
 def graph_demo():
-    g = Graph(vertices=range(4), edges=[(0, 1), (0, 2), (0, 3), (1, 3)])
+    g = Graph(
+        vertices=range(4),
+        edges=[(0, 1), (0, 2), (0, 3), (1, 3)],
+        include_vertex_labels=True,
+    )
     # this actually triggers an update to the subpath
     start_vertex = g.vertices[0]
     start_vertex.set_color(RED)
@@ -66,8 +70,10 @@ def graph_demo():
     assert g.vertices[0].get_path() == "start_vertex"
     assert g.vertices[1].get_path() == "g.vertices[1]"
 
+    print(g.vertex_labels[0].get_path())
 
-graph_demo()
+
+# graph_demo()
 
 
 # direct adds should be avoided when possible
@@ -167,3 +173,23 @@ def test():
 # Future: Current approach to assignment is not perfect. If an object reference is assigned a name multiple times, only the last time is captured.
 # I could use "access points" and let the LLM decide where to access
 # The LLM should be able to infer this though.
+
+
+# TODO: fix me
+def grid_2d():
+    canvas.set_dimensions(width=16, height=16)
+
+    squares = [Square(stroke_color=GRAY) for _ in range(16)]
+    group = Group(*squares)
+    group.arrange_in_grid(num_rows=4, num_cols=4, buff=0.5)
+    # the problem is the submobjects get added to another group here
+
+    canvas.add(group)
+    arrow = Arrow(start=squares[0], end=squares[1], color=GRAY)
+    canvas.add(arrow)
+    arrow2 = Arrow(start=squares[1], end=squares[2], color=GRAY)
+    canvas.add(arrow2)
+    canvas.snapshot(ignore_bg=True)
+
+
+grid_2d()

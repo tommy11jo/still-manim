@@ -68,7 +68,7 @@ class Canvas:
         self.num_snapshots = 0
         self.loaded_fonts = set()
 
-    def add(self, *mobjects: Tuple[Mobject, ...]):
+    def add(self, *mobjects: Mobject):
         for mobject in mobjects:
             if not isinstance(mobject, Mobject):
                 raise ValueError(f"Added item must be of type Mobject: {mobject}")
@@ -85,7 +85,7 @@ class Canvas:
                     mobject.direct_lineno = lineno
                 self.mobjects.add(mobject)
 
-    def remove(self, *mobjects: Tuple[Mobject, ...]):
+    def remove(self, *mobjects: Mobject):
         for mobject in mobjects:
             if mobject not in self.mobjects:
                 log.warning(f"Mobject not found: {mobject}")

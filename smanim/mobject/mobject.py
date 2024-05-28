@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import List, Sequence, Tuple, Type
+from typing import List, Sequence, Type
 from typing_extensions import Self
 
 import numpy as np
@@ -90,9 +90,7 @@ class Mobject(ABC):
             self.subpath = subpath
 
     # Grouping
-    def add(
-        self, *mobjects: Tuple[Mobject, ...], insert_at_front: bool = False
-    ) -> Self:
+    def add(self, *mobjects: Mobject, insert_at_front: bool = False) -> Self:
         new_mobjects = []
         old_len = len(self.submobjects)
         for mobject in mobjects:
@@ -116,7 +114,7 @@ class Mobject(ABC):
             self.add(*old_submobjects)
         return self
 
-    def remove(self, *mobjects: Tuple[Mobject, ...]) -> Self:
+    def remove(self, *mobjects: Mobject) -> Self:
         for mobject in mobjects:
             if mobject is self:
                 log.error("Cannot remove mobject from itself")
@@ -419,9 +417,10 @@ class Mobject(ABC):
             mobject.z_index = top_z_index + 1
         return self
 
-    def set_z_index(self, value: int, family: bool = True):
+    def set_z_index(self, value: int, family: bool = True) -> Self:
         for mob in self.get_family():
             mob.z_index = value
+        return self
 
     # Style matching helpers
     def set_color(self, color: ManimColor, family: bool = False) -> Self:
@@ -444,3 +443,6 @@ class Mobject(ABC):
             ]
         ):
             raise ValueError("`direction` must be a bbox point, such as UP or LEFT")
+
+    def __getitem__(self, index: int) -> Mobject:
+        return self.submobjects[index]
