@@ -200,7 +200,6 @@ class TipableLine(Line):
         return tip
 
 
-# bidirectional complete
 class Arrow(TipableLine):
     def __init__(
         self,
@@ -229,11 +228,10 @@ class Arrow(TipableLine):
                 tip_width=tip_width * tip_scalar,
                 tip_shape=tip_shape,
                 at_start=False,
+                subpath=".end_tip",
+                parent=self,
                 **tip_config,
             )
-            # bidirectional metadata
-            self.end_tip.parent = self
-            self.end_tip.subpath = ".end_tip"
 
             self.add(self.end_tip)
         if at_start:
@@ -242,11 +240,10 @@ class Arrow(TipableLine):
                 tip_width=tip_width * tip_scalar,
                 tip_shape=tip_shape,
                 at_start=True,
+                subpath=".start_tip",
+                parent=self,
                 **tip_config,
             )
-            # bidirectional metadata
-            self.start_tip.parent = self
-            self.start_tip.subpath = ".start_tip"
 
             self.add(self.start_tip)
         self.set_color(color)

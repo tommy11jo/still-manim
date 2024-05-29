@@ -24,7 +24,7 @@ from smanim.constants import (
 )
 from smanim.mobject.geometry.polygon import Rectangle
 from smanim.mobject.group import Group
-from smanim.mobject.mobject import Mobject
+from smanim.mobject.mobject import AccessPath, AccessType, Mobject
 from smanim.mobject.vmobject import VGroup, VMobject
 from smanim.mobject.text.text_mobject import Text
 from smanim.typing import InternalPoint3D_Array, Point3D, Vector3
@@ -55,8 +55,7 @@ MobjectMetadata = namedtuple(
 )
 
 
-# bidirectional complete
-# instance must be named lowercase 'canvas' to work
+# for now, instance must be named lowercase 'canvas' to work with access paths for bidirectional features
 class Canvas:
     def __init__(self, config: Config):
         self.reset_canvas(config)
@@ -75,22 +74,30 @@ class Canvas:
             if mobject in self.mobjects:
                 log.warning(f"Mobject already added: {mobject}")
             else:
-                if mobject.subpath is None:
-                    # assume this fn is called from the main file
-                    old_len = len(self.mobjects)
-                    caller_frame = inspect.stack()[1]
-                    lineno = caller_frame.lineno
-                    mobject.parent = None
-                    mobject.subpath = f"canvas.mobjects[{old_len}]"
-                    mobject.direct_lineno = lineno
+                # assume this fn is called from the main file
+                caller_frame = inspect.stack()[1]
+                lineno = caller_frame.lineno
+                old_len = len(self.mobjects)
+                # TODO: Remove would break the index set within subpath here.
+                # A major fix would be to make canvas a `mobject`. This has other benefits too.
+                # Then I could use mob_id and parent for index lookup (base mobject functionality)
+                # For now, I'm removing remove so that this doesn't break things
+                new_access_path = AccessPath(
+                    type=AccessType.ADD_TO_CANVAS,
+                    subpath=f"canvas.mobjects[{old_len}]",
+                    parent=None,
+                    lineno=lineno,
+                )
+                mobject.access_paths.append(new_access_path)
+
                 self.mobjects.add(mobject)
 
-    def remove(self, *mobjects: Mobject):
-        for mobject in mobjects:
-            if mobject not in self.mobjects:
-                log.warning(f"Mobject not found: {mobject}")
-            else:
-                self.mobjects.remove(mobject)
+    # def remove(self, *mobjects: Mobject):
+    #     for mobject in mobjects:
+    #         if mobject not in self.mobjects:
+    #             log.warning(f"Mobject not found: {mobject}")
+    #         else:
+    #             self.mobjects.remove(mobject)
 
     def get_mobjects_to_display(
         self,
@@ -124,6 +131,7 @@ class Canvas:
         crop: bool = False,
         crop_buff: float = SMALL_BUFF,
         called_from_draw: bool = False,
+        manual_suffix: str | None = None,
     ) -> Tuple[Tuple[float, float, float, float], dict]:
         if not called_from_draw and BROWSER_ENV:
             raise Exception(
@@ -179,6 +187,8 @@ class Canvas:
             suffix = self.num_snapshots - 1
         else:
             suffix = 0
+        if manual_suffix is not None:
+            suffix = manual_suffix
         self.save_svg(svg_view_obj, preview=preview, suffix=suffix)
 
         layer_metadatas = {}
@@ -188,7 +198,7 @@ class Canvas:
             mobject=None,
             id="canvas",
             mob_type="canvas",
-            parent="none",
+            parent="None",
             children=[f"id-{id(mob)}" for mob in self.mobjects],
         )
 
@@ -436,6 +446,9 @@ class Canvas:
         parent: str | None = None,
         points: List[float] | None = None,
     ) -> dict:
+        path, lineno = mobject.get_access_path() if mobject else ("", -1)
+        path = "None" if path is None else path
+        lineno = -1 if lineno is None else lineno
         return MobjectMetadata(
             id=id,
             type=mob_type,
@@ -443,8 +456,8 @@ class Canvas:
             children=children,
             parent=parent,
             classname=type(mobject).__qualname__ if mobject else "None",
-            path=mobject.get_path() if mobject else "None",
-            lineno=mobject.direct_lineno if mobject else -1,
+            path=path,
+            lineno=lineno,
         )._asdict()
 
     def populate_mobject_metadatas(

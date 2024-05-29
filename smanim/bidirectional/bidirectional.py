@@ -2,7 +2,7 @@ import ast
 from types import FrameType
 from typing import NamedTuple
 from smanim.canvas import BROWSER_ENV
-from smanim.mobject.mobject import Mobject
+from smanim.mobject.mobject import AccessPath, AccessType, Mobject
 
 
 # linecache doesn't work in pyodide, so mock it
@@ -51,9 +51,13 @@ def update_mobject_metadata(
     # print(
     #     f"Var '{var_to_capture}' assigned at line {line_to_process} for mobject: {mobject}"
     # )
-    mobject.parent = None
-    mobject.subpath = var_to_capture
-    mobject.direct_lineno = line_to_process
+    new_access_path = AccessPath(
+        type=AccessType.TOP_LEVEL_ASSIGN,
+        subpath=var_to_capture,
+        parent=None,
+        lineno=line_to_process,
+    )
+    mobject.access_paths.append(new_access_path)
 
 
 # Note: does not handle recursion right now, but it is possible by tracking call depth

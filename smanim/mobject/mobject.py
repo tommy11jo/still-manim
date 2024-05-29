@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import List, Sequence, Type
+from enum import Enum
+from typing import List, NamedTuple, Sequence, Tuple, Type
 from typing_extensions import Self
 
 import numpy as np
@@ -36,6 +37,22 @@ from smanim.utils.space_ops import line_intersect, polygon_intersection
 __all__ = ["Mobject"]
 
 
+class AccessType(Enum):
+    TOP_LEVEL_ASSIGN = "top-level-assign"
+    MANUAL_ASSIGN = "manual-assign"
+    ADD_TO_GROUP = "add-to-group"
+    ADD_TO_CANVAS = "add-to-canvas"
+
+
+class AccessPath(NamedTuple):
+    type: AccessType
+    subpath: str | None = None
+    parent: Mobject | None = None
+    lineno: int | None = None  # only set on top-level assignments
+    mob_id: int | None = None  # only set by group additions
+    # mob_id is used to generate index at retrieval using `parent._index_of_submobject(mob_id)`
+
+
 class Mobject(ABC):
     """Base class for all objects that take up space.
     Note: This class has been modified to support bidirectional editing.
@@ -49,7 +66,7 @@ class Mobject(ABC):
         z_index: int = 0,
         parent: Mobject | None = None,
         subpath: str | None = None,
-        direct_lineno: int | None = None,
+        lineno: int | None = None,
     ):
         if bounding_points is None:
             bounding_points = np.empty((0, 3))
@@ -58,14 +75,15 @@ class Mobject(ABC):
         self.submobjects: List[Mobject] = []
 
         # used for bidirectional editing
-        # TODO: Maybe use tokens for subpath instead of str
-        self.parent = parent
-        self.subpath = subpath
-        self.direct_lineno = direct_lineno
-
-        # used for tracking whether a manual assignment was made
-        # TODO: Might need a better way
-        self.path_assigned = subpath is not None
+        self.access_paths: List[AccessPath] = []
+        if subpath:
+            first_path = AccessPath(
+                type=AccessType.MANUAL_ASSIGN,
+                subpath=subpath,
+                parent=parent,
+                lineno=lineno,
+            )
+            self.access_paths.append(first_path)
 
     @property
     def bounding_points(self):
@@ -75,24 +93,57 @@ class Mobject(ABC):
     def bounding_points(self, bounding_points: InternalPoint3D_Array):
         self._bounding_points = bounding_points
 
-    def get_path(self) -> str:
-        path = self.parent.get_path() if self.parent else ""
-        if self.subpath is None:
-            return "None"
+    def get_access_path(self) -> Tuple[str | None, int | None]:
+        """Return the first valid access path and its corresponding lineno"""
+        access_type_precedence = {
+            AccessType.TOP_LEVEL_ASSIGN: 0,
+            AccessType.MANUAL_ASSIGN: 1,
+            AccessType.ADD_TO_GROUP: 2,
+            AccessType.ADD_TO_CANVAS: 3,
+        }
 
-        path += self.subpath
-        return path
+        # Implictly, this also guarantees earlier access paths take precedence over later ones
+        sorted_access_paths = sorted(
+            self.access_paths,
+            key=lambda ap: access_type_precedence[ap.type],
+        )
 
-    # Bidirectional Ops
-    def set_path_if_not_exists(self, parent: Mobject, subpath: str):
-        if self.subpath is None:
-            self.parent = parent
-            self.subpath = subpath
+        for access_path in sorted_access_paths:
+            access_type, subpath, parent, lineno, mob_id = access_path
+            if access_type == AccessType.TOP_LEVEL_ASSIGN:
+                return subpath, lineno
+            elif access_type == AccessType.MANUAL_ASSIGN:
+                if not parent:
+                    return subpath, lineno
+                parent_path, parent_lineno = parent.get_access_path()
+                path = parent_path + subpath if parent_path is not None else subpath
+                lineno = parent_lineno if lineno is None else lineno
+                return path, lineno
+            elif access_type == AccessType.ADD_TO_GROUP:
+                parent_path, parent_lineno = parent.get_access_path()
+                if not mob_id:
+                    raise AttributeError(
+                        f"Add to group paths must have a mobject id. Mobject is {self}"
+                    )
+                if parent_path is None:
+                    # Invalid path, should be skipped
+                    continue
+
+                # Generate subpath dynamically for mobjects in groups by finding their index
+                index = parent._index_of_submobject(mob_id)
+                subpath = f"[{index}]"
+                if lineno is None:
+                    lineno = parent_lineno
+                return parent_path + subpath, lineno
+            elif access_type == AccessType.ADD_TO_CANVAS:
+                return subpath, lineno
+            else:
+                raise TypeError("Invalid access type")
+        return None, None
 
     # Grouping
     def add(self, *mobjects: Mobject, insert_at_front: bool = False) -> Self:
         new_mobjects = []
-        old_len = len(self.submobjects)
         for mobject in mobjects:
             if mobject is self:
                 raise ValueError("Cannot add mobject to itself")
@@ -100,19 +151,23 @@ class Mobject(ABC):
                 log.warning(f"Mobject already added: {mobject}")
             else:
                 new_mobjects.append(mobject)
-                # reset the mobject subpath, except when it's set by a direct assignment in the trace
-                if not mobject.path_assigned and mobject.direct_lineno is None:
-                    mobject.subpath = f"[{old_len}]"
-                    mobject.parent = self
+                new_access_path = AccessPath(
+                    type=AccessType.ADD_TO_GROUP,
+                    parent=self,
+                    mob_id=id(mobject),
+                )
+                mobject.access_paths.append(new_access_path)
         if not insert_at_front:
             self.submobjects.extend(new_mobjects)
         else:
-            # setup from scratch to reset subpaths and parents
-            old_submobjects = self.submobjects
-            self.submobjects = []
-            self.add(*new_mobjects)
-            self.add(*old_submobjects)
+            self.submobjects = new_mobjects + self.submobjects
         return self
+
+    def _index_of_submobject(self, sub_mob_id: str):
+        for index, sub_mob in enumerate(self.submobjects):
+            if id(sub_mob) == sub_mob_id:
+                return index
+        return -1
 
     def remove(self, *mobjects: Mobject) -> Self:
         for mobject in mobjects:

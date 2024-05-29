@@ -118,9 +118,8 @@ class Graph(TransformableMobject):
 
         self.vertex_labels: Group | None
         if include_vertex_labels:
-            self.vertex_labels = self.generate_vertex_labels(**vertex_label_config)
-            self.vertex_labels.parent = self
-            self.vertex_labels.subpath = ".vertex_labels"
+            self.vertex_labels = Group(subpath=".vertex_labels", parent=self)
+            self.populate_vertex_labels(self.vertex_labels, **vertex_label_config)
             self.add(*self.vertex_labels)
         else:
             self.vertex_labels = None
@@ -147,17 +146,18 @@ class Graph(TransformableMobject):
                 edges.append((vertex, neighbor))
         return vertices, edges
 
-    def generate_vertex_labels(
-        self, labels: Iterable[str] | None = None, label_config: dict = {}
-    ) -> Group:
-        vertex_labels = Group()
+    def populate_vertex_labels(
+        self,
+        vertex_labels: Group,
+        labels: Iterable[str] | None = None,
+        label_config: dict = {},
+    ) -> None:
         if labels is None:
             labels = [str(i) for i in range(len(self.vertices))]
         for vertex, label in zip(self.vertices.values(), labels):
             text = Text(label, **label_config)
             text.move_to(vertex)
             vertex_labels.add(text)
-        return vertex_labels
 
 
 class WeightedGraph(Graph):

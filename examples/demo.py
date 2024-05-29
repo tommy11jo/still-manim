@@ -1256,4 +1256,4 @@ def label_line():
     canvas.snapshot()
 
 
-label_line()
+# label_line()
